@@ -2,6 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
+<script>try{if(localStorage.getItem('fp_dark')==='1'){document.documentElement.style.setProperty('background','#0a0e1a','important');var _d=document.createElement('style');_d.id='fpPreDark';_d.textContent='html,body{background:#0a0e1a!important}html.fp-dark [style*="background:#f"],html.fp-dark [style*="background: #f"],html.fp-dark [style*="background:#e9f3fe"],html.fp-dark [style*="background:rgb(2"]{background-color:#141d31!important}';(document.head||document.documentElement).appendChild(_d);document.documentElement.classList.add('fp-dark');}}catch(e){}</script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <script src="./support.js"></script>
 <template id="__bundler_thumbnail" data-bg-color="#008ece">
@@ -8439,7 +8440,7 @@ class Component extends DCLogic {
     a.onclick=function(e){ e.preventDefault(); if(window.FPCatalog)window.FPCatalog(); };
     target.parentNode.insertBefore(a, target.nextSibling);
   }
-  setInterval(function(){ inject(); injectProductsLink(); },800); setTimeout(function(){ inject(); injectProductsLink(); },900);
+  setInterval(function(){ inject(); injectProductsLink(); },2500); setTimeout(function(){ inject(); injectProductsLink(); },900);
 })();
 </script>
 <script>
@@ -8840,7 +8841,7 @@ class Component extends DCLogic {
     themeBtn.parentNode.insertBefore(box, themeBtn);
     paintToggle();
   }
-  setInterval(function(){ injectToggle(); apply(); }, 1000);
+  setInterval(function(){ injectToggle(); apply(); }, 2500);
   setTimeout(function(){ injectToggle(); apply(); }, 1000);
 })();
 </script>
@@ -8880,8 +8881,10 @@ class Component extends DCLogic {
   function walk(root){ if(!root||root.nodeType!==1)return; darkenEl(root); var els=root.querySelectorAll?root.querySelectorAll('*'):[]; for(var i=0;i<els.length;i++)darkenEl(els[i]); }
   function restore(root){ var els=(root||document.body).querySelectorAll('[data-fpl]'); for(var i=0;i<els.length;i++){ var el=els[i]; el.setAttribute('style', el.getAttribute('data-fpl')||''); el.removeAttribute('data-fpl'); } }
   var obs=null;
+  var _pend=[], _ft=null;
+  function _flush(){ _ft=null; var arr=_pend; _pend=[]; for(var i=0;i<arr.length;i++) walk(arr[i]); }
   function on(){ document.documentElement.style.setProperty('background','#0a0e1a','important'); document.body.style.setProperty('background','#0a0e1a','important'); walk(document.body);
-    if(!obs){ obs=new MutationObserver(function(muts){ if(!isDark())return; for(var j=0;j<muts.length;j++){ var m=muts[j]; if(m.type==='attributes'){ if(m.target&&m.target.nodeType===1)darkenEl(m.target); } else { for(var i=0;i<m.addedNodes.length;i++){ walk(m.addedNodes[i]); } } } }); obs.observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['style','class']}); } }
+    if(!obs){ obs=new MutationObserver(function(muts){ if(!isDark())return; for(var j=0;j<muts.length;j++){ var a=muts[j].addedNodes; for(var i=0;i<a.length;i++){ if(a[i].nodeType===1)_pend.push(a[i]); } } if(!_ft&&_pend.length)_ft=setTimeout(_flush,250); }); obs.observe(document.body,{childList:true,subtree:true}); } }
   function off(){ if(obs){obs.disconnect();obs=null;} document.documentElement.style.background=''; document.body.style.background=''; restore(document.body); }
   function isDark(){ try{return localStorage.getItem('fp_dark')==='1';}catch(e){return false;} }
   function setDark(v){ try{localStorage.setItem('fp_dark',v?'1':'0');}catch(e){} if(v)on(); else off(); paint(); }
@@ -8898,8 +8901,13 @@ class Component extends DCLogic {
     paint();
   }
   var engaged=false;
-  setInterval(function(){ if(isDark()){ if(!engaged){engaged=true;on();} } else if(engaged){ engaged=false; off(); } }, 1500);
-  setTimeout(function(){ if(isDark()){ engaged=true; on(); } }, 1100);
+  setInterval(function(){ if(isDark()){ if(!engaged){engaged=true;on();} } else if(engaged){ engaged=false; off(); } }, 2500);
+  function fpBoot(){ if(isDark()){ if(!engaged){ engaged=true; on(); } } }
+  fpBoot();
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',fpBoot);
+  window.addEventListener('load',function(){ fpBoot(); if(isDark())walk(document.body); });
+  setTimeout(function(){ if(isDark())walk(document.body); }, 1200);
+  setTimeout(function(){ var pd=document.getElementById('fpPreDark'); if(pd&&!isDark()&&pd.parentNode)pd.parentNode.removeChild(pd); }, 1500);
 })();
 </script>
 <script>
