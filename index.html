@@ -4865,6 +4865,40 @@ class Component extends DCLogic {
     } catch (e) { this.setState({ qsStatus: '' }); }
   };
   loadTodaySales_noop = () => {};
+  // Safe periodic pull: refresh today's sales from the cloud so another
+  // device's entries appear here automatically. Skips when it could clobber
+  // unsaved typing (mid-entry rows, in-flight saves, background tab, or a
+  // focused input in the Quick Sale grid).
+  syncRefreshSafe_ = () => {
+    try {
+      if (!/\/exec$/.test((this.state.backendUrl || '').trim())) return;
+      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
+      // only auto-refresh when viewing today (not a past date being reviewed)
+      const iso = this.state.qsDateISO || this.qsTodayISO();
+      if (iso !== this.qsTodayISO()) return;
+      // don't refresh while a save is in flight
+      const infl = this._qsInFlight || {}, einfl = this._expInFlight || {};
+      if (Object.keys(infl).some(k => infl[k]) || Object.keys(einfl).some(k => einfl[k])) return;
+      // don't refresh if the user is mid-entry on an unsaved row
+      const done = this.state.qsSyncedIds || {};
+      const hasUnsaved = (this.state.qsSales || []).some(r => {
+        const c = (r.client || '').trim(), g = (r.goods || '').trim();
+        if (!c && !g) return false; // empty trailing row is fine
+        if (!r._sid) return true;   // typed but never assigned an id yet
+        const sig = c + '|' + g + '|' + r.qty + '|' + r.price + '|' + (r.payMode || 'Cash') + '|' + (r.paid || '0');
+        return done[r._sid] !== sig; // typed changes not yet synced
+      });
+      if (hasUnsaved) return;
+      // don't refresh if a Quick Sale input currently has focus
+      const ae = (typeof document !== 'undefined') ? document.activeElement : null;
+      if (ae && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName || '')) return;
+      this.loadTodaySales();
+    } catch (e) {}
+  };
+  startSyncPoll_ = () => {
+    try { clearInterval(this._syncPoll); } catch (e) {}
+    this._syncPoll = setInterval(this.syncRefreshSafe_, 30000); // every 30s
+  };
   componentDidMount() {
     try {
       var self = this;
@@ -4883,7 +4917,7 @@ class Component extends DCLogic {
     try { this._staffTip = this.staffTips()[Math.floor(Math.random() * this.staffTips().length)]; } catch (e) {}
     try { const d = localStorage.getItem('fp_dark'); if (d === '1') { this.setState({ darkMode: true }); document.documentElement.classList.add('fp-dark'); } } catch (e) {}
     try { const saved = localStorage.getItem('fp_user_photo'); if (saved) this.setState({ userPhoto: saved }); } catch (e) {}
-    try { const burl = localStorage.getItem('fp_backend_url'); if (burl) { this.setState({ backendUrl: burl, syncStatus: 'saved', backendConnected: /\/exec$/.test(burl.trim()) }); setTimeout(() => this.loadTodaySales(), 400); this.startBotPolling(); } } catch (e) {}
+    try { const burl = localStorage.getItem('fp_backend_url'); if (burl) { this.setState({ backendUrl: burl, syncStatus: 'saved', backendConnected: /\/exec$/.test(burl.trim()) }); setTimeout(() => this.loadTodaySales(), 400); this.startBotPolling(); this.startSyncPoll_(); } } catch (e) {}
     try { const sc = localStorage.getItem('fp_saved_customers'); if (sc) { const arr = JSON.parse(sc); if (Array.isArray(arr) && arr.length) this.setState({ savedCustomers: arr }, () => this.runCustomerAudit_(false)); } } catch (e) {}
     // restore Quick Sale + saved documents from browser so a page refresh keeps them on screen
     try {
@@ -4941,7 +4975,7 @@ class Component extends DCLogic {
       });
     }, 4500);
   }
-  componentWillUnmount() { clearInterval(this._notifT); clearTimeout(this._toastT); clearTimeout(this._syncT); clearTimeout(this._cacheT); }
+  componentWillUnmount() { clearInterval(this._notifT); clearTimeout(this._toastT); clearTimeout(this._syncT); clearTimeout(this._cacheT); clearInterval(this._syncPoll); }
   saveLocalCache_ = () => { const s = this.state; try { localStorage.setItem('fp_local_cache', JSON.stringify({ qsSales: s.qsSales, qsExpenses: s.qsExpenses, qsStore: s.qsStore, qsNotes: s.qsNotes, qsDateISO: s.qsDateISO, savedDocs: s.savedDocs })); } catch (e) {} try { localStorage.setItem('fp_payroll_cache', JSON.stringify(s.payroll || [])); } catch (e) {} try { this.fpSaveDailyExpTpl_(); } catch (e) {} try { this.fpLogEmp_(); } catch (e) {} };
   fpAttendance_ = (monthISO) => {
     const out = { map: {}, has: false };
