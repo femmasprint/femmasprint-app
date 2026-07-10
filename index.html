@@ -4482,7 +4482,7 @@ class Component extends DCLogic {
     notifFeatured: 0, notifRead: [], userPhoto: null,
     newCustOpen: false, newCustRow: null, newCustName: '', newCustPhone: '', newCustEmail: '', newCustLocation: '', newCustForSale: false, qsCustDetails: {},
     calOpen: null, calView: '', calRangeStart: '', calRangeEnd: '',
-    payMonth: 'MAY 2026', payMonthISO: '2026-05', payStore: {}, payslipIdx: null, empProfileIdx: null, empHistPeriod: 'month', sidebarPeek: false, advOpen: false, advName: '', advAmount: '', advTitle: '', advSalary: '', advFare: '', advDDOpen: false,
+    payMonth: (new Date().toLocaleString('en',{month:'long'}).toUpperCase()+' '+new Date().getFullYear()), payMonthISO: (new Date().getFullYear()+'-'+String(new Date().getMonth()+1).padStart(2,'0')), payStore: {}, payslipIdx: null, empProfileIdx: null, empHistPeriod: 'month', sidebarPeek: false, advOpen: false, advName: '', advAmount: '', advTitle: '', advSalary: '', advFare: '', advDDOpen: false,
     payroll: [
       { name: 'ISMAIL ISSA', title: 'Printing', days: '26', fareRate: '7000', salary: '250000', fareAmt: '0', advance: '0', penalty: '0', photo: 'staff/sm/ismo.png' },
       { name: 'HASSAN T. MWESIUMO', title: 'Graphics', days: '26', fareRate: '7000', salary: '280000', fareAmt: '0', advance: '0', penalty: '0', photo: 'staff/sm/hasani.png' },
@@ -5766,7 +5766,7 @@ class Component extends DCLogic {
   setUnit = (i, unit) => this.setState(s => ({ saleRows: s.saleRows.map((r, j) => j === i ? { ...r, unit } : r), unitOpenRow: null }));
   cycleUnit = (i) => this.setState(s => ({ unitOpenRow: s.unitOpenRow === i ? null : i }));
   addRow = () => this.setState(s => ({ saleRows: [...s.saleRows, { item: '', desc: '', count: '', qty: '', unit: 'NONE', price: '' }] }));
-  removeRow = (i) => this.setState(s => ({ saleRows: s.saleRows.filter((_, j) => j !== i) }));
+  removeRow = (i) => window.confirm('Una uhakika unataka kufuta safu hii?') && this.setState(s => ({ saleRows: s.saleRows.filter((_, j) => j !== i) }));
   updateQsSale = (i, key, val) => this.setState(s => ({ qsSales: s.qsSales.map((r, j) => j === i ? { ...r, [key]: val } : r) }));
   updateQsExpense = (i, key, val) => this.setState(s => ({ qsExpenses: s.qsExpenses.map((r, j) => j === i ? { ...r, [key]: val } : r) }));
   qsNameHist_ = () => { try { return JSON.parse(localStorage.getItem('fp_name_hist') || '[]'); } catch (e) { return []; } };
@@ -5954,7 +5954,7 @@ class Component extends DCLogic {
   };
   updatePay = (i, key, val) => this.setState(s => ({ payroll: s.payroll.map((r, j) => j === i ? { ...r, [key]: val } : r) }));
   addPay = () => this.setState(s => ({ payroll: [...s.payroll, { name: '', title: '', days: '26', fareRate: '7000', salary: '', fareAmt: '0', advance: '0', penalty: '0', bonus: '0', phone: '', address: '', altContact: '', referee: '', nida: '', birthday: '', penaltyReason: '', advanceReason: '', contractType: '', contractStart: '', contractEnd: '', contractNote: '' }] }));
-  removePay = (i) => this.setState(s => ({ payroll: s.payroll.filter((_, j) => j !== i) }));
+  removePay = (i) => window.confirm('Una uhakika unataka kufuta mfanyakazi huyu?') && this.setState(s => ({ payroll: s.payroll.filter((_, j) => j !== i) }));
   changePayMonth = (newISO) => this.setState(s => {
     const store = { ...(s.payStore || {}) };
     store[s.payMonthISO] = s.payroll;
@@ -5998,8 +5998,8 @@ class Component extends DCLogic {
     }, () => this.showToast('✓ ' + name + (amt > 0 ? ' — Advance Sh ' + amt.toLocaleString('en-US') + ' (Quick Sale + Payroll)' : ' imesasishwa kwenye payroll')));
   };
   printPayroll = () => { setTimeout(() => { try { window.print(); } catch (e) {} }, 120); };
-  removeQsSale = (i) => this.setState(s => ({ qsSales: s.qsSales.filter((_, j) => j !== i) }));
-  removeQsExpense = (i) => this.setState(s => ({ qsExpenses: s.qsExpenses.filter((_, j) => j !== i) }));  updateRow = (i, key, val) => this.setState(s => {
+  removeQsSale = (i) => window.confirm('Una uhakika unataka kufuta safu hii?') && this.setState(s => ({ qsSales: s.qsSales.filter((_, j) => j !== i) }));
+  removeQsExpense = (i) => window.confirm('Una uhakika unataka kufuta safu hii?') && this.setState(s => ({ qsExpenses: s.qsExpenses.filter((_, j) => j !== i) }));  updateRow = (i, key, val) => this.setState(s => {
     const rows = s.saleRows.map((r, j) => j === i ? { ...r, [key]: val } : r);
     return { saleRows: rows };
   });
