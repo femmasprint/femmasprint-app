@@ -1,8 +1,9 @@
 /* fp-theme.js — FemmasBot: professional Light / Dark / System theme control.
- * Drives the theme by toggling the html.fp-dark class directly (no app re-render),
- * so the switch is a smooth crossfade instead of a jarring redraw. Keeps fp_dark in
- * sync so the head pre-paint script applies the right theme on the next load.
- * 'System' follows the OS preference live. Replaces the old single sun/moon button. */
+ * Drives the app's OWN theme toggle (single source of truth) so the internal
+ * darkMode state, the html.fp-dark class, and fp_dark stay in perfect sync — this
+ * prevents the state/class divergence that made the theme look "half switched".
+ * A brief crossfade smooths the change; 'System' follows the OS preference live.
+ * Replaces the old single sun/moon button with a clean 3-way segmented control. */
 (function () {
   var LS_MODE = 'fp_mode', LS_DARK = 'fp_dark';
   function get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
@@ -32,16 +33,21 @@
   var mq = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
   function systemDark() { return mq ? mq.matches : false; }
 
-  function applyDark(dark, animate) {
+  // Drive the app's OWN toggle so its internal darkMode state, the html.fp-dark class,
+  // and fp_dark stay perfectly in sync — one source of truth, no divergence/mixing.
+  function ensureDark(dark, animate) {
     var html = document.documentElement;
-    set(LS_DARK, dark ? '1' : '0');
-    if (html.classList.contains('fp-dark') === dark) return;
+    if (html.classList.contains('fp-dark') === dark) { set(LS_DARK, dark ? '1' : '0'); return; }
     if (animate) {
       html.classList.add('fp-switching');
-      clearTimeout(applyDark._t);
-      applyDark._t = setTimeout(function () { html.classList.remove('fp-switching'); }, 480);
+      clearTimeout(ensureDark._t);
+      ensureDark._t = setTimeout(function () { html.classList.remove('fp-switching'); }, 480);
     }
-    html.classList.toggle('fp-dark', dark);
+    var b = findThemeBtn();
+    if (!b) { html.classList.toggle('fp-dark', dark); set(LS_DARK, dark ? '1' : '0'); return; }
+    b.click(); // runs the app's toggleTheme (syncs state + class + fp_dark)
+    // the class is updated synchronously; if state was diverged, one more click aligns it.
+    if (html.classList.contains('fp-dark') !== dark) b.click();
   }
 
   var wrap = null;
@@ -55,7 +61,7 @@
   function setMode(mode, animate) {
     set(LS_MODE, mode);
     var dark = mode === 'dark' ? true : mode === 'light' ? false : systemDark();
-    applyDark(dark, animate);
+    ensureDark(dark, animate);
     paint(mode);
   }
 
