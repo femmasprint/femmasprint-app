@@ -1,9 +1,10 @@
 /* fp-theme.js — FemmasBot: professional Light / Dark / System theme control + a
  * small language helper. The theme control drives the app's OWN toggle so the
  * darkMode state and html.fp-dark class stay in sync; persistent CSS darkens the
- * app's light surfaces so nothing can flash white on any re-render; and on load we
- * fast-apply the saved language (killing the flash-of-English) plus a supplementary
- * Swahili dictionary for form/invoice labels the app's own i18n misses. */
+ * app's light surfaces so nothing can flash white on any re-render; and we keep the
+ * saved language applied on a short cadence (killing the flash-of-English on reload
+ * AND on in-app navigation) plus a supplementary Swahili dictionary for form/invoice
+ * labels the app's own i18n misses. */
 (function () {
   var LS_MODE = 'fp_mode', LS_DARK = 'fp_dark';
   function get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
@@ -167,7 +168,6 @@
     }
   }
 
-  // Fast-apply the saved language on load to remove the flash-of-English after reload.
   function fastLang() {
     var lang;
     try { lang = localStorage.getItem('fp_lang') || 'sw'; } catch (e) { lang = 'sw'; }
@@ -214,6 +214,17 @@
     } catch (e) {}
   }
 
+  // Keep the whole app in the saved language on a short cadence so navigating to a
+  // new page (whose fresh English DOM the app's slow 2.5s i18n pass would otherwise
+  // leave in English for a beat) is translated almost immediately — no flash of
+  // English anywhere, not just on reload.
+  function keepLang() {
+    var lang;
+    try { lang = localStorage.getItem('fp_lang') || 'sw'; } catch (e) { lang = 'sw'; }
+    try { if (window.FPSetLang) window.FPSetLang(lang); } catch (e) {}
+    extraI18n();
+  }
+
   function boot() {
     var st = document.createElement('style'); st.textContent = CSS; document.head.appendChild(st);
     initMode();
@@ -221,7 +232,8 @@
     fastLang();
     extraI18n();
     setTimeout(function () { booted = true; }, 1200);
-    setInterval(function () { build(); extraI18n(); }, 1500);
+    setInterval(build, 1500);
+    setInterval(keepLang, 600);
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();
