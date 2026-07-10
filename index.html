@@ -4468,7 +4468,7 @@ window.addEventListener('load', function () {
 <script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1400,&quot;height&quot;:980}}">
 class Component extends DCLogic {
   state = {
-    darkMode: false,
+    darkMode: (function(){try{return localStorage.getItem('fp_dark')==='1';}catch(e){return false;}})(),
     botConfig: { businessName: 'Femmas Print', phone: '+255 658 843 344', email: 'femmasprint@gmail.com', address: 'Amani & Congo Street, Jangwani, Ilala — Dar es Salaam', greeting: 'Karibu! Mimi ni FemmasBot wa Femmas Print. Naweza kukusaidiaje leo — makadirio ya bei, ujumbe kwa mteja, au taarifa ya huduma zetu?', services: 'Printing, Branding, Graphic Design, Large Format, DTF, Embroidery, ID Cards, Banners', offerBusinessCards: '15,000', offerMug: '8,000', offerSabaSaba: '50,000' }, botSavedAt: '', botLeads: [],
     qsPeriodOpen: false, period: 'This Month', periodOpen: false, screen: (function(){try{return sessionStorage.getItem('fp_screen')||'home';}catch(e){return 'home';}})(), customerIdx: 0, item: 6, openMenu: '', report: 'sale', setTab: 'transaction', multiPay: false, globalSearch: '', searchFocused: false, hiddenCards: [], customerSearch: '', hoverIdx: null,
     saleOpen: false, saleTitle: 'Sale', customerFormOpen: false, itemFormOpen: false, payInOpen: false, payInForm: { customer: '', amount: '', payMode: '', relType: '', relId: '', ref: '', notes: '' }, payInErr: '', contactsOpen: false, waOpen: false, toast: '', saleMode: 'credit', discountPct: 0, discountShManual: '', discountMode: 'pct', taxPct: 0, roundOff: true, received: false, receivedAmt: '',
