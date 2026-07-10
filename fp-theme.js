@@ -1,31 +1,21 @@
 /* fp-theme.js — FemmasBot: professional Light / Dark / System theme control + a
- * small language helper. The theme control drives the app's OWN toggle so the
- * darkMode state and html.fp-dark class stay in sync; persistent CSS darkens the
- * app's light surfaces so nothing can flash white on any re-render; and we keep the
- * saved language applied on a short cadence (killing the flash-of-English on reload
- * AND on in-app navigation) plus a supplementary Swahili dictionary for form/invoice
- * labels the app's own i18n misses. */
+ * language helper. The theme control drives the app's OWN toggle so the darkMode
+ * state and html.fp-dark class stay in sync; persistent CSS darkens the app's light
+ * surfaces so nothing can flash white on any re-render; and the saved language is
+ * kept applied on a short cadence (killing the flash-of-English on reload AND
+ * in-app navigation) plus a large supplementary Swahili dictionary for inner-page
+ * labels (reports, filters, subtitles, column headers, forms) the app's own i18n
+ * misses. */
 (function () {
   var LS_MODE = 'fp_mode', LS_DARK = 'fp_dark';
   function get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
   function set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
 
   var CSS =
-    /* Root stays dark the instant the class is present — backdrop can't flash white. */
     'html.fp-dark,html.fp-dark body{background:#0a0e1a !important}' +
-    /* Hide the app's ORIGINAL single sun/moon toggle by its title (EN + SW), instantly
-       and on every re-render, so it never shows up beside our 3-way control. Our own
-       buttons are titled "Light"/"Dark"/"System" so they are never matched. */
     'button[title*="Light / Dark"],button[title*="Mwanga / Giza"]{display:none !important}' +
-    /* Any light card we tag during the switch is painted dark immediately, in place. */
     'html.fp-dark .fp-fd{background:#131a2b !important;background-color:#131a2b !important;' +
     'border-color:rgba(255,255,255,.07) !important;color:#e6edf7 !important}' +
-    /* PERSISTENT dark override for the app's light surfaces so nothing can flash white on
-       ANY re-render. The app leaves its full-page wrapper (and some cards) LIGHT and only
-       the theme makes them dark; a transient JS tag only covered the switch, so re-renders
-       (the Arifa card cycles ~1/s) briefly showed white. These CSS rules always apply while
-       fp-dark is on. Grey/blue tones are background-only values so are safe unscoped; pure
-       white is scoped to `background:` to avoid recolouring white TEXT (e.g. blue buttons). */
     'html.fp-dark [style*="rgb(245, 248, 252)"]{background:#0a0e1a !important;background-color:#0a0e1a !important}' +
     'html.fp-dark [style*="rgb(248, 249, 251)"],html.fp-dark [style*="rgb(244, 245, 247)"],' +
     'html.fp-dark [style*="rgb(233, 243, 254)"],' +
@@ -33,14 +23,10 @@
     'html.fp-dark [style*="background: rgb(255, 255, 255)"],html.fp-dark [style*="background:rgb(255, 255, 255)"],' +
     'html.fp-dark [style*="background: rgba(255, 255, 255"],html.fp-dark [style*="background:rgba(255, 255, 255"]' +
     '{background:#131a2b !important;background-color:#131a2b !important;border-color:rgba(255,255,255,.07) !important}' +
-    /* Dark slate/near-black text used on those cards -> light, so nothing goes
-       invisible during the beat before the app repaints it. Colour accents
-       (green / red / amber) are left untouched. */
     'html.fp-dark [style*="color: rgb(15, 23, 42)"],html.fp-dark [style*="color:#0f172a"],' +
     'html.fp-dark [style*="color: rgb(31, 41, 55)"],html.fp-dark [style*="color: rgb(71, 85, 105)"],' +
     'html.fp-dark [style*="color: rgb(19, 49, 90)"],html.fp-dark [style*="color:#13315a"],' +
     'html.fp-dark [style*="color: rgb(47, 86, 136)"]{color:#dbe6f5 !important}' +
-    /* segmented control */
     '.fp-theme{display:inline-flex;align-items:center;gap:2px;background:rgba(130,150,180,.16);' +
     'border-radius:10px;padding:3px;vertical-align:middle}' +
     '.fp-theme button{all:unset;box-sizing:border-box;cursor:pointer;width:30px;height:26px;' +
@@ -178,25 +164,75 @@
     }, 60);
   }
 
-  // Supplementary Swahili for strings the app's main i18n dictionary misses — mostly
-  // form/modal/invoice labels that render after load. Applied (EN->SW) only when the
-  // saved language is Swahili. Longer phrases first so partial matches don't clash.
-  var EXTRA_SW = [
+  // Supplementary Swahili for strings the app's main i18n dictionary misses across the
+  // inner pages (subtitles, filter chips, report names, column headers, form labels).
+  //   PHRASE_SW = distinctive multi-word strings, replaced as substrings (longest first).
+  //   EXACT_SW  = short/ambiguous single words, replaced only when they are the WHOLE
+  //               (trimmed) text node — so "All" never corrupts "Small", etc.
+  var PHRASE_SW = [
+    ['Manage customer profiles and activity', 'Simamia wasifu na shughuli za wateja'],
+    ['Create a sale or payment for this customer', 'Tengeneza mauzo au malipo kwa mteja huyu'],
+    ['Add a receipt or change the filters above.', 'Ongeza risiti au badilisha vichujio hapo juu.'],
+    ['Try another period or status, or add a debtor.', 'Jaribu kipindi au hali nyingine, au ongeza mdaiwa.'],
+    ['Search customer, receipt no. or related id', 'Tafuta mteja, namba ya risiti au kitambulisho'],
+    ['Search order, customer, job or staff', 'Tafuta oda, mteja, kazi au mfanyakazi'],
+    ['Search debtor by name or phone', 'Tafuta mdaiwa kwa jina au simu'],
+    ['Monthly salary roster & payslips', 'Orodha ya mishahara ya mwezi'],
+    ['Manual double-entry adjustments', 'Marekebisho ya kuingiza mara mbili'],
+    ['Second Admin / Sales Manager', 'Msimamizi wa Pili / Meneja wa Mauzo'],
+    ['Customer wise Profit & Loss', 'Faida/Hasara kwa Mteja'],
+    ['Item Wise Profit & Loss', 'Faida/Hasara kwa Bidhaa'],
+    ['Ledgers & account groups', 'Leja na makundi ya akaunti'],
+    ['Customer payment receipts', 'Risiti za malipo ya wateja'],
+    ['jobs move stage to stage', 'kazi zinapita hatua kwa hatua'],
+    ['Debit / credit summary', 'Muhtasari wa deni / madai'],
     ['Shipping/Delivery Address', 'Anwani ya Kupeleka'],
+    ['Daily sales & expenses', 'Mauzo na matumizi ya kila siku'],
+    ['Low Stock Summary', 'Muhtasari wa Stock Ndogo'],
     ['Terms & Conditions', 'Masharti na Vigezo'],
-    ['Preview & Share', 'Hakiki & Sambaza'],
+    ['Track job progress', 'Fuatilia maendeleo ya kazi'],
     ['Delivery Details', 'Maelezo ya Usafirishaji'],
-    ['Invoice Number', 'Namba ya Ankara'],
-    ['Invoice Date', 'Tarehe ya Ankara'],
-    ['Bill Number', 'Namba ya Bili'],
-    ['Bill Date', 'Tarehe ya Bili'],
-    ['Amount in Words', 'Kiasi kwa Maneno'],
     ['Enter supplier name', 'Weka jina la muuzaji'],
     ['Enter customer name', 'Weka jina la mteja'],
+    ['No transactions yet', 'Hakuna miamala bado'],
+    ['Add Bank Account', 'Ongeza Akaunti ya Benki'],
+    ['Billing Address', 'Anwani ya Bili'],
+    ['Waiting to start', 'Zinasubiri kuanza'],
+    ['Being worked on', 'Zinafanyiwa kazi'],
+    ['Preview & Share', 'Hakiki & Sambaza'],
+    ['Amount in Words', 'Kiasi kwa Maneno'],
+    ['Invoice Number', 'Namba ya Ankara'],
+    ['Invoice Date', 'Tarehe ya Ankara'],
+    ['Balance Sheet', 'Karatasi ya Mizani'],
+    ['Bill Wise Profit', 'Faida kwa Bili'],
+    ['Stock Summary', 'Muhtasari wa Stock'],
+    ['Stock Detail', 'Maelezo ya Stock'],
+    ['Profit & Loss', 'Faida na Hasara'],
+    ['All Customers', 'Wateja Wote'],
+    ['Sales Manager', 'Meneja wa Mauzo'],
+    ['Ready / done', 'Tayari / imekamilika'],
+    ['Job Workflow', 'Mtiririko wa Kazi'],
+    ['Phone Number', 'Namba ya Simu'],
+    ['Add Customer', 'Ongeza Mteja'],
+    ['Add Receipt', 'Ongeza Risiti'],
+    ['Adjust Item', 'Rekebisha Bidhaa'],
+    ['Out of Stock', 'Imeisha'],
+    ['Bill Number', 'Namba ya Bili'],
+    ['Bill Date', 'Tarehe ya Bili'],
+    ['Cash Flow', 'Mtiririko wa Fedha'],
+    ['Day Book', 'Daftari la Siku'],
+    ['Sale Amount', 'Kiasi cha Mauzo'],
+    ['Item / Stock', 'Bidhaa / Stock'],
     ['Price/Unit', 'Bei/Kipimo'],
-    ['Bill To', 'Ankara Kwa'],
-    ['Payment', 'Malipo']
+    ['Bill To', 'Ankara Kwa']
   ];
+  var EXACT_SW = {
+    'All Time': 'Muda Wote', 'Custom': 'Maalum', 'All': 'Zote', 'Unpaid': 'Haijalipwa',
+    'Partial': 'Kiasi', 'Overdue': 'Imepitwa', 'Category': 'Kategoria', 'Unit': 'Kipimo',
+    'Admin': 'Msimamizi', 'Payment': 'Malipo', 'Email': 'Barua pepe', 'Balance': 'Salio',
+    'Assigned': 'Amepewa', 'Transaction': 'Miamala', 'Statement': 'Taarifa',
+    'Reputation manager': 'Meneja wa sifa'
+  };
   function extraI18n() {
     var lang;
     try { lang = localStorage.getItem('fp_lang') || 'sw'; } catch (e) { lang = 'sw'; }
@@ -204,10 +240,12 @@
     try {
       var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null, false), n;
       while ((n = w.nextNode())) {
-        var v = n.nodeValue; if (!v || v.length > 60) continue;
+        var v = n.nodeValue; if (!v) continue;
+        var t = v.trim(); if (!t || t.length > 70) continue;
+        if (EXACT_SW[t] !== undefined) { n.nodeValue = v.replace(t, EXACT_SW[t]); continue; }
         var nv = v;
-        for (var i = 0; i < EXTRA_SW.length; i++) {
-          if (nv.indexOf(EXTRA_SW[i][0]) >= 0) nv = nv.split(EXTRA_SW[i][0]).join(EXTRA_SW[i][1]);
+        for (var i = 0; i < PHRASE_SW.length; i++) {
+          if (nv.indexOf(PHRASE_SW[i][0]) >= 0) nv = nv.split(PHRASE_SW[i][0]).join(PHRASE_SW[i][1]);
         }
         if (nv !== v) n.nodeValue = nv;
       }
@@ -216,8 +254,7 @@
 
   // Keep the whole app in the saved language on a short cadence so navigating to a
   // new page (whose fresh English DOM the app's slow 2.5s i18n pass would otherwise
-  // leave in English for a beat) is translated almost immediately — no flash of
-  // English anywhere, not just on reload.
+  // leave in English for a beat) is translated almost immediately.
   function keepLang() {
     var lang;
     try { lang = localStorage.getItem('fp_lang') || 'sw'; } catch (e) { lang = 'sw'; }
