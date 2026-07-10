@@ -66,18 +66,30 @@
     if (html.classList.contains('fp-dark') !== dark) b.click(); // align if state diverged
   }
 
-  // Has the repaint settled? In dark mode, "settled" == no big bright/white card
-  // is still on screen. Returns true when the theme looks uniform.
-  function settled(dark) {
-    if (!dark) return true; // light target: nothing jarring to wait for
-    var els = document.querySelectorAll('div,section,article,aside');
-    for (var i = 0; i < els.length; i++) {
-      var el = els[i], r = el.getBoundingClientRect();
-      if (r.width < 190 || r.height < 90 || r.bottom < 0 || r.top > 820) continue;
+  // Is a point still showing a bright/white surface? Walk up a few ancestors to the
+  // first element with a real (non-transparent) background and test its brightness.
+  function brightAt(x, y) {
+    var el = document.elementFromPoint(x, y); // curtain is pointer-events:none, so this sees THROUGH it
+    for (var d = 0; el && d < 4; d++, el = el.parentElement) {
       var m = getComputedStyle(el).backgroundColor.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?/);
       if (!m) continue;
       var a = m[4] === undefined ? 1 : parseFloat(m[4]);
-      if (a > 0.5 && (+m[1] + +m[2] + +m[3]) > 620) return false; // a bright card remains
+      if (a < 0.4) continue; // transparent layer — keep climbing
+      return (+m[1] + +m[2] + +m[3]) > 620; // first solid surface decides
+    }
+    return false;
+  }
+
+  // Cheap settle check: sample a handful of viewport points where the laggy cards
+  // live (right column, the two top cards, mid). In dark mode we're "settled" once
+  // none of them is still bright. Only ~5 elementFromPoint probes — fast, so the
+  // cap below is honoured and the curtain lifts the instant the repaint finishes.
+  function settled(dark) {
+    if (!dark) return true; // light target: nothing jarring to wait for
+    var W = innerWidth, H = innerHeight;
+    var pts = [[0.88, 0.35], [0.88, 0.60], [0.30, 0.31], [0.62, 0.31], [0.46, 0.70]];
+    for (var i = 0; i < pts.length; i++) {
+      if (brightAt(pts[i][0] * W, pts[i][1] * H)) return false;
     }
     return true;
   }
@@ -98,21 +110,21 @@
       flip(dark);                          // switch underneath, hidden
       var t0 = performance.now();
       (function waitSettle() {
-        if (settled(dark) || performance.now() - t0 > 1400) {
-          // small extra beat so the last cards are painted, then fade out
+        if (settled(dark) || performance.now() - t0 > 1100) {
+          // one extra frame so the last cards are painted, then fade out
           setTimeout(function () {
-            c.style.transition = 'opacity .42s ease';
+            c.style.transition = 'opacity .34s ease';
             c.style.opacity = '0';
             setTimeout(function () {
               if (c.parentNode) c.parentNode.removeChild(c);
               switching = false;
-            }, 480);
-          }, 90);
+            }, 380);
+          }, 40);
         } else {
           requestAnimationFrame(waitSettle);
         }
       })();
-    }, 140);
+    }, 120);
   }
 
   var wrap = null, booted = false;
