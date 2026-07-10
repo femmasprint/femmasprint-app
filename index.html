@@ -4848,7 +4848,7 @@ class Component extends DCLogic {
       const r = await this.backendGet_('getQuickSale', { date: iso });
       if (r && r.ok && Array.isArray(r.sales)) {
         const num = (v) => { const n = parseFloat(String(v).replace(/,/g, '')); return isNaN(n) ? 0 : n; };
-        const loaded = r.sales.map(s => ({ client: s.Client || '', goods: s.Goods || '', qty: String(s.Qty || ''), price: String(s.UnitPrice || ''), paid: String(s.Paid || ''), payMode: s.PayMode || 'Cash', _sid: s.SaleID || '' }));
+        const loaded = r.sales.map(s => ({ client: s.Client || '', goods: s.Goods || '', qty: String(s.Qty || ''), price: String(s.UnitPrice || ''), paid: (function(){ var p=String(s.Paid||''); var c=p.replace(/,/g,'').trim(); return (c!=='' && !/^[\d.]+$/.test(c)) ? String(num(s.Qty)*num(s.UnitPrice)) : p; })(), payMode: s.PayMode || 'Cash', _sid: s.SaleID || '' }));
         // mark loaded rows as already-synced so auto-save won't re-post them
         const done = { ...(this.state.qsSyncedIds || {}) };
         loaded.forEach(rw => { if (rw._sid) done[rw._sid] = rw.client + '|' + rw.goods + '|' + rw.qty + '|' + rw.price + '|' + rw.payMode + '|' + (rw.paid || '0'); });
