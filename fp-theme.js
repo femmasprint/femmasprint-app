@@ -1,20 +1,16 @@
 /* fp-theme.js — FemmasBot: professional Light / Dark / System theme control.
- * Switches by toggling ONLY the html.fp-dark class (+ fp_dark) — instant and
- * flicker-free, with a short crossfade. It does NOT call the app's setState, so
- * there is no heavy full re-render (that re-render, combined with the page's
- * MutationObservers, previously froze the tab). The app's darkMode state is
- * initialised from fp_dark on load, so state and class agree and the theme is
- * clean. 'System' follows the OS preference live. Replaces the single sun/moon
- * button with a clean 3-way segmented control. */
+ * Switches by toggling ONLY the html.fp-dark class (+ fp_dark) — instant, no
+ * app re-render (that re-render, combined with the page's MutationObservers,
+ * froze the tab). No universal '*' transition and no body-wide observer, for the
+ * same reason. The app's darkMode state is initialised from fp_dark on load, so
+ * state and class agree and the theme is clean. 'System' follows the OS live.
+ * Replaces the single sun/moon button with a clean 3-way segmented control. */
 (function () {
   var LS_MODE = 'fp_mode', LS_DARK = 'fp_dark';
   function get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
   function set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
 
   var CSS =
-    /* smooth crossfade — only active during a switch */
-    'html.fp-switching, html.fp-switching *{transition:background-color .35s ease,color .3s ease,' +
-    'border-color .3s ease,fill .3s ease,stroke .35s ease,box-shadow .3s ease !important}' +
     /* segmented control */
     '.fp-theme{display:inline-flex;align-items:center;gap:2px;background:rgba(130,150,180,.16);' +
     'border-radius:10px;padding:3px;vertical-align:middle}' +
@@ -35,20 +31,11 @@
   var mq = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
   function systemDark() { return mq ? mq.matches : false; }
 
-  // Apply the theme by toggling ONLY the html.fp-dark class + fp_dark. This does NOT
-  // call the app's setState, so there is no full re-render (which previously caused a
-  // heavy re-render + observer cascade that froze the tab). All theme colours are
-  // driven by html.fp-dark CSS, and the app's darkMode state is initialised from
-  // fp_dark on load, so the class alone is a clean, instant, flicker-free switch.
-  function ensureDark(dark, animate) {
+  // Toggle ONLY the class + fp_dark — no setState, no re-render, no storm.
+  function ensureDark(dark) {
     var html = document.documentElement;
     set(LS_DARK, dark ? '1' : '0');
     if (html.classList.contains('fp-dark') === dark) return;
-    if (animate) {
-      html.classList.add('fp-switching');
-      clearTimeout(ensureDark._t);
-      ensureDark._t = setTimeout(function () { html.classList.remove('fp-switching'); }, 480);
-    }
     html.classList.toggle('fp-dark', dark);
   }
 
@@ -60,10 +47,10 @@
     });
   }
 
-  function setMode(mode, animate) {
+  function setMode(mode) {
     set(LS_MODE, mode);
     var dark = mode === 'dark' ? true : mode === 'light' ? false : systemDark();
-    ensureDark(dark, animate);
+    ensureDark(dark);
     paint(mode);
   }
 
@@ -88,13 +75,12 @@
       b.setAttribute('data-m', m);
       b.title = m.charAt(0).toUpperCase() + m.slice(1);
       b.innerHTML = icon(m);
-      b.addEventListener('click', function () { setMode(m, true); });
+      b.addEventListener('click', function () { setMode(m); });
       wrap.appendChild(b);
     });
     oldBtn.style.display = 'none';
     oldBtn.parentNode.insertBefore(wrap, oldBtn);
-    /* apply the saved mode to the class now (class-only, no re-render) */
-    setMode(get(LS_MODE) || 'system', false);
+    setMode(get(LS_MODE) || 'system');
     return true;
   }
 
@@ -104,9 +90,9 @@
       mode = get(LS_DARK) === '1' ? 'dark' : (get(LS_DARK) === '0' ? 'light' : 'system');
       set(LS_MODE, mode);
     }
-    setMode(mode, false);
+    setMode(mode);
     if (mq) {
-      var onChange = function () { if (get(LS_MODE) === 'system') setMode('system', true); };
+      var onChange = function () { if (get(LS_MODE) === 'system') setMode('system'); };
       try { mq.addEventListener('change', onChange); } catch (e) { try { mq.addListener(onChange); } catch (e2) {} }
     }
   }
@@ -115,8 +101,8 @@
     var st = document.createElement('style'); st.textContent = CSS; document.head.appendChild(st);
     initMode();
     build();
+    /* rebuild on a light interval only — NO body-wide MutationObserver. */
     setInterval(build, 1500);
-    try { new MutationObserver(function () { build(); }).observe(document.body, { childList: true, subtree: true }); } catch (e) {}
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();
