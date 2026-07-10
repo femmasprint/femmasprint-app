@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="sw">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FemmasBot — Dashboard | FEMMAS PRINT</title>
+<style>
+:root{--bg:#0E1726;--card:#15203A;--card2:#1B2A4A;--primary:#3B82F6;--primary2:#60A5FA;--text:#E5EAF2;--sub:#8CA0BE;--green:#25D366;--amber:#F59E0B;--red:#EF4444;--border:rgba(255,255,255,.08)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+header{display:flex;align-items:center;gap:12px;padding:12px 18px;background:var(--card);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:10}
+header .logo{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--primary2));display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff}
+header h1{font-size:16px}
+header .health{margin-left:auto;font-size:12px;color:var(--sub);display:flex;align-items:center;gap:6px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--sub)}
+.dot.ok{background:var(--green);box-shadow:0 0 6px var(--green)}
+.dot.bad{background:var(--red);box-shadow:0 0 6px var(--red)}
+.tabs{display:flex;gap:4px;padding:10px 18px 0;background:var(--card);border-bottom:1px solid var(--border)}
+.tabs button{background:none;border:none;color:var(--sub);padding:10px 16px;font-size:14px;cursor:pointer;border-bottom:2px solid transparent}
+.tabs button.active{color:var(--primary2);border-bottom-color:var(--primary)}
+main{padding:16px;max-width:1200px;margin:0 auto}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px}
+.stat{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 14px}
+.stat .n{font-size:22px;font-weight:700}
+.stat .l{font-size:12px;color:var(--sub)}
+.split{display:grid;grid-template-columns:340px 1fr;gap:14px;height:calc(100vh - 250px);min-height:420px}
+.list{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow-y:auto}
+.conv{padding:12px 14px;border-bottom:1px solid var(--border);cursor:pointer}
+.conv:hover,.conv.sel{background:var(--card2)}
+.conv .top{display:flex;justify-content:space-between;gap:8px}
+.conv .name{font-weight:600;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.conv .time{font-size:11px;color:var(--sub);flex-shrink:0}
+.conv .prev{font-size:12px;color:var(--sub);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.badge{display:inline-block;font-size:10px;padding:2px 8px;border-radius:10px;margin-top:5px;font-weight:600}
+.b-BOT_ACTIVE{background:rgba(37,211,102,.15);color:var(--green)}
+.b-NEEDS_HUMAN{background:rgba(245,158,11,.18);color:var(--amber)}
+.b-HUMAN_ACTIVE{background:rgba(59,130,246,.18);color:var(--primary2)}
+.b-CLOSED{background:rgba(140,160,190,.15);color:var(--sub)}
+.thread{background:var(--card);border:1px solid var(--border);border-radius:12px;display:flex;flex-direction:column;overflow:hidden}
+.thead{padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.thead .who{font-weight:600}
+.thead .phone{font-size:12px;color:var(--sub)}
+.thead .actions{margin-left:auto;display:flex;gap:6px}
+.thead button{font-size:11px;padding:6px 10px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--text);cursor:pointer}
+.thead button:hover{border-color:var(--primary)}
+.msgs{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:8px}
+.m{max-width:75%;padding:8px 12px;border-radius:12px;font-size:13px;line-height:1.45;white-space:pre-wrap;word-break:break-word}
+.m.in{background:var(--card2);align-self:flex-start;border-bottom-left-radius:4px}
+.m.out{background:var(--primary);color:#fff;align-self:flex-end;border-bottom-right-radius:4px}
+.m .t{display:block;font-size:10px;opacity:.65;margin-top:3px}
+.reply{display:flex;gap:8px;padding:10px;border-top:1px solid var(--border)}
+.reply textarea{flex:1;background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:9px 12px;color:var(--text);font-size:13px;resize:none;height:42px;outline:none;font-family:inherit}
+.reply button{background:var(--primary);border:none;border-radius:10px;padding:0 18px;color:#fff;font-weight:600;cursor:pointer}
+.reply button:disabled{opacity:.5}
+table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;font-size:13px}
+th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--border)}
+th{background:var(--card2);color:var(--sub);font-size:11px;text-transform:uppercase;letter-spacing:.05em}
+tr:hover td{background:var(--card2)}
+.empty{color:var(--sub);text-align:center;padding:40px;font-size:14px}
+.hidden{display:none!important}
+#login{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:100}
+#login .box{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:28px;width:320px;text-align:center}
+#login input{width:100%;background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:11px 12px;color:var(--text);margin:14px 0;outline:none}
+#login button{width:100%;background:var(--primary);border:none;border-radius:10px;padding:11px;color:#fff;font-weight:600;cursor:pointer}
+#login .err{color:var(--red);font-size:12px;margin-top:8px;min-height:14px}
+.refresh{background:none;border:1px solid var(--border);color:var(--sub);border-radius:8px;padding:5px 10px;font-size:12px;cursor:pointer;margin-left:8px}
+@media(max-width:800px){.split{grid-template-columns:1fr;height:auto}.list{max-height:300px}}
+</style>
+</head>
+<body>
+
+<div id="login">
+  <div class="box">
+    <div style="font-size:26px;font-weight:800;color:var(--primary2)">fp</div>
+    <h2 style="font-size:16px;margin-top:6px">FemmasBot Dashboard</h2>
+    <input id="tok" type="password" placeholder="Admin token" autocomplete="off">
+    <button onclick="login()">Ingia</button>
+    <div class="err" id="loginErr"></div>
+  </div>
+</div>
+
+<header>
+  <div class="logo">fp</div>
+  <h1>FemmasBot — Dashboard</h1>
+  <div class="health"><span class="dot" id="hdot"></span><span id="htext">inakagua…</span>
+    <button class="refresh" onclick="loadAll()">↻ Refresh</button>
+    <button class="refresh" onclick="logout()">Toka</button>
+  </div>
+</header>
+
+<div class="tabs">
+  <button class="active" data-tab="inbox" onclick="tab('inbox')">Inbox</button>
+  <button data-tab="orders" onclick="tab('orders')">Orders</button>
+</div>
+
+<main>
+  <div class="stats" id="stats"></div>
+
+  <div id="view-inbox" class="split">
+    <div class="list" id="convList"><div class="empty">Inapakia…</div></div>
+    <div class="thread">
+      <div class="thead" id="thead"><span class="who">Chagua mazungumzo</span></div>
+      <div class="msgs" id="msgs"><div class="empty">Chagua mteja kushoto kuona historia</div></div>
+      <div class="reply">
+        <textarea id="replyBox" placeholder="Andika jibu… (Enter kutuma)" disabled></textarea>
+        <button id="sendBtn" onclick="sendReply()" disabled>Tuma</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="view-orders" class="hidden">
+    <div style="overflow-x:auto"><table id="ordersTable">
+      <thead><tr><th>Tarehe</th><th>Mteja</th><th>Simu</th><th>Huduma</th><th>Qty</th><th>Size</th><th>Deadline</th><th>Mahali</th><th>Bei (hint)</th><th>Status</th></tr></thead>
+      <tbody><tr><td colspan="10" class="empty">Inapakia…</td></tr></tbody>
+    </table></div>
+  </div>
+</main>
+
+<script>
+var API = "https://femmasbot.vercel.app";
+var TOKEN = localStorage.getItem("fb_admin_token") || "";
+var current = null;
+var convs = [];
+var pollTimer = null;
+
+function hdrs(){ return { "Content-Type": "application/json", "x-admin-token": TOKEN }; }
+
+function login(){
+  var t = document.getElementById("tok").value.trim();
+  if(!t) return;
+  fetch(API + "/api/admin-leads", { headers: { "x-admin-token": t } })
+    .then(function(r){
+      if(r.status === 403 || r.status === 401) throw new Error("Token si sahihi");
+      TOKEN = t; localStorage.setItem("fb_admin_token", t);
+      document.getElementById("login").classList.add("hidden");
+      loadAll();
+    })
+    .catch(function(e){ document.getElementById("loginErr").textContent = e.message || "Imeshindikana"; });
+}
+function logout(){ localStorage.removeItem("fb_admin_token"); location.reload(); }
+
+function tab(name){
+  document.querySelectorAll(".tabs button").forEach(function(b){ b.classList.toggle("active", b.dataset.tab === name); });
+  document.getElementById("view-inbox").classList.toggle("hidden", name !== "inbox");
+  document.getElementById("view-orders").classList.toggle("hidden", name !== "orders");
+}
+
+function esc(s){ var d = document.createElement("div"); d.textContent = s == null ? "" : String(s); return d.innerHTML; }
+function fmtT(iso){ if(!iso) return ""; var d = new Date(iso); return d.toLocaleDateString("sw-TZ",{day:"2-digit",month:"short"}) + " " + d.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}); }
+function dispName(c){ return c.contact_name || c.profile_name || ("+" + c.phone); }
+
+function loadHealth(){
+  fetch(API + "/api/health").then(function(r){ return r.json(); }).then(function(d){
+    document.getElementById("hdot").className = "dot " + (d.ok ? "ok" : "bad");
+    document.getElementById("htext").textContent = d.ok ? "Bot iko hai" : "Bot ina tatizo";
+  }).catch(function(){
+    document.getElementById("hdot").className = "dot bad";
+    document.getElementById("htext").textContent = "Haipatikani";
+  });
+}
+
+function loadConvs(){
+  return fetch(API + "/api/admin-leads", { headers: hdrs() })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      convs = d.conversations || [];
+      var el = document.getElementById("convList");
+      if(!convs.length){ el.innerHTML = '<div class="empty">Hakuna mazungumzo bado</div>'; return; }
+      el.innerHTML = convs.map(function(c){
+        return '<div class="conv' + (current === c.phone ? " sel" : "") + '" onclick="openConv(\'' + esc(c.phone) + '\')">' +
+          '<div class="top"><span class="name">' + esc(dispName(c)) + '</span><span class="time">' + fmtT(c.last_message_at) + '</span></div>' +
+          '<div class="prev">' + (c.direction === "OUTBOUND" ? "↩ " : "") + esc(c.latest_message) + '</div>' +
+          '<span class="badge b-' + esc(c.status) + '">' + esc(c.status) + '</span>' +
+        '</div>';
+      }).join("");
+      renderStats();
+    });
+}
+
+function renderStats(){
+  var needs = convs.filter(function(c){ return c.status === "NEEDS_HUMAN"; }).length;
+  var human = convs.filter(function(c){ return c.status === "HUMAN_ACTIVE"; }).length;
+  var msgs = convs.reduce(function(a,c){ return a + (c.messages || 0); }, 0);
+  document.getElementById("stats").innerHTML =
+    '<div class="stat"><div class="n">' + convs.length + '</div><div class="l">Mazungumzo</div></div>' +
+    '<div class="stat"><div class="n" style="color:var(--amber)">' + needs + '</div><div class="l">Wanahitaji mtu</div></div>' +
+    '<div class="stat"><div class="n" style="color:var(--primary2)">' + human + '</div><div class="l">Human active</div></div>' +
+    '<div class="stat"><div class="n">' + msgs + '</div><div class="l">Messages jumla</div></div>';
+}
+
+function openConv(phone){
+  current = phone;
+  var c = convs.find(function(x){ return x.phone === phone; }) || { phone: phone, status: "" };
+  document.getElementById("thead").innerHTML =
+    '<span class="who">' + esc(dispName(c)) + '</span><span class="phone">+' + esc(phone) + '</span>' +
+    '<span class="badge b-' + esc(c.status) + '">' + esc(c.status) + '</span>' +
+    '<div class="actions">' +
+      '<button onclick="setStatus(\'HUMAN_ACTIVE\')">🙋 Nichukue mimi</button>' +
+      '<button onclick="setStatus(\'BOT_ACTIVE\')">🤖 Rudisha bot</button>' +
+      '<button onclick="setStatus(\'CLOSED\')">✅ Funga</button>' +
+    '</div>';
+  document.getElementById("replyBox").disabled = false;
+  document.getElementById("sendBtn").disabled = false;
+  loadMsgs();
+  document.querySelectorAll(".conv").forEach(function(el){ el.classList.remove("sel"); });
+  loadConvs();
+  if(pollTimer) clearInterval(pollTimer);
+  pollTimer = setInterval(loadMsgs, 20000);
+}
+
+function loadMsgs(){
+  if(!current) return;
+  fetch(API + "/api/admin-messages?phone=" + encodeURIComponent(current) + "&limit=200", { headers: hdrs() })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      var el = document.getElementById("msgs");
+      var ms = d.messages || [];
+      if(!ms.length){ el.innerHTML = '<div class="empty">Hakuna messages</div>'; return; }
+      el.innerHTML = ms.map(function(m){
+        var cls = m.direction === "INBOUND" ? "in" : "out";
+        return '<div class="m ' + cls + '">' + esc(m.body) + '<span class="t">' + fmtT(m.at) + '</span></div>';
+      }).join("");
+      el.scrollTop = el.scrollHeight;
+    });
+}
+
+function sendReply(){
+  var box = document.getElementById("replyBox");
+  var text = box.value.trim();
+  if(!text || !current) return;
+  var btn = document.getElementById("sendBtn");
+  btn.disabled = true;
+  fetch(API + "/api/send-message", { method: "POST", headers: hdrs(), body: JSON.stringify({ to: current, message: text }) })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if(d.ok){ box.value = ""; loadMsgs(); } else { alert("Imeshindikana kutuma"); }
+    })
+    .catch(function(){ alert("Mtandao una tatizo"); })
+    .finally(function(){ btn.disabled = false; });
+}
+document.getElementById("replyBox").addEventListener("keydown", function(e){
+  if(e.key === "Enter" && !e.shiftKey){ e.preventDefault(); sendReply(); }
+});
+
+function setStatus(status){
+  if(!current) return;
+  fetch(API + "/api/admin-session-status", { method: "POST", headers: hdrs(), body: JSON.stringify({ phone: current, status: status }) })
+    .then(function(r){ return r.json(); })
+    .then(function(){ loadConvs().then(function(){ openConvHeaderRefresh(); }); });
+}
+function openConvHeaderRefresh(){
+  var c = convs.find(function(x){ return x.phone === current; });
+  if(c){ var b = document.querySelector("#thead .badge"); if(b){ b.className = "badge b-" + c.status; b.textContent = c.status; } }
+}
+
+function loadOrders(){
+  fetch(API + "/api/admin-orders?limit=100", { headers: hdrs() })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      var tb = document.querySelector("#ordersTable tbody");
+      var os = d.orders || [];
+      if(!os.length){ tb.innerHTML = '<tr><td colspan="10" class="empty">Hakuna orders bado</td></tr>'; return; }
+      tb.innerHTML = os.map(function(o){
+        return "<tr><td>" + fmtT(o.at) + "</td><td>" + esc(o.customer_name) + "</td><td>+" + esc(o.phone) +
+          "</td><td>" + esc(o.service) + "</td><td>" + esc(o.quantity) + "</td><td>" + esc(o.size) +
+          "</td><td>" + esc(o.deadline) + "</td><td>" + esc(o.location) + "</td><td>" + esc(o.price_hint) +
+          "</td><td>" + esc(o.status) + "</td></tr>";
+      }).join("");
+    });
+}
+
+function loadAll(){ loadHealth(); loadConvs(); loadOrders(); }
+
+if(TOKEN){
+  document.getElementById("login").classList.add("hidden");
+  loadAll();
+  setInterval(loadConvs, 30000);
+  setInterval(loadHealth, 60000);
+} else {
+  document.getElementById("tok").addEventListener("keydown", function(e){ if(e.key === "Enter") login(); });
+}
+</script>
+</body>
+</html>
