@@ -6,12 +6,10 @@
  * WHITE-FLASH ROOT CAUSE (found via DOM inspection): the app leaves its full-page
  * wrapper (and some cards) with a LIGHT inline background; only the theme darkens
  * them. Earlier we darkened them with a transient JS tag that ran only during a
- * switch — so every later re-render (the Arifa card cycles ~1/s) briefly reverted
- * that full-page wrapper to white = the flash. Fix: PERSISTENT CSS rules (below)
- * that darken those light surfaces whenever fp-dark is on, so they can never flash
- * white on any render. We still drive the app's own toggle for correct state/text,
- * pin the root dark, and keep the light-card tagging as extra switch-time cover.
- * 'System' follows the OS live. */
+ * switch — so every later re-render briefly reverted the wrapper to white. Fix:
+ * PERSISTENT CSS rules that darken those light surfaces whenever fp-dark is on. We
+ * also fast-apply the saved language on load to remove the flash-of-English seen
+ * after a reload. 'System' follows the OS live. */
 (function () {
   var LS_MODE = 'fp_mode', LS_DARK = 'fp_dark';
   function get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
@@ -76,8 +74,6 @@
     return null;
   }
 
-  // Tag / untag every element whose INLINE background is light. Parses the actual
-  // style string and only touches elements that carry an inline background.
   function markLightCards(on) {
     var els = document.querySelectorAll('[style*="background"]');
     for (var i = 0; i < els.length; i++) {
@@ -91,8 +87,6 @@
     }
   }
 
-  // Flip the app's own darkMode state (+ class) so the SETTLED theme is uniform,
-  // and cover the repaint lag by tagging light cards for a short window.
   function flip(dark, animate) {
     var html = document.documentElement;
     set(LS_DARK, dark ? '1' : '0');
@@ -111,7 +105,7 @@
         if (performance.now() - t0 < 600) requestAnimationFrame(chase);
       })();
     } else {
-      markLightCards(false); // going light — drop all tags so cards are light again
+      markLightCards(false);
     }
   }
 
@@ -129,11 +123,9 @@
     var isDark = document.documentElement.classList.contains('fp-dark');
     paint(mode);
     if (dark === isDark) { set(LS_DARK, dark ? '1' : '0'); if (dark) markLightCards(true); return; }
-    flip(dark, booted); // animate (tag cards) only for real user switches
+    flip(dark, booted);
   }
 
-  // Belt-and-suspenders: hide EVERY native theme toggle on every pass (a re-render can
-  // spawn a fresh, un-hidden one that the CSS title rule might miss if i18n reworded it).
   function hideNatives() {
     var btns = document.querySelectorAll('button');
     for (var i = 0; i < btns.length; i++) {
@@ -181,10 +173,25 @@
     }
   }
 
+  // After a reload the app renders in its native English for a moment before the
+  // i18n engine translates to the saved language — a visible "flash of English".
+  // Drive the saved language HARD for the first ~1.6s so the translation lands
+  // immediately and that flash is gone.
+  function fastLang() {
+    var lang;
+    try { lang = localStorage.getItem('fp_lang') || 'sw'; } catch (e) { lang = 'sw'; }
+    var t0 = Date.now();
+    var iv = setInterval(function () {
+      try { if (window.FPSetLang) window.FPSetLang(lang); } catch (e) {}
+      if (Date.now() - t0 > 1600) clearInterval(iv);
+    }, 60);
+  }
+
   function boot() {
     var st = document.createElement('style'); st.textContent = CSS; document.head.appendChild(st);
     initMode();
     build();
+    fastLang();
     setTimeout(function () { booted = true; }, 1200);
     setInterval(build, 1500);
   }
