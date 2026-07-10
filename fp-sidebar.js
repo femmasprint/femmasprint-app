@@ -1,15 +1,14 @@
-/* FEMMAS PRINT — sidebar enhancer v2.3
+/* FEMMAS PRINT — sidebar enhancer v2.4
  * 1) fp logo (top) toggles collapse/expand (body.fp-rail).
  * 2) every nav item gets a tooltip (title); items without an icon get a fallback icon.
  * 3) the flat 25-item menu is grouped into a FEW main menus, each collapsible (accordion):
  *      Home + Quick Sale stay standalone at the top, then:
  *      Mauzo · Manunuzi & Bidhaa · Uzalishaji · Fedha & Ripoti · Wafanyakazi · Mfumo
- *    Legacy section dividers are hidden STRUCTURALLY (any plain text-only nav label,
- *    in ANY language) so they stay hidden through re-renders and the i18n translation.
- * 4) collapsed (rail) shows ONLY 8 clean, meaningful icons: Home, Quick Sale + the 6 group icons.
- * v2.2: divider hiding is language-independent (fixes dividers reappearing after i18n).
- * v2.3: anti-flicker — the menu stays hidden until it is grouped, so the flat list
- *       never flashes on refresh; a 2.5s safety timeout guarantees it is revealed.
+ *    Legacy section dividers are hidden STRUCTURALLY (any plain text-only nav label, any language).
+ * 4) collapsed (rail) shows ONLY 8 clean icons: Home, Quick Sale + the 6 group icons.
+ * v2.2: divider hiding is language-independent. v2.3: anti-flicker reveal.
+ * v2.4: interval-only — removed the broad aside-wide MutationObserver that fired on
+ *       every app render and cascaded into a tab-freezing storm on theme switch.
  */
 (function () {
   try {
@@ -164,8 +163,10 @@
       var items = aside.querySelectorAll('a,button');
       for (var i = 0; i < items.length; i++) {
         var el = items[i];
-        var label = (el.textContent || '').replace(/\s+/g, ' ').trim();
-        if (label) el.setAttribute('title', label.slice(0, 44));
+        if (el.getAttribute('title')) { /* already tagged */ } else {
+          var label = (el.textContent || '').replace(/\s+/g, ' ').trim();
+          if (label) el.setAttribute('title', label.slice(0, 44));
+        }
         if (!el.querySelector('svg') && !el.querySelector('.fp-fallicon')) {
           var s = document.createElement('span');
           s.className = 'fp-fallicon';
@@ -192,7 +193,7 @@
         if (!nav.__fpDivObs) {
           try {
             var obs = new MutationObserver(function () { hideDividers(nav); });
-            obs.observe(nav, { childList: true, attributes: true, attributeFilter: ['style', 'class'], subtree: true });
+            obs.observe(nav, { childList: true, attributes: true, attributeFilter: ['style', 'class'] });
             nav.__fpDivObs = obs;
           } catch (e) {}
         }
@@ -201,11 +202,12 @@
 
     function boot() {
       enhance();
-      var a = document.querySelector('aside');
-      if (a) { try { new MutationObserver(function () { enhance(); }).observe(a, { childList: true, subtree: true }); } catch (e) {} }
-      setInterval(enhance, 2000);
-      /* safety: never leave the menu hidden — reveal after a short max wait even if
-         grouping did not run (e.g. an unexpected nav structure). */
+      /* interval only — NO broad aside-wide MutationObserver. It fired on every app
+         re-render and cascaded into a freeze on theme switch; the interval re-runs
+         enhance just as well. (The narrow divider observer inside enhance stays, and it
+         no longer uses subtree:true, so it can't storm.) */
+      setInterval(enhance, 1500);
+      /* safety: never leave the menu hidden — reveal after a short max wait. */
       setTimeout(function () {
         var n = document.querySelector('aside nav');
         if (n) n.classList.add('fp-ready');
