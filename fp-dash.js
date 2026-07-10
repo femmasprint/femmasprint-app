@@ -68,16 +68,20 @@
     }
     if (!line) { svg.__fpDash = false; return; }
 
-    // Entrance: draw the line in.
-    try {
-      var len = line.getTotalLength();
-      line.style.transition = "none";
-      line.style.strokeDasharray = len + " " + len;
-      line.style.strokeDashoffset = len;
-      line.getBoundingClientRect();
-      line.style.transition = "stroke-dashoffset 1.15s cubic-bezier(.3,.8,.3,1)";
-      line.style.strokeDashoffset = "0";
-    } catch (e) {}
+    // Entrance: draw the line in — only ONCE per page load, so theme toggles and
+    // period changes (which re-render the chart) don't re-animate and feel janky.
+    if (!document.__fpChartAnim) {
+      document.__fpChartAnim = true;
+      try {
+        var len = line.getTotalLength();
+        line.style.transition = "none";
+        line.style.strokeDasharray = len + " " + len;
+        line.style.strokeDashoffset = len;
+        line.getBoundingClientRect();
+        line.style.transition = "stroke-dashoffset 1.15s cubic-bezier(.3,.8,.3,1)";
+        line.style.strokeDashoffset = "0";
+      } catch (e) {}
+    }
 
     // Crosshair + hover dot.
     var cross = document.createElementNS(NS, "line");
