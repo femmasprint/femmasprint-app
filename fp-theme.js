@@ -1,22 +1,30 @@
 /* fp-theme.js — FemmasBot: professional Light / Dark / System theme control.
- * Switches by toggling ONLY the html.fp-dark class (+ fp_dark) — instant and
- * flicker-free, with a short crossfade. It does NOT call the app's setState, so
- * there is no heavy full re-render (that re-render, combined with the page's
- * MutationObservers, previously froze the tab). The app's darkMode state is
- * initialised from fp_dark on load, so state and class agree and the theme is
- * clean. 'System' follows the OS preference live. Replaces the single sun/moon
- * button with a clean 3-way segmented control. */
+ * Replaces the single sun/moon button with a clean 3-way segmented control
+ * (Light / Dark / System) and drives the app's OWN theme toggle so its internal
+ * darkMode state AND the html.fp-dark class update together — the settled theme
+ * is always uniform (no permanent "half-dark").
+ *
+ * THE TRANSITION PROBLEM (seen in the user's screen recording): the app repaints
+ * its heavy widget cards a beat AFTER the page background flips, so for a short
+ * window you get a dark page with still-white cards (or the reverse) — the
+ * "kupandiana-pandiana" / white flash. Chasing every inline card colour with CSS
+ * is fragile. Instead we drop a full-screen CURTAIN in the *target* colour over
+ * the whole switch, hold it until the repaint has actually settled (adaptive —
+ * works on fast and slow machines), then fade it out. The mixing happens under
+ * the curtain and is never seen. 'System' follows the OS live. */
 (function () {
   var LS_MODE = 'fp_mode', LS_DARK = 'fp_dark';
+  var DARK_BG = '#0a0e1a', LIGHT_BG = '#f4f6fb';
   function get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
   function set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
 
   var CSS =
-    /* Pin the page root to the app's dark colour the instant the fp-dark class is
-       present. The app themes its cards on re-render, but the <html>/<body> backdrop
-       must never flash white during that re-render — this rule guarantees it, killing
-       the brief white flash seen when switching light -> dark. */
+    /* Pin the page root to the dark colour the instant fp-dark is present, so the
+       backdrop can never flash white during the repaint. */
     'html.fp-dark,html.fp-dark body{background:#0a0e1a !important}' +
+    /* the switch curtain */
+    '.fp-curtain{position:fixed;inset:0;z-index:2147483646;pointer-events:none;opacity:0;' +
+    'transition:opacity .13s ease}' +
     /* segmented control */
     '.fp-theme{display:inline-flex;align-items:center;gap:2px;background:rgba(130,150,180,.16);' +
     'border-radius:10px;padding:3px;vertical-align:middle}' +
@@ -37,11 +45,18 @@
   var mq = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
   function systemDark() { return mq ? mq.matches : false; }
 
-  // Drive the app's OWN theme toggle so its darkMode STATE updates too (many cards are
-  // themed from state, not just the class) — this gives a fully clean switch with no
-  // "half-dark" mixing. This is safe now that the i18n MutationObserver was removed
-  // (that observer is what turned the toggle's re-render into a tab-freezing storm).
-  function ensureDark(dark) {
+  // The app's theme button; its title is translated by i18n, so match both languages.
+  function findThemeBtn() {
+    var btns = document.querySelectorAll('button');
+    for (var i = 0; i < btns.length; i++) {
+      var t = (btns[i].title || '').toLowerCase();
+      if (/light\s*\/\s*dark|mwanga\s*\/\s*giza/.test(t)) return btns[i];
+    }
+    return null;
+  }
+
+  // Flip the app's own darkMode state (+ class) so the SETTLED theme is uniform.
+  function flip(dark) {
     var html = document.documentElement;
     set(LS_DARK, dark ? '1' : '0');
     if (html.classList.contains('fp-dark') === dark) return;
@@ -51,7 +66,56 @@
     if (html.classList.contains('fp-dark') !== dark) b.click(); // align if state diverged
   }
 
-  var wrap = null;
+  // Has the repaint settled? In dark mode, "settled" == no big bright/white card
+  // is still on screen. Returns true when the theme looks uniform.
+  function settled(dark) {
+    if (!dark) return true; // light target: nothing jarring to wait for
+    var els = document.querySelectorAll('div,section,article,aside');
+    for (var i = 0; i < els.length; i++) {
+      var el = els[i], r = el.getBoundingClientRect();
+      if (r.width < 190 || r.height < 90 || r.bottom < 0 || r.top > 820) continue;
+      var m = getComputedStyle(el).backgroundColor.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?/);
+      if (!m) continue;
+      var a = m[4] === undefined ? 1 : parseFloat(m[4]);
+      if (a > 0.5 && (+m[1] + +m[2] + +m[3]) > 620) return false; // a bright card remains
+    }
+    return true;
+  }
+
+  var switching = false;
+  // Cover the whole switch with a target-coloured curtain; lift it only once the
+  // repaint has settled (adaptive, capped) so mixing is never visible.
+  function switchTo(dark) {
+    if (switching) return;
+    switching = true;
+    var c = document.createElement('div');
+    c.className = 'fp-curtain';
+    c.style.background = dark ? DARK_BG : LIGHT_BG;
+    document.body.appendChild(c);
+    c.getBoundingClientRect();
+    c.style.opacity = '1';                 // fade the curtain IN (~130ms) over old theme
+    setTimeout(function () {
+      flip(dark);                          // switch underneath, hidden
+      var t0 = performance.now();
+      (function waitSettle() {
+        if (settled(dark) || performance.now() - t0 > 1400) {
+          // small extra beat so the last cards are painted, then fade out
+          setTimeout(function () {
+            c.style.transition = 'opacity .42s ease';
+            c.style.opacity = '0';
+            setTimeout(function () {
+              if (c.parentNode) c.parentNode.removeChild(c);
+              switching = false;
+            }, 480);
+          }, 90);
+        } else {
+          requestAnimationFrame(waitSettle);
+        }
+      })();
+    }, 140);
+  }
+
+  var wrap = null, booted = false;
   function paint(mode) {
     if (!wrap) return;
     [].forEach.call(wrap.querySelectorAll('button'), function (b) {
@@ -62,18 +126,11 @@
   function setMode(mode) {
     set(LS_MODE, mode);
     var dark = mode === 'dark' ? true : mode === 'light' ? false : systemDark();
-    ensureDark(dark);
+    var isDark = document.documentElement.classList.contains('fp-dark');
     paint(mode);
-  }
-
-  // The app's theme button; its title is translated by i18n, so match both languages.
-  function findThemeBtn() {
-    var btns = document.querySelectorAll('button');
-    for (var i = 0; i < btns.length; i++) {
-      var t = (btns[i].title || '').toLowerCase();
-      if (/light\s*\/\s*dark|mwanga\s*\/\s*giza/.test(t)) return btns[i];
-    }
-    return null;
+    if (dark === isDark) { set(LS_DARK, dark ? '1' : '0'); return; } // already there
+    if (booted) switchTo(dark);            // user switch → curtained crossfade
+    else flip(dark);                       // initial load → just align, no curtain
   }
 
   function build() {
@@ -92,8 +149,6 @@
     });
     oldBtn.style.display = 'none';
     oldBtn.parentNode.insertBefore(wrap, oldBtn);
-    /* The native toggle now exists — sync the theme to the saved mode through it, so
-       the app's darkMode state and the class agree from the start (no mismatch). */
     setMode(get(LS_MODE) || 'system');
     return true;
   }
@@ -115,6 +170,8 @@
     var st = document.createElement('style'); st.textContent = CSS; document.head.appendChild(st);
     initMode();
     build();
+    /* only start curtaining AFTER load has settled, so opening the app never flashes a curtain */
+    setTimeout(function () { booted = true; }, 1200);
     /* rebuild on a light interval only — NO body-wide MutationObserver (that fired on
        every DOM change during the app's renders and helped storm/freeze the tab). */
     setInterval(build, 1500);
