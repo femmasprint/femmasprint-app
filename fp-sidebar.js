@@ -1,4 +1,4 @@
-/* FEMMAS PRINT — sidebar v4.0 (minimal & robust, no restructuring)
+/* FEMMAS PRINT — sidebar v4.1 (minimal & robust, no restructuring)
  *
  * The app's native sidebar is ALREADY sectioned (Muhtasari · Miamala · Uendeshaji ·
  * Fedha · Usimamizi · Mfumo) with every item under its heading. Earlier versions
@@ -8,21 +8,25 @@
  * half-hidden section labels that looked like broken menus.
  *
  * Per the owner's choice we now DO NOT touch the menu structure at all: no grouping,
- * no hiding of section headers, no MutationObservers. The section labels are the
- * app's own and simply act as clear category headings (not clickable — they were
- * never meant to be). We only (a) give each item a hover tooltip and (b) add a small
- * fallback icon to any item that is missing one, and we gently style the section
- * headings so they read clearly as headings. All of this is additive and idempotent,
- * so re-renders can't make it flicker or break. */
+ * no hiding of section headers, no MutationObservers. We only (a) give each item a
+ * hover tooltip, (b) add a fallback icon to any item missing one, (c) style the section
+ * headings so they read clearly, and (d) force every link to be a full-width row — the
+ * Usimamizi section rendered its links as display:inline, which wrapped them into a
+ * jumbled 2-column mess; this makes every section look identical and clean. All
+ * additive and idempotent, so re-renders can't make it flicker or break. */
 (function () {
   try {
     var css = document.createElement('style');
     css.textContent =
       /* make the app's section headings read clearly as headings, not buttons */
       ' .fp-sec{opacity:.62;font-size:11px !important;letter-spacing:.06em;text-transform:uppercase;' +
-      'font-weight:700;padding-top:9px !important;pointer-events:none;cursor:default}' +
+      'font-weight:700;padding-top:9px !important;pointer-events:none;cursor:default;display:block !important}' +
       /* fallback icon shown only for items the app left without an icon */
-      ' aside .fp-fallicon{display:inline-flex;align-items:center;flex:none;margin-right:2px}';
+      ' aside .fp-fallicon{display:inline-flex;align-items:center;flex:none;margin-right:2px}' +
+      /* Some sections (e.g. Usimamizi) render their links as display:inline, which makes
+         them wrap into a jumbled block. Force EVERY sidebar link to be a full-width row
+         so all sections look identical and clean. */
+      ' aside nav a{display:flex !important;align-items:center;width:100% !important;box-sizing:border-box}';
     document.head.appendChild(css);
 
     var FALL = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8aa0c0" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="1.6" fill="#8aa0c0" stroke="none"/></svg>';
@@ -57,12 +61,20 @@
         }
       }
 
-      // 2) tag the app's own section headings so they read clearly (purely cosmetic)
+      // 2) tag the app's own section headings so they read clearly (purely cosmetic).
+      //    Scan direct nav children AND one level into wrapper divs (some sections, e.g.
+      //    Usimamizi, are wrapped in an extra container that holds their own heading).
       var nav = aside.querySelector('nav');
       if (nav) {
         var kids = nav.children;
         for (var k = 0; k < kids.length; k++) {
-          if (looksLikeHeading(kids[k])) kids[k].classList.add('fp-sec');
+          var el = kids[k];
+          if (looksLikeHeading(el)) { el.classList.add('fp-sec'); continue; }
+          if (el.tagName === 'DIV' && el.querySelector && el.querySelector('a,button')) {
+            for (var j = 0; j < el.children.length; j++) {
+              if (looksLikeHeading(el.children[j])) el.children[j].classList.add('fp-sec');
+            }
+          }
         }
       }
     }
