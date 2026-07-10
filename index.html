@@ -5917,7 +5917,7 @@ class Component extends DCLogic {
   };
   addQsExpense = () => this.setState(s => ({ qsExpenses: [...s.qsExpenses, { client: '', goods: '', qty: '', price: '' }] }));
   qsTodayISO = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
-  changeQsDate = (newISO) => this.setState(s => {
+  changeQsDate = (newISO) => this.setState(s => { setTimeout(() => { try { this.loadTodaySales(); } catch (e) {} }, 150);
     const cur = s.qsDateISO || this.qsTodayISO();
     const store = { ...(s.qsStore || {}) };
     store[cur] = { sales: s.qsSales, expenses: s.qsExpenses };
