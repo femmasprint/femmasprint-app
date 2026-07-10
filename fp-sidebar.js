@@ -1,12 +1,14 @@
-/* FEMMAS PRINT — sidebar enhancer v2.1
+/* FEMMAS PRINT — sidebar enhancer v2.2
  * 1) fp logo (top) toggles collapse/expand (body.fp-rail).
  * 2) every nav item gets a tooltip (title); items without an icon get a fallback icon.
  * 3) the flat 25-item menu is grouped into a FEW main menus, each collapsible (accordion):
  *      Home + Quick Sale stay standalone at the top, then:
  *      Mauzo · Manunuzi & Bidhaa · Uzalishaji · Fedha & Ripoti · Wafanyakazi · Mfumo
- *    Legacy section dividers are hidden and kept hidden through the framework's re-renders.
+ *    Legacy section dividers are hidden STRUCTURALLY (any plain text-only nav label,
+ *    in ANY language) so they stay hidden through re-renders and the i18n translation.
  * 4) collapsed (rail) shows ONLY 8 clean, meaningful icons: Home, Quick Sale + the 6 group icons.
- *    Any expanded submenu that leaks into the rail is hidden so no repeated generic tags appear.
+ * v2.2: divider hiding is language-independent (fixes dividers reappearing after i18n
+ *       translates them to Swahili); group + Home/Quick Sale matching handle SW & EN.
  */
 (function () {
   try {
@@ -44,19 +46,24 @@
     function svg(p) { return '<svg class="fp-gi" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8aa0c0" stroke-width="2" style="flex:none"><path d="' + p + '"/></svg>'; }
     var CHEV = '<svg class="fp-chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8aa0c0" stroke-width="2.4"><path d="M9 18l6-6-6-6"/></svg>';
 
+    /* group matchers include BOTH English and Swahili tokens (the UI can be in either) */
     var GROUPS = [
-      { id: 'sales', name: 'Mauzo', ic: I.cart, m: ['sale', 'customer', 'debtor', 'madeni', 'receipt', 'risiti'] },
-      { id: 'inv', name: 'Manunuzi & Bidhaa', ic: I.box, m: ['item', 'bidhaa', 'bei &', 'majina', 'purchase', 'expense', 'wauzaji', 'supplier'] },
-      { id: 'prod', name: 'Uzalishaji', ic: I.factory, m: ['production', 'delivery'] },
-      { id: 'fin', name: 'Fedha & Ripoti', ic: I.chart, m: ['cash', 'bank', 'accounting', 'report', 'ripoti', 'grow your'] },
-      { id: 'staff', name: 'Wafanyakazi', ic: I.people, m: ['mahudhurio', 'attendance', 'watumiaji', 'users', 'payroll', 'mfanyakazi'] },
-      { id: 'sys', name: 'Mfumo', ic: I.gear, m: ['femmasbot', 'sync', 'share', 'backup', 'utilities', 'settings', 'mipangilio'] }
+      { id: 'sales', name: 'Mauzo', ic: I.cart, m: ['sale', 'customer', 'debtor', 'madeni', 'receipt', 'risiti', 'wateja', 'wadaiwa'] },
+      { id: 'inv', name: 'Manunuzi & Bidhaa', ic: I.box, m: ['item', 'bidhaa', 'bei &', 'majina', 'purchase', 'expense', 'wauzaji', 'supplier', 'manunuzi', 'matumizi'] },
+      { id: 'prod', name: 'Uzalishaji', ic: I.factory, m: ['production', 'delivery', 'uzalishaji', 'usafirishaji'] },
+      { id: 'fin', name: 'Fedha & Ripoti', ic: I.chart, m: ['cash', 'bank', 'accounting', 'report', 'ripoti', 'grow your', 'benki', 'uhasibu', 'kuza', 'daybook', 'fedha na', 'fedha &'] },
+      { id: 'staff', name: 'Wafanyakazi', ic: I.people, m: ['mahudhurio', 'attendance', 'watumiaji', 'users', 'payroll', 'mfanyakazi', 'wafanyakazi', 'roles'] },
+      { id: 'sys', name: 'Mfumo', ic: I.gear, m: ['femmasbot', 'sync', 'share', 'backup', 'utilities', 'settings', 'mipangilio', 'zana', 'sawazisha', 'hifadhi', 'rejesha'] }
     ];
-    var DIVS = ['transactions', 'operations', 'money', 'system', 'management', 'overview'];
+
+    function isStandalone(label) {
+      return /^home\b/.test(label) || /^nyumbani\b/.test(label) ||
+             /^quick sale/.test(label) || /^mauzo ya haraka/.test(label);
+    }
 
     function groupFor(label) {
       label = label.toLowerCase();
-      if (/^home/.test(label) || /^quick sale/.test(label)) return null;
+      if (isStandalone(label)) return null;
       for (var i = 0; i < GROUPS.length; i++) {
         for (var j = 0; j < GROUPS[i].m.length; j++) {
           if (label.indexOf(GROUPS[i].m[j]) >= 0) return GROUPS[i].id;
@@ -65,15 +72,19 @@
       return 'sys';
     }
 
+    /* Hide section-divider labels structurally: a top-level nav child that is not a
+       group, not a link, holds no link/input, and is just a short text label — in ANY
+       language. This is immune to the i18n engine renaming them to Swahili. */
     function hideDividers(nav) {
       var kids = nav.children;
       for (var i = 0; i < kids.length; i++) {
         var ch = kids[i];
+        if (!ch || ch.nodeType !== 1) continue;
         if (ch.classList && ch.classList.contains('fp-grp')) continue;
-        if (ch.tagName === 'A' || ch.tagName === 'BUTTON') continue;
-        if (ch.querySelector && ch.querySelector('a,button')) continue; /* keep containers with real links */
-        var tx = (ch.textContent || '').trim().toLowerCase();
-        if (DIVS.indexOf(tx) >= 0 && ch.style.display !== 'none') {
+        if (ch.tagName === 'A' || ch.tagName === 'BUTTON' || ch.tagName === 'INPUT') continue;
+        if (ch.querySelector && ch.querySelector('a,button,input,textarea,select')) continue;
+        var tx = (ch.textContent || '').trim();
+        if (tx.length >= 1 && tx.length <= 30 && ch.style.display !== 'none') {
           ch.style.setProperty('display', 'none', 'important');
         }
       }
@@ -85,15 +96,16 @@
       var all = nav.querySelectorAll('a,button');
       for (var i = 0; i < all.length; i++) {
         var tx = (all[i].textContent || '').trim().toLowerCase();
-        if (tx && tx.indexOf('search') !== 0 && tx.indexOf('show all') !== 0) links.push(all[i]);
+        if (tx && tx.indexOf('search') !== 0 && tx.indexOf('tafuta') !== 0 &&
+            tx.indexOf('show all') !== 0 && tx.indexOf('onyesha') !== 0) links.push(all[i]);
       }
       if (links.length < 6) return; /* not fully rendered yet */
 
       var homeLink = null, qsLink = null;
       links.forEach(function (el) {
-        var t = (el.textContent || '').trim();
-        if (/^home/i.test(t)) homeLink = el;
-        else if (/^quick sale/i.test(t)) qsLink = el;
+        var t = (el.textContent || '').trim().toLowerCase();
+        if (/^home\b/.test(t) || /^nyumbani\b/.test(t)) homeLink = el;
+        else if (/^quick sale/.test(t) || /^mauzo ya haraka/.test(t)) qsLink = el;
       });
 
       var containers = {};
@@ -175,7 +187,7 @@
         if (!nav.__fpDivObs) {
           try {
             var obs = new MutationObserver(function () { hideDividers(nav); });
-            obs.observe(nav, { attributes: true, attributeFilter: ['style', 'class'], subtree: true });
+            obs.observe(nav, { childList: true, attributes: true, attributeFilter: ['style', 'class'], subtree: true });
             nav.__fpDivObs = obs;
           } catch (e) {}
         }
