@@ -1,10 +1,11 @@
 /* fp-theme.js — FemmasBot: professional Light / Dark / System theme control.
- * Switches by toggling ONLY the html.fp-dark class (+ fp_dark) — instant, no
- * app re-render (that re-render, combined with the page's MutationObservers,
- * froze the tab). No universal '*' transition and no body-wide observer, for the
- * same reason. The app's darkMode state is initialised from fp_dark on load, so
- * state and class agree and the theme is clean. 'System' follows the OS live.
- * Replaces the single sun/moon button with a clean 3-way segmented control. */
+ * Drives the app's OWN theme toggle so its internal darkMode state AND the
+ * html.fp-dark class update together — a fully clean switch with no "half-dark"
+ * mixing. No universal '*' transition and no body-wide observer, and the app's
+ * i18n MutationObserver was removed, so the toggle's re-render no longer storms /
+ * freezes the tab. State is also initialised from fp_dark on load, so it starts
+ * aligned. 'System' follows the OS live. Replaces the single sun/moon button with
+ * a clean 3-way segmented control. */
 (function () {
   var LS_MODE = 'fp_mode', LS_DARK = 'fp_dark';
   function get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
@@ -31,12 +32,18 @@
   var mq = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
   function systemDark() { return mq ? mq.matches : false; }
 
-  // Toggle ONLY the class + fp_dark — no setState, no re-render, no storm.
+  // Drive the app's OWN theme toggle so its darkMode STATE updates too (many cards are
+  // themed from state, not just the class) — this gives a fully clean switch with no
+  // "half-dark" mixing. Safe now that the i18n MutationObserver was removed (that was
+  // what turned the toggle's re-render into a tab-freezing observer storm).
   function ensureDark(dark) {
     var html = document.documentElement;
     set(LS_DARK, dark ? '1' : '0');
     if (html.classList.contains('fp-dark') === dark) return;
-    html.classList.toggle('fp-dark', dark);
+    var b = findThemeBtn();
+    if (!b) { html.classList.toggle('fp-dark', dark); return; }
+    b.click();
+    if (html.classList.contains('fp-dark') !== dark) b.click(); // align if state diverged
   }
 
   var wrap = null;
@@ -80,6 +87,7 @@
     });
     oldBtn.style.display = 'none';
     oldBtn.parentNode.insertBefore(wrap, oldBtn);
+    /* native button exists now — sync the saved mode through it so state + class agree */
     setMode(get(LS_MODE) || 'system');
     return true;
   }
