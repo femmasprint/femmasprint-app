@@ -1,23 +1,27 @@
-/* Cloudflare Pages Function middleware — PERMANENT dark-mode flash fix.
+/* Cloudflare Pages Function middleware — PERMANENT flash / reflow fix.
  *
- * The app's dark mode was previously applied by an external deferred script that loads
- * AFTER the browser's first paint, so on a dark-mode reload the sidebar (and other
- * surfaces) could show their light/near-black colour for one frame before the app
- * painted its dark inline styles — a recurring flash that outer scripts can't fully
- * kill.
+ * The app's theme + sidebar tidy-ups were applied by external deferred scripts that
+ * load AFTER the browser's first paint, so on a reload you could see (a) the sidebar
+ * flash its light/near-black colour for a frame before the dark colour applied, and
+ * (b) the menu items reflow / "crumple" for a frame as the layout rules kicked in.
  *
  * This runs at the EDGE (server side) and appends a <style> to the page <head> of every
- * HTML response, so the dark rules are present in the document BEFORE the browser paints
- * anything. Combined with the app's synchronous head script that adds the `fp-dark`
- * class when the saved theme is dark, the sidebar and backdrop are their dark colours
- * from the very first frame. No script delay, no flash — the fix is baked into the page.
+ * HTML response, so both the dark colours AND the sidebar layout are present in the
+ * document BEFORE the browser paints anything — no script delay, no flash, no reflow.
+ * The fix is baked into the page.
  *
- * It is fully defensive: only HTML responses are touched, and ANY error falls straight
+ * Fully defensive: only HTML responses are touched, and ANY error falls straight
  * through to the original, unmodified response — it can never break the site. */
 
-const DARK_HEAD_CSS =
-  'html.fp-dark,html.fp-dark body{background:#0a0e1a !important}' +
-  'html.fp-dark aside{background:#13315a !important}';
+var HEAD_CSS =
+  // Sidebar LAYOUT — unconditional, so menu items are full-width rows and the Arifa
+  // notification is already compact from the very first paint (no reflow/"crumple").
+  ' aside nav a{display:flex !important;align-items:center;width:100% !important;box-sizing:border-box}' +
+  ' aside>nav~*>div>div:nth-of-type(2){display:none !important}' +
+  // Dark colours — apply the moment the app's head script adds the fp-dark class, so the
+  // sidebar and backdrop are dark from the first frame (no light/black flash).
+  ' html.fp-dark,html.fp-dark body{background:#0a0e1a !important}' +
+  ' html.fp-dark aside{background:#13315a !important}';
 
 export async function onRequest(context) {
   const response = await context.next();
@@ -27,7 +31,7 @@ export async function onRequest(context) {
     return new HTMLRewriter()
       .on('head', {
         element(el) {
-          el.append('<style id="fpEdgeDark">' + DARK_HEAD_CSS + '</style>', { html: true });
+          el.append('<style id="fpEdgeDark">' + HEAD_CSS + '</style>', { html: true });
         }
       })
       .transform(response);
