@@ -1,9 +1,11 @@
 /* fp-theme.js — FemmasBot: professional Light / Dark / System theme control.
- * Drives the app's OWN theme toggle (single source of truth) so the internal
- * darkMode state, the html.fp-dark class, and fp_dark stay in perfect sync — this
- * prevents the state/class divergence that made the theme look "half switched".
- * A brief crossfade smooths the change; 'System' follows the OS preference live.
- * Replaces the old single sun/moon button with a clean 3-way segmented control. */
+ * Switches by toggling ONLY the html.fp-dark class (+ fp_dark) — instant and
+ * flicker-free, with a short crossfade. It does NOT call the app's setState, so
+ * there is no heavy full re-render (that re-render, combined with the page's
+ * MutationObservers, previously froze the tab). The app's darkMode state is
+ * initialised from fp_dark on load, so state and class agree and the theme is
+ * clean. 'System' follows the OS preference live. Replaces the single sun/moon
+ * button with a clean 3-way segmented control. */
 (function () {
   var LS_MODE = 'fp_mode', LS_DARK = 'fp_dark';
   function get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
@@ -33,21 +35,21 @@
   var mq = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
   function systemDark() { return mq ? mq.matches : false; }
 
-  // Drive the app's OWN toggle so its internal darkMode state, the html.fp-dark class,
-  // and fp_dark stay perfectly in sync — one source of truth, no divergence/mixing.
+  // Apply the theme by toggling ONLY the html.fp-dark class + fp_dark. This does NOT
+  // call the app's setState, so there is no full re-render (which previously caused a
+  // heavy re-render + observer cascade that froze the tab). All theme colours are
+  // driven by html.fp-dark CSS, and the app's darkMode state is initialised from
+  // fp_dark on load, so the class alone is a clean, instant, flicker-free switch.
   function ensureDark(dark, animate) {
     var html = document.documentElement;
-    if (html.classList.contains('fp-dark') === dark) { set(LS_DARK, dark ? '1' : '0'); return; }
+    set(LS_DARK, dark ? '1' : '0');
+    if (html.classList.contains('fp-dark') === dark) return;
     if (animate) {
       html.classList.add('fp-switching');
       clearTimeout(ensureDark._t);
       ensureDark._t = setTimeout(function () { html.classList.remove('fp-switching'); }, 480);
     }
-    var b = findThemeBtn();
-    if (!b) { html.classList.toggle('fp-dark', dark); set(LS_DARK, dark ? '1' : '0'); return; }
-    b.click(); // runs the app's toggleTheme (syncs state + class + fp_dark)
-    // the class is updated synchronously; if state was diverged, one more click aligns it.
-    if (html.classList.contains('fp-dark') !== dark) b.click();
+    html.classList.toggle('fp-dark', dark);
   }
 
   var wrap = null;
@@ -91,8 +93,7 @@
     });
     oldBtn.style.display = 'none';
     oldBtn.parentNode.insertBefore(wrap, oldBtn);
-    /* The native toggle now exists — sync the theme to the saved mode through it, so
-       the app's darkMode state and the class agree from the start (no mismatch). */
+    /* apply the saved mode to the class now (class-only, no re-render) */
     setMode(get(LS_MODE) || 'system', false);
     return true;
   }
@@ -103,6 +104,7 @@
       mode = get(LS_DARK) === '1' ? 'dark' : (get(LS_DARK) === '0' ? 'light' : 'system');
       set(LS_MODE, mode);
     }
+    setMode(mode, false);
     if (mq) {
       var onChange = function () { if (get(LS_MODE) === 'system') setMode('system', true); };
       try { mq.addEventListener('change', onChange); } catch (e) { try { mq.addListener(onChange); } catch (e2) {} }
