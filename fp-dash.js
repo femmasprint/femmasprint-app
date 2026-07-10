@@ -189,9 +189,11 @@
 
   function boot() { injectCss(); enhance(); countUp(); }
   function start() {
-    try { new MutationObserver(function () { enhance(); }).observe(document.body, { childList: true, subtree: true }); } catch (e) {}
     boot();
-    setInterval(enhance, 1500);
+    /* interval only — NO body-wide MutationObserver. That observer fired on every app
+       re-render and, on a theme switch, cascaded with the other scripts into a storm
+       that froze the tab. A light interval re-attaches the chart just as well. */
+    setInterval(enhance, 1200);
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start);
   else start();
