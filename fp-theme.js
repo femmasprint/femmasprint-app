@@ -1,15 +1,9 @@
-/* fp-theme.js — FemmasBot: professional Light / Dark / System theme control.
- * Clean 3-way segmented control (Light / Dark / System) that drives the app's OWN
- * theme toggle, so the app's darkMode STATE and the html.fp-dark class stay in
- * sync and the settled theme is always uniform.
- *
- * WHITE-FLASH ROOT CAUSE (found via DOM inspection): the app leaves its full-page
- * wrapper (and some cards) with a LIGHT inline background; only the theme darkens
- * them. Earlier we darkened them with a transient JS tag that ran only during a
- * switch — so every later re-render briefly reverted the wrapper to white. Fix:
- * PERSISTENT CSS rules that darken those light surfaces whenever fp-dark is on. We
- * also fast-apply the saved language on load to remove the flash-of-English seen
- * after a reload. 'System' follows the OS live. */
+/* fp-theme.js — FemmasBot: professional Light / Dark / System theme control + a
+ * small language helper. The theme control drives the app's OWN toggle so the
+ * darkMode state and html.fp-dark class stay in sync; persistent CSS darkens the
+ * app's light surfaces so nothing can flash white on any re-render; and on load we
+ * fast-apply the saved language (killing the flash-of-English) plus a supplementary
+ * Swahili dictionary for form/invoice labels the app's own i18n misses. */
 (function () {
   var LS_MODE = 'fp_mode', LS_DARK = 'fp_dark';
   function get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
@@ -173,10 +167,7 @@
     }
   }
 
-  // After a reload the app renders in its native English for a moment before the
-  // i18n engine translates to the saved language — a visible "flash of English".
-  // Drive the saved language HARD for the first ~1.6s so the translation lands
-  // immediately and that flash is gone.
+  // Fast-apply the saved language on load to remove the flash-of-English after reload.
   function fastLang() {
     var lang;
     try { lang = localStorage.getItem('fp_lang') || 'sw'; } catch (e) { lang = 'sw'; }
@@ -187,13 +178,50 @@
     }, 60);
   }
 
+  // Supplementary Swahili for strings the app's main i18n dictionary misses — mostly
+  // form/modal/invoice labels that render after load. Applied (EN->SW) only when the
+  // saved language is Swahili. Longer phrases first so partial matches don't clash.
+  var EXTRA_SW = [
+    ['Shipping/Delivery Address', 'Anwani ya Kupeleka'],
+    ['Terms & Conditions', 'Masharti na Vigezo'],
+    ['Preview & Share', 'Hakiki & Sambaza'],
+    ['Delivery Details', 'Maelezo ya Usafirishaji'],
+    ['Invoice Number', 'Namba ya Ankara'],
+    ['Invoice Date', 'Tarehe ya Ankara'],
+    ['Bill Number', 'Namba ya Bili'],
+    ['Bill Date', 'Tarehe ya Bili'],
+    ['Amount in Words', 'Kiasi kwa Maneno'],
+    ['Enter supplier name', 'Weka jina la muuzaji'],
+    ['Enter customer name', 'Weka jina la mteja'],
+    ['Price/Unit', 'Bei/Kipimo'],
+    ['Bill To', 'Ankara Kwa'],
+    ['Payment', 'Malipo']
+  ];
+  function extraI18n() {
+    var lang;
+    try { lang = localStorage.getItem('fp_lang') || 'sw'; } catch (e) { lang = 'sw'; }
+    if (lang !== 'sw') return;
+    try {
+      var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null, false), n;
+      while ((n = w.nextNode())) {
+        var v = n.nodeValue; if (!v || v.length > 60) continue;
+        var nv = v;
+        for (var i = 0; i < EXTRA_SW.length; i++) {
+          if (nv.indexOf(EXTRA_SW[i][0]) >= 0) nv = nv.split(EXTRA_SW[i][0]).join(EXTRA_SW[i][1]);
+        }
+        if (nv !== v) n.nodeValue = nv;
+      }
+    } catch (e) {}
+  }
+
   function boot() {
     var st = document.createElement('style'); st.textContent = CSS; document.head.appendChild(st);
     initMode();
     build();
     fastLang();
+    extraI18n();
     setTimeout(function () { booted = true; }, 1200);
-    setInterval(build, 1500);
+    setInterval(function () { build(); extraI18n(); }, 1500);
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();
