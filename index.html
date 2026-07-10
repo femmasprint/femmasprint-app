@@ -156,20 +156,20 @@
   /* Sidebar icons-only collapse */
   /* Sidebar auto hover-expand rail: collapsed shows icons, hover expands to full */
   body.fp-rail aside{width:66px !important;min-width:66px !important;max-width:66px !important;flex:0 0 66px !important;overflow:hidden !important;white-space:nowrap !important;transition:width .08s ease, max-width .18s ease, flex-basis .18s ease !important;scrollbar-width:none !important;position:relative;z-index:50}
-  body.fp-rail aside:hover{width:248px !important;min-width:248px !important;max-width:248px !important;flex:0 0 248px !important;box-shadow:6px 0 24px rgba(10,28,56,.28) !important}
+  body.fp-rail aside:hover.fpNoExpand{width:248px !important;min-width:248px !important;max-width:248px !important;flex:0 0 248px !important;box-shadow:6px 0 24px rgba(10,28,56,.28) !important}
   /* collapsed = icons only (text hidden); hover reveals full text */
-  body.fp-rail aside:not(:hover) *{font-size:0 !important;letter-spacing:0 !important}
-  body.fp-rail aside:not(:hover) a{justify-content:center !important;gap:0 !important;padding-left:0 !important;padding-right:0 !important}
-  body.fp-rail aside:not(:hover) a svg{width:20px !important;height:20px !important;flex:none !important}
-  body.fp-rail aside:not(:hover) a svg[width="13"]{display:none !important}
-  body.fp-rail aside:not(:hover) input{display:none !important}
-  body.fp-rail aside:not(:hover) img{max-width:34px !important}
+  body.fp-rail aside *{font-size:0 !important;letter-spacing:0 !important}
+  body.fp-rail aside a{justify-content:center !important;gap:0 !important;padding-left:0 !important;padding-right:0 !important}
+  body.fp-rail aside a svg{width:20px !important;height:20px !important;flex:none !important}
+  body.fp-rail aside a svg[width="13"]{display:none !important}
+  body.fp-rail aside input{display:none !important}
+  body.fp-rail aside img{max-width:34px !important}
   body.fp-rail aside::-webkit-scrollbar{display:none !important;width:0 !important}
   /* Hide sidebar scrollbar line (always) */
   aside, aside nav, aside > nav, aside *{scrollbar-width:none !important;-ms-overflow-style:none !important}
   aside::-webkit-scrollbar, aside *::-webkit-scrollbar{display:none !important;width:0 !important;height:0 !important}
   /* collapsed rail: hide notifications panel (doesn't fit in narrow rail) */
-  body.fp-rail aside:not(:hover) [data-comment-anchor="ceb713f5ba-div"]{display:none !important}
+  body.fp-rail aside [data-comment-anchor="ceb713f5ba-div"]{display:none !important}
   #fpRailBtn{display:none !important}
   #fpRailBtnUNUSED{position:fixed;left:12px;bottom:12px;z-index:60;width:34px;height:34px;border:1px solid rgba(255,255,255,.2);border-radius:9px;background:#13315a;color:#fff;font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(0,0,0,.25)}
   /* FemmasBot chat: show real logo instead of "fp" text */
@@ -314,7 +314,7 @@
     var on=true; try{var v=localStorage.getItem('fp_rail2'); if(v!==null)on=(v==='1');}catch(e){}
     var lockSvg='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 018 0v4"></path></svg>';
     var openSvg='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 017-2.6"></path></svg>';
-    function paint(){ if(on)document.body.classList.add('fp-rail'); else document.body.classList.remove('fp-rail'); b.innerHTML=(on?openSvg:lockSvg)+'<span>'+(on?'Auto':'Imelock')+'</span>'; b.title= on?'Menu inajikunja ukiondoa mouse — bofya ku-LOCK ibaki wazi':'Menu imelock (inabaki wazi) — bofya iwe Auto (ijikunje ukiondoa mouse)'; }
+    function paint(){ if(on)document.body.classList.add('fp-rail'); else document.body.classList.remove('fp-rail'); b.innerHTML=(on?openSvg:lockSvg)+'<span>'+(on?'Fungua':'Kunja')+'</span>'; b.title= on?'Menu inajikunja ukiondoa mouse — bofya ku-LOCK ibaki wazi':'Menu imelock (inabaki wazi) — bofya iwe Auto (ijikunje ukiondoa mouse)'; }
     paint();
     b.onclick=function(){ on=!on; try{localStorage.setItem('fp_rail2',on?'1':'0');}catch(e){} paint(); };
     document.body.appendChild(b);
