@@ -1,4 +1,4 @@
-/* FEMMAS PRINT — sidebar v5.
+/* FEMMAS PRINT — sidebar v5.1.
  *
  * DEFAULT (everyone): the clean minimal enhancement — tooltips, fallback icons, clear
  * section headings, full-width rows, and the compact static Arifa card. Nothing risky.
@@ -6,9 +6,10 @@
  * OPT-IN PREVIEW ("Accordion Navy", the owner's chosen design): grouped, collapsible
  * sub-menus. Enabled only when the visitor opts in with ?sb=acc (persisted), so live
  * customers are unaffected while the owner reviews it. ?sb=off turns it back off.
- * The flat menu is hidden until the accordion is built (anti-flicker), and a guarded
- * observer rebuilds it if the app re-renders. Once approved this becomes the default
- * and the anti-flicker is moved to the edge for zero flash. */
+ * The flat menu is hidden until the accordion is built (anti-flicker); leftover native
+ * section dividers are hidden via CSS (so app re-renders can't bring them back); and a
+ * guarded observer rebuilds the groups if the app re-renders. Once approved this becomes
+ * the default and the anti-flicker is moved to the edge for zero flash. */
 (function () {
   try {
     var q = location.search || '';
@@ -30,6 +31,10 @@
     var accCss =
       ' aside nav:not(.fp-acc-ready){opacity:0}' +
       ' aside nav.fp-acc-ready{opacity:1;transition:opacity .18s ease}' +
+      /* once the accordion is built, the ONLY divs that should remain are our groups;
+         every other direct-child div is a leftover native section label -> hide it.
+         CSS so app re-renders that re-add them are hidden instantly, no flicker. */
+      ' aside nav.fp-acc-ready > div:not(.fp-grp){display:none !important}' +
       ' .fp-grp-hdr{display:flex;align-items:center;gap:11px;padding:9px 12px;margin:1px 6px;border-radius:9px;cursor:pointer;color:#c3d2e8;font-size:13.5px;user-select:none;transition:background .15s,color .15s}' +
       ' .fp-grp-hdr:hover{background:rgba(46,144,240,.12);color:#fff}' +
       ' .fp-grp-hdr .fp-gi{width:18px;height:18px;flex:none;stroke:#7f97bd}' +
@@ -44,7 +49,6 @@
     st.textContent = baseCss + (ACC ? accCss : '');
     document.head.appendChild(st);
 
-    /* ---------- shared helpers ---------- */
     function looksLikeHeading(el) {
       if (!el || el.nodeType !== 1) return false;
       var tag = el.tagName;
@@ -68,7 +72,6 @@
       }
     }
 
-    /* ---------- DEFAULT minimal path ---------- */
     function enhanceMinimal() {
       var aside = document.querySelector('aside'); if (!aside) return;
       decorate(aside);
@@ -87,7 +90,6 @@
       }
     }
 
-    /* ---------- OPT-IN accordion path ---------- */
     var I = {
       cart: 'M3 3h2l2.4 12h9.2L20 7H6', box: 'M21 8l-9-5-9 5 9 5 9-5zM3 8v8l9 5 9-5V8',
       factory: 'M2 20h20V9l-6 4V9l-6 4V4H2z', chart: 'M3 3v18h18M7 14l3-3 3 3 5-6',
@@ -110,17 +112,6 @@
       l = l.toLowerCase(); if (isStandalone(l)) return null;
       for (var i = 0; i < GROUPS.length; i++) for (var j = 0; j < GROUPS[i].m.length; j++) if (l.indexOf(GROUPS[i].m[j]) >= 0) return GROUPS[i].id;
       return 'sys';
-    }
-    function hideDividers(nav) {
-      var kids = nav.children;
-      for (var i = 0; i < kids.length; i++) {
-        var ch = kids[i]; if (!ch || ch.nodeType !== 1) continue;
-        if (ch.classList && ch.classList.contains('fp-grp')) continue;
-        if (ch.tagName === 'A' || ch.tagName === 'BUTTON') continue;
-        if (ch.querySelector && ch.querySelector('a,button')) continue;
-        var tx = (ch.textContent || '').trim();
-        if (tx.length >= 1 && tx.length <= 30) ch.style.setProperty('display', 'none', 'important');
-      }
     }
     function needsRegroup(nav) {
       var all = nav.querySelectorAll('a,button'), content = 0, ungrouped = 0;
@@ -163,7 +154,7 @@
       var aside = document.querySelector('aside'); if (!aside) return;
       var nav = aside.querySelector('nav'); if (!nav) return;
       if (obs) obs.disconnect();
-      try { decorate(aside); if (needsRegroup(nav)) buildGroups(nav); hideDividers(nav); nav.classList.add('fp-acc-ready'); } catch (e) {}
+      try { decorate(aside); if (needsRegroup(nav)) buildGroups(nav); nav.classList.add('fp-acc-ready'); } catch (e) {}
       if (obs) { try { obs.observe(document.body, OPT); } catch (e) {} }
     }
 
@@ -171,7 +162,7 @@
       if (ACC) {
         syncAcc();
         try { obs = new MutationObserver(syncAcc); obs.observe(document.body, OPT); } catch (e) {}
-        setInterval(syncAcc, 2000);
+        setInterval(syncAcc, 1500);
         setTimeout(function () { var n = document.querySelector('aside nav'); if (n) n.classList.add('fp-acc-ready'); }, 2500);
       } else {
         enhanceMinimal();
