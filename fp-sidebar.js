@@ -1,4 +1,4 @@
-/* FEMMAS PRINT — sidebar v4.1 (minimal & robust, no restructuring)
+/* FEMMAS PRINT — sidebar v4.2 (minimal & robust, no restructuring)
  *
  * The app's native sidebar is ALREADY sectioned (Muhtasari · Miamala · Uendeshaji ·
  * Fedha · Usimamizi · Mfumo) with every item under its heading. Earlier versions
@@ -8,11 +8,10 @@
  * half-hidden section labels that looked like broken menus.
  *
  * Per the owner's choice we now DO NOT touch the menu structure at all: no grouping,
- * no hiding of section headers, no MutationObservers. We only (a) give each item a
- * hover tooltip, (b) add a fallback icon to any item missing one, (c) style the section
- * headings so they read clearly, and (d) force every link to be a full-width row — the
- * Usimamizi section rendered its links as display:inline, which wrapped them into a
- * jumbled 2-column mess; this makes every section look identical and clean. All
+ * no hiding of section headers, no MutationObservers. We (a) give each item a hover
+ * tooltip, (b) add a fallback icon where missing, (c) style section headings clearly,
+ * (d) force every link to a full-width row (fixes the jumbled Usimamizi section), and
+ * (e) hide the Arifa notification card below the menu so the menu has room. All
  * additive and idempotent, so re-renders can't make it flicker or break. */
 (function () {
   try {
@@ -26,7 +25,11 @@
       /* Some sections (e.g. Usimamizi) render their links as display:inline, which makes
          them wrap into a jumbled block. Force EVERY sidebar link to be a full-width row
          so all sections look identical and clean. */
-      ' aside nav a{display:flex !important;align-items:center;width:100% !important;box-sizing:border-box}';
+      ' aside nav a{display:flex !important;align-items:center;width:100% !important;box-sizing:border-box}' +
+      /* Hide the Arifa notification card that sits below the menu (aside > nav ~ *):
+         the owner wants it gone so the menu has room, and it also stops the ~1/s
+         re-render churn it caused. */
+      ' aside > nav ~ *{display:none !important}';
     document.head.appendChild(css);
 
     var FALL = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8aa0c0" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="1.6" fill="#8aa0c0" stroke="none"/></svg>';
