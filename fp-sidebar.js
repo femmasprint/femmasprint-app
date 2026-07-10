@@ -1,11 +1,12 @@
-/* FEMMAS PRINT — sidebar enhancer v2
+/* FEMMAS PRINT — sidebar enhancer v2.1
  * 1) fp logo (top) toggles collapse/expand (body.fp-rail).
  * 2) every nav item gets a tooltip (title); items without an icon get a fallback icon.
  * 3) the flat 25-item menu is grouped into a FEW main menus, each collapsible (accordion):
  *      Home + Quick Sale stay standalone at the top, then:
  *      Mauzo · Manunuzi & Bidhaa · Uzalishaji · Fedha & Ripoti · Wafanyakazi · Mfumo
  *    Legacy section dividers are hidden and kept hidden through the framework's re-renders.
- * The app's sidebar node is stable, so we build the groups once and keep them tidy with observers.
+ * 4) collapsed (rail) shows ONLY 8 clean, meaningful icons: Home, Quick Sale + the 6 group icons.
+ *    Any expanded submenu that leaks into the rail is hidden so no repeated generic tags appear.
  */
 (function () {
   try {
@@ -24,7 +25,9 @@
       ' .fp-grp-body{display:none;flex-direction:column;gap:1px;padding-left:10px;margin:1px 0 6px}' +
       ' .fp-grp.open > .fp-grp-body{display:flex}' +
       ' .fp-grp-body > a, .fp-grp-body > button{width:100% !important}' +
+      /* collapsed rail: only Home, Quick Sale and the group icons */
       ' body.fp-rail .fp-grp-body{display:none !important}' +
+      ' body.fp-rail aside nav > div:not(.fp-grp){display:none !important}' +
       ' body.fp-rail .fp-grp-hdr > span:not(.fp-gi){font-size:0 !important}' +
       ' body.fp-rail .fp-grp-hdr .fp-chev{display:none !important}';
     document.head.appendChild(css);
@@ -68,7 +71,7 @@
         var ch = kids[i];
         if (ch.classList && ch.classList.contains('fp-grp')) continue;
         if (ch.tagName === 'A' || ch.tagName === 'BUTTON') continue;
-        if (ch.querySelector && ch.querySelector('a,button')) continue; /* keep containers with real links (e.g. Home wrapper) */
+        if (ch.querySelector && ch.querySelector('a,button')) continue; /* keep containers with real links */
         var tx = (ch.textContent || '').trim().toLowerCase();
         if (DIVS.indexOf(tx) >= 0 && ch.style.display !== 'none') {
           ch.style.setProperty('display', 'none', 'important');
