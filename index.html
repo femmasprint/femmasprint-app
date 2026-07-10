@@ -8860,7 +8860,7 @@ class Component extends DCLogic {
       ['placeholder','title'].forEach(function(at){ document.querySelectorAll('['+at+']').forEach(function(el){ var v=(el.getAttribute(at)||'').trim(); var rep=map[v]; if(rep!==undefined && rep!==v){ el.setAttribute(at,rep); } }); });
     }catch(e){}
   }
-  function apply(){ tr(lang()==='sw'?toSW:toEN); paintToggle(); }
+  function apply(){ var m=lang()==='sw'?toSW:toEN; tr(m); try{ var els=document.querySelectorAll('button,a,span,div,h1,h2,h3,h4,p,li,th,td,label'); for(var k=0;k<els.length;k++){ var el=els[k]; if(el.children.length)continue; var t=(el.textContent||'').replace(/\s+/g,' ').trim(); if(t.length<2||t.length>60)continue; var r=m[t]; if(r!==undefined&&r!==t) el.textContent=r; } }catch(e){} paintToggle(); }
   function paintToggle(){ var t=document.getElementById('fpLangTop'); if(!t)return; var l=lang(); var sw=t.querySelector('[data-l="sw"]'), en=t.querySelector('[data-l="en"]'); if(sw&&en){ var base='padding:0 11px;height:32px;display:flex;align-items:center;border-radius:8px;font-size:12px;font-weight:800;cursor:pointer;'; var on='background:#fff;color:#13315a;box-shadow:0 1px 3px rgba(0,0,0,.12);', off='background:transparent;color:#94a3b8;'; sw.setAttribute('style',base+(l==='sw'?on:off)); en.setAttribute('style',base+(l==='en'?on:off)); } }
   function setLang(l){ try{localStorage.setItem('fp_lang',l);}catch(e){} apply(); }
   window.FPSetLang=setLang;
