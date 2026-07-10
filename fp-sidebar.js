@@ -1,14 +1,20 @@
-/* FEMMAS PRINT — sidebar enhancer v2.4
+/* FEMMAS PRINT — sidebar enhancer v3.0
  * 1) fp logo (top) toggles collapse/expand (body.fp-rail).
  * 2) every nav item gets a tooltip (title); items without an icon get a fallback icon.
- * 3) the flat 25-item menu is grouped into a FEW main menus, each collapsible (accordion):
+ * 3) the flat menu is grouped into a FEW collapsible groups (accordion):
  *      Home + Quick Sale stay standalone at the top, then:
  *      Mauzo · Manunuzi & Bidhaa · Uzalishaji · Fedha & Ripoti · Wafanyakazi · Mfumo
  *    Legacy section dividers are hidden STRUCTURALLY (any plain text-only nav label, any language).
  * 4) collapsed (rail) shows ONLY 8 clean icons: Home, Quick Sale + the 6 group icons.
- * v2.2: divider hiding is language-independent. v2.3: anti-flicker reveal.
- * v2.4: interval-only — removed the broad aside-wide MutationObserver that fired on
- *       every app render and cascaded into a tab-freezing storm on theme switch.
+ *
+ * v3.0 — KILLS THE "cheza cheza" FLICKER. The app re-renders the sidebar to its flat
+ * state very often (the Arifa notification card cycles every ~1s, and every re-render
+ * rebuilds the whole aside). v2.4 only re-grouped on a 1.5s timer, so the flat list
+ * was visible for up to 1.5s each time = a constant bounce between flat and grouped.
+ * Now a single guarded MutationObserver re-groups SYNCHRONOUSLY, before the browser
+ * paints, the instant a flat state reappears — so the flat menu is never shown. The
+ * observer disconnects around its own writes (no self-trigger) and does only a cheap
+ * check on each batch, so it can't storm/freeze like the old broad observers.
  */
 (function () {
   try {
@@ -34,7 +40,7 @@
       ' body.fp-rail .fp-grp-hdr .fp-chev{display:none !important}' +
       /* anti-flicker: hide the menu until it is grouped, so the flat list never flashes */
       ' aside nav:not(.fp-ready){opacity:0}' +
-      ' aside nav.fp-ready{opacity:1;transition:opacity .25s ease}';
+      ' aside nav.fp-ready{opacity:1;transition:opacity .2s ease}';
     document.head.appendChild(css);
 
     var FALL = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8aa0c0" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>';
@@ -49,7 +55,6 @@
     function svg(p) { return '<svg class="fp-gi" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8aa0c0" stroke-width="2" style="flex:none"><path d="' + p + '"/></svg>'; }
     var CHEV = '<svg class="fp-chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8aa0c0" stroke-width="2.4"><path d="M9 18l6-6-6-6"/></svg>';
 
-    /* group matchers include BOTH English and Swahili tokens (the UI can be in either) */
     var GROUPS = [
       { id: 'sales', name: 'Mauzo', ic: I.cart, m: ['sale', 'customer', 'debtor', 'madeni', 'receipt', 'risiti', 'wateja', 'wadaiwa'] },
       { id: 'inv', name: 'Manunuzi & Bidhaa', ic: I.box, m: ['item', 'bidhaa', 'bei &', 'majina', 'purchase', 'expense', 'wauzaji', 'supplier', 'manunuzi', 'matumizi'] },
@@ -63,7 +68,10 @@
       return /^home\b/.test(label) || /^nyumbani\b/.test(label) ||
              /^quick sale/.test(label) || /^mauzo ya haraka/.test(label);
     }
-
+    function isNoise(label) {
+      return label.indexOf('search') === 0 || label.indexOf('tafuta') === 0 ||
+             label.indexOf('show all') === 0 || label.indexOf('onyesha') === 0;
+    }
     function groupFor(label) {
       label = label.toLowerCase();
       if (isStandalone(label)) return null;
@@ -75,9 +83,6 @@
       return 'sys';
     }
 
-    /* Hide section-divider labels structurally: a top-level nav child that is not a
-       group, not a link, holds no link/input, and is just a short text label — in ANY
-       language. This is immune to the i18n engine renaming them to Swahili. */
     function hideDividers(nav) {
       var kids = nav.children;
       for (var i = 0; i < kids.length; i++) {
@@ -93,14 +98,32 @@
       }
     }
 
+    /* Does the nav currently show a flat (ungrouped) state that must be re-grouped?
+       Cheap: true if there are no group containers, or a non-standalone content link
+       is sitting as a direct child of nav (i.e. the app just restored its flat list). */
+    function needsRegroup(nav) {
+      if (!nav.querySelector('.fp-grp')) {
+        var n = 0, a = nav.querySelectorAll('a,button');
+        for (var k = 0; k < a.length; k++) { var t = (a[k].textContent || '').trim().toLowerCase(); if (t && !isNoise(t)) n++; }
+        return n >= 6;
+      }
+      var kids = nav.children;
+      for (var i = 0; i < kids.length; i++) {
+        var ch = kids[i];
+        if (ch.tagName === 'A' || ch.tagName === 'BUTTON') {
+          var lx = (ch.textContent || '').trim().toLowerCase();
+          if (lx && !isNoise(lx) && !isStandalone(lx)) return true; // flat link leaked to top level
+        }
+      }
+      return false;
+    }
+
     function buildGroups(nav) {
-      if (nav.getAttribute('data-fpgrouped')) return;
       var links = [];
       var all = nav.querySelectorAll('a,button');
       for (var i = 0; i < all.length; i++) {
         var tx = (all[i].textContent || '').trim().toLowerCase();
-        if (tx && tx.indexOf('search') !== 0 && tx.indexOf('tafuta') !== 0 &&
-            tx.indexOf('show all') !== 0 && tx.indexOf('onyesha') !== 0) links.push(all[i]);
+        if (tx && !isNoise(tx)) links.push(all[i]);
       }
       if (links.length < 6) return; /* not fully rendered yet */
 
@@ -143,10 +166,8 @@
 
       GROUPS.forEach(function (g) { nav.appendChild(containers[g.id]); });
 
-      /* Quick Sale sits right after Home at the top */
       if (homeLink && qsLink) homeLink.insertAdjacentElement('afterend', qsLink);
 
-      /* restore open/closed state (default: all closed) */
       GROUPS.forEach(function (g) {
         var was;
         try { was = localStorage.getItem('fpg_' + g.id); } catch (e) {}
@@ -154,16 +175,23 @@
       });
 
       nav.setAttribute('data-fpgrouped', '1');
-      nav.classList.add('fp-ready'); /* reveal the (now grouped) menu */
+      nav.classList.add('fp-ready');
     }
 
-    function enhance() {
-      var aside = document.querySelector('aside');
-      if (!aside) return;
+    /* Tear down any stale group containers, then rebuild fresh from the current
+       (app-rendered) links. Called only when needsRegroup() is true. */
+    function regroup(nav) {
+      var old = nav.querySelectorAll('.fp-grp');
+      for (var i = 0; i < old.length; i++) old[i].parentNode && old[i].parentNode.removeChild(old[i]);
+      nav.removeAttribute('data-fpgrouped');
+      buildGroups(nav);
+    }
+
+    function decorate(aside) {
       var items = aside.querySelectorAll('a,button');
       for (var i = 0; i < items.length; i++) {
         var el = items[i];
-        if (el.getAttribute('title')) { /* already tagged */ } else {
+        if (!el.getAttribute('title')) {
           var label = (el.textContent || '').replace(/\s+/g, ' ').trim();
           if (label) el.setAttribute('title', label.slice(0, 44));
         }
@@ -186,28 +214,35 @@
           try { localStorage.setItem('fp_rail2', on ? '1' : '0'); } catch (e) {}
         });
       }
+    }
+
+    var obs = null;
+    var OPT = { childList: true, subtree: true };
+
+    /* The one guarded observer. Runs once per mutation batch, BEFORE paint. Disconnects
+       around its own DOM writes so it never triggers itself. Cheap when nothing changed. */
+    function sync() {
+      var aside = document.querySelector('aside');
+      if (!aside) return;
       var nav = aside.querySelector('nav');
-      if (nav) {
-        buildGroups(nav);
+      if (!nav) return;
+      if (obs) obs.disconnect();
+      try {
+        decorate(aside);
+        if (needsRegroup(nav)) regroup(nav);
         hideDividers(nav);
-        if (!nav.__fpDivObs) {
-          try {
-            var obs = new MutationObserver(function () { hideDividers(nav); });
-            obs.observe(nav, { childList: true, attributes: true, attributeFilter: ['style', 'class'] });
-            nav.__fpDivObs = obs;
-          } catch (e) {}
-        }
-      }
+      } catch (e) {}
+      if (obs) { try { obs.observe(document.body, OPT); } catch (e) {} }
     }
 
     function boot() {
-      enhance();
-      /* interval only — NO broad aside-wide MutationObserver. It fired on every app
-         re-render and cascaded into a freeze on theme switch; the interval re-runs
-         enhance just as well. (The narrow divider observer inside enhance stays, and it
-         no longer uses subtree:true, so it can't storm.) */
-      setInterval(enhance, 1500);
-      /* safety: never leave the menu hidden — reveal after a short max wait. */
+      sync();
+      try {
+        obs = new MutationObserver(sync);
+        obs.observe(document.body, OPT);
+      } catch (e) {}
+      /* light backup pass + a guaranteed reveal so the menu is never stuck hidden */
+      setInterval(sync, 2000);
       setTimeout(function () {
         var n = document.querySelector('aside nav');
         if (n) n.classList.add('fp-ready');
