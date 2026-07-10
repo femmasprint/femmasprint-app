@@ -91,7 +91,9 @@
     });
     oldBtn.style.display = 'none';
     oldBtn.parentNode.insertBefore(wrap, oldBtn);
-    paint(get(LS_MODE) || 'system');
+    /* The native toggle now exists — sync the theme to the saved mode through it, so
+       the app's darkMode state and the class agree from the start (no mismatch). */
+    setMode(get(LS_MODE) || 'system', false);
     return true;
   }
 
@@ -101,7 +103,6 @@
       mode = get(LS_DARK) === '1' ? 'dark' : (get(LS_DARK) === '0' ? 'light' : 'system');
       set(LS_MODE, mode);
     }
-    setMode(mode, false);
     if (mq) {
       var onChange = function () { if (get(LS_MODE) === 'system') setMode('system', true); };
       try { mq.addEventListener('change', onChange); } catch (e) { try { mq.addListener(onChange); } catch (e2) {} }
