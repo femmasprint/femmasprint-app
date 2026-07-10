@@ -22,6 +22,10 @@
   var CSS =
     /* Root stays dark the instant the class is present — backdrop can't flash white. */
     'html.fp-dark,html.fp-dark body{background:#0a0e1a !important}' +
+    /* Hide the app's ORIGINAL single sun/moon toggle by its title (EN + SW), instantly
+       and on every re-render, so it never shows up beside our 3-way control. Our own
+       buttons are titled "Light"/"Dark"/"System" so they are never matched. */
+    'button[title*="Light / Dark"],button[title*="Mwanga / Giza"]{display:none !important}' +
     /* Any light card we tag during the switch is painted dark immediately, in place. */
     'html.fp-dark .fp-fd{background:#131a2b !important;background-color:#131a2b !important;' +
     'border-color:rgba(255,255,255,.07) !important;color:#e6edf7 !important}' +
@@ -120,8 +124,25 @@
     flip(dark, booted); // animate (tag cards) only for real user switches
   }
 
+  // Belt-and-suspenders: hide EVERY native theme toggle on every pass (a re-render can
+  // spawn a fresh, un-hidden one that the CSS title rule might miss if i18n reworded it).
+  function hideNatives() {
+    var btns = document.querySelectorAll('button');
+    for (var i = 0; i < btns.length; i++) {
+      var t = (btns[i].title || '').toLowerCase();
+      if (/light\s*\/\s*dark|mwanga\s*\/\s*giza/.test(t)) btns[i].style.setProperty('display', 'none', 'important');
+    }
+  }
+
   function build() {
-    if (document.querySelector('.fp-theme')) { paint(get(LS_MODE) || 'system'); return true; }
+    hideNatives();
+    var existing = document.querySelectorAll('.fp-theme');
+    if (existing.length) {
+      // never allow more than one of our controls either
+      for (var d = 1; d < existing.length; d++) { if (existing[d].parentNode) existing[d].parentNode.removeChild(existing[d]); }
+      paint(get(LS_MODE) || 'system');
+      return true;
+    }
     var oldBtn = findThemeBtn();
     if (!oldBtn || !oldBtn.parentNode) return false;
     wrap = document.createElement('div');
