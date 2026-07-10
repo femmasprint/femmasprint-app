@@ -4,8 +4,8 @@
  * surfaces so nothing can flash white on any re-render; and the saved language is
  * kept applied on a short cadence (killing the flash-of-English on reload AND
  * in-app navigation) plus a large supplementary Swahili dictionary for inner-page
- * labels (reports, filters, subtitles, column headers, forms) the app's own i18n
- * misses. */
+ * labels (reports, filters, subtitles, column headers, forms, placeholders) the
+ * app's own i18n misses. */
 (function () {
   var LS_MODE = 'fp_mode', LS_DARK = 'fp_dark';
   function get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
@@ -165,10 +165,10 @@
   }
 
   // Supplementary Swahili for strings the app's main i18n dictionary misses across the
-  // inner pages (subtitles, filter chips, report names, column headers, form labels).
-  //   PHRASE_SW = distinctive multi-word strings, replaced as substrings (longest first).
-  //   EXACT_SW  = short/ambiguous single words, replaced only when they are the WHOLE
-  //               (trimmed) text node — so "All" never corrupts "Small", etc.
+  // inner pages (subtitles, filter chips, report names, column headers, form labels,
+  // placeholders). PHRASE_SW = distinctive multi-word substrings (longest first).
+  // EXACT_SW = short/ambiguous single words, replaced only when they are the WHOLE
+  // trimmed text node/placeholder, so "All" never corrupts "Small", etc.
   var PHRASE_SW = [
     ['Manage customer profiles and activity', 'Simamia wasifu na shughuli za wateja'],
     ['Create a sale or payment for this customer', 'Tengeneza mauzo au malipo kwa mteja huyu'],
@@ -177,6 +177,8 @@
     ['Search customer, receipt no. or related id', 'Tafuta mteja, namba ya risiti au kitambulisho'],
     ['Search order, customer, job or staff', 'Tafuta oda, mteja, kazi au mfanyakazi'],
     ['Search debtor by name or phone', 'Tafuta mdaiwa kwa jina au simu'],
+    ['Search Customer Name', 'Tafuta Jina la Mteja'],
+    ['Search Item by Name', 'Tafuta Bidhaa kwa Jina'],
     ['Monthly salary roster & payslips', 'Orodha ya mishahara ya mwezi'],
     ['Manual double-entry adjustments', 'Marekebisho ya kuingiza mara mbili'],
     ['Second Admin / Sales Manager', 'Msimamizi wa Pili / Meneja wa Mauzo'],
@@ -248,6 +250,16 @@
           if (nv.indexOf(PHRASE_SW[i][0]) >= 0) nv = nv.split(PHRASE_SW[i][0]).join(PHRASE_SW[i][1]);
         }
         if (nv !== v) n.nodeValue = nv;
+      }
+      // placeholders are attributes, not text nodes — translate them too
+      var ins = document.querySelectorAll('input[placeholder],textarea[placeholder]');
+      for (var k = 0; k < ins.length; k++) {
+        var p = ins[k].getAttribute('placeholder'); if (!p || p.length > 70) continue;
+        var pt = p.trim(); if (!pt) continue;
+        var np = p;
+        if (EXACT_SW[pt] !== undefined) np = p.replace(pt, EXACT_SW[pt]);
+        else { for (var q = 0; q < PHRASE_SW.length; q++) { if (np.indexOf(PHRASE_SW[q][0]) >= 0) np = np.split(PHRASE_SW[q][0]).join(PHRASE_SW[q][1]); } }
+        if (np !== p) ins[k].setAttribute('placeholder', np);
       }
     } catch (e) {}
   }
