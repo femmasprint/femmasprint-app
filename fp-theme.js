@@ -3,17 +3,15 @@
  * theme toggle, so the app's darkMode STATE and the html.fp-dark class stay in
  * sync and the settled theme is always uniform.
  *
- * THE TRANSITION PROBLEM (from the user's screen recordings): the app repaints its
- * heavy cards (right-column widgets, top tiles) a beat AFTER the background flips,
- * so for a moment you'd see a dark page with still-white cards. An earlier attempt
- * covered the switch with a full-screen curtain — but going dark->light that
- * curtain was itself a brief WHITE screen, i.e. exactly the "white page" the user
- * was complaining about. NO CURTAIN now. Instead, the instant we flip to dark we
- * tag every element that still has a light inline background with .fp-fd, which CSS
- * paints dark immediately. So the cards go dark IN PLACE, in the same instant as
- * the background — no wipe, no flash, no mixing. Once the app finishes its own
- * repaint the tags are irrelevant (those nodes are already dark). 'System' follows
- * the OS live. */
+ * WHITE-FLASH ROOT CAUSE (found via DOM inspection): the app leaves its full-page
+ * wrapper (and some cards) with a LIGHT inline background; only the theme darkens
+ * them. Earlier we darkened them with a transient JS tag that ran only during a
+ * switch — so every later re-render (the Arifa card cycles ~1/s) briefly reverted
+ * that full-page wrapper to white = the flash. Fix: PERSISTENT CSS rules (below)
+ * that darken those light surfaces whenever fp-dark is on, so they can never flash
+ * white on any render. We still drive the app's own toggle for correct state/text,
+ * pin the root dark, and keep the light-card tagging as extra switch-time cover.
+ * 'System' follows the OS live. */
 (function () {
   var LS_MODE = 'fp_mode', LS_DARK = 'fp_dark';
   function get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
@@ -29,6 +27,19 @@
     /* Any light card we tag during the switch is painted dark immediately, in place. */
     'html.fp-dark .fp-fd{background:#131a2b !important;background-color:#131a2b !important;' +
     'border-color:rgba(255,255,255,.07) !important;color:#e6edf7 !important}' +
+    /* PERSISTENT dark override for the app's light surfaces so nothing can flash white on
+       ANY re-render. The app leaves its full-page wrapper (and some cards) LIGHT and only
+       the theme makes them dark; a transient JS tag only covered the switch, so re-renders
+       (the Arifa card cycles ~1/s) briefly showed white. These CSS rules always apply while
+       fp-dark is on. Grey/blue tones are background-only values so are safe unscoped; pure
+       white is scoped to `background:` to avoid recolouring white TEXT (e.g. blue buttons). */
+    'html.fp-dark [style*="rgb(245, 248, 252)"]{background:#0a0e1a !important;background-color:#0a0e1a !important}' +
+    'html.fp-dark [style*="rgb(248, 249, 251)"],html.fp-dark [style*="rgb(244, 245, 247)"],' +
+    'html.fp-dark [style*="rgb(233, 243, 254)"],' +
+    'html.fp-dark [style*="background:#fff"],html.fp-dark [style*="background: #fff"],' +
+    'html.fp-dark [style*="background: rgb(255, 255, 255)"],html.fp-dark [style*="background:rgb(255, 255, 255)"],' +
+    'html.fp-dark [style*="background: rgba(255, 255, 255"],html.fp-dark [style*="background:rgba(255, 255, 255"]' +
+    '{background:#131a2b !important;background-color:#131a2b !important;border-color:rgba(255,255,255,.07) !important}' +
     /* Dark slate/near-black text used on those cards -> light, so nothing goes
        invisible during the beat before the app repaints it. Colour accents
        (green / red / amber) are left untouched. */
@@ -66,8 +77,7 @@
   }
 
   // Tag / untag every element whose INLINE background is light. Parses the actual
-  // style string (no fragile CSS substring matching, no getComputedStyle) and only
-  // touches elements that carry an inline background — a small, cheap set.
+  // style string and only touches elements that carry an inline background.
   function markLightCards(on) {
     var els = document.querySelectorAll('[style*="background"]');
     for (var i = 0; i < els.length; i++) {
@@ -95,8 +105,6 @@
     }
     if (!animate) return;
     if (dark) {
-      // keep re-tagging for ~0.6s so any cards the app repaints late are caught the
-      // moment they appear, then stop (by then the app owns their dark styling)
       var t0 = performance.now();
       (function chase() {
         markLightCards(true);
@@ -138,7 +146,6 @@
     hideNatives();
     var existing = document.querySelectorAll('.fp-theme');
     if (existing.length) {
-      // never allow more than one of our controls either
       for (var d = 1; d < existing.length; d++) { if (existing[d].parentNode) existing[d].parentNode.removeChild(existing[d]); }
       paint(get(LS_MODE) || 'system');
       return true;
