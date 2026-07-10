@@ -824,11 +824,11 @@ window.addEventListener('load', function () {
               <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 14px"><button onClick="{{ qs.addSale }}" style="display:inline-flex;align-items:center;gap:6px;padding:7px 13px;border:1px solid #aed4f8;border-radius:8px;background:#e9f3fe;color:#008ece;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer" style-hover="background:#d6ecfd"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#008ece" stroke-width="2.6"><path d="M12 5v14M5 12h14"></path></svg>Ongeza Safu</button><span style="{{ qs.statusStyle }}">{{ qs.statusText }}</span></div>
               <datalist id="qs-customers">{{ qs.customerOptions }}</datalist>
               <!-- payment-mode daily totals -->
-              <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:0 14px 14px">
+              <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;padding:0 14px 14px">
                 <div style="border:1px solid #cdebd9;border-radius:9px;padding:9px 11px;background:#f0fdf4"><div style="font-size:10px;font-weight:700;color:#16a34a;text-transform:uppercase;letter-spacing:.03em">Cash</div><div style="font-size:13px;font-weight:800;color:#0f172a;margin-top:2px">Sh {{ qs.totCash }}</div></div>
                 <div style="border:1px solid #cfe6fc;border-radius:9px;padding:9px 11px;background:#eff8ff"><div style="font-size:10px;font-weight:700;color:#008ece;text-transform:uppercase;letter-spacing:.03em">Bank</div><div style="font-size:13px;font-weight:800;color:#0f172a;margin-top:2px">Sh {{ qs.totBank }}</div></div>
                 <div style="border:1px solid #f6cdd5;border-radius:9px;padding:9px 11px;background:#fdf2f4"><div style="font-size:10px;font-weight:700;color:#e11d48;text-transform:uppercase;letter-spacing:.03em">Voda</div><div style="font-size:13px;font-weight:800;color:#0f172a;margin-top:2px">Sh {{ qs.totVoda }}</div></div>
-                <div style="border:1px solid #f0d98a;border-radius:9px;padding:9px 11px;background:#fdf8e7"><div style="font-size:10px;font-weight:700;color:#b8860b;text-transform:uppercase;letter-spacing:.03em">Yas</div><div style="font-size:13px;font-weight:800;color:#0f172a;margin-top:2px">Sh {{ qs.totYas }}</div></div>
+                <div style="border:1px solid #f0d98a;border-radius:9px;padding:9px 11px;background:#fdf8e7"><div style="font-size:10px;font-weight:700;color:#b8860b;text-transform:uppercase;letter-spacing:.03em">Yas</div><div style="font-size:13px;font-weight:800;color:#0f172a;margin-top:2px">Sh {{ qs.totYas }}</div></div><div style="border:1px solid #ddd0f5;border-radius:9px;padding:9px 11px;background:#f5f2fd"><div style="font-size:10px;font-weight:700;color:#8b5cf6;text-transform:uppercase;letter-spacing:.03em">Simu Pay</div><div style="font-size:13px;font-weight:800;color:#0f172a;margin-top:2px">Sh {{ qs.totSimu }}</div></div>
               </div>
             </div>
 
@@ -4470,7 +4470,7 @@ class Component extends DCLogic {
   state = {
     darkMode: false,
     botConfig: { businessName: 'Femmas Print', phone: '+255 658 843 344', email: 'femmasprint@gmail.com', address: 'Amani & Congo Street, Jangwani, Ilala — Dar es Salaam', greeting: 'Karibu! Mimi ni FemmasBot wa Femmas Print. Naweza kukusaidiaje leo — makadirio ya bei, ujumbe kwa mteja, au taarifa ya huduma zetu?', services: 'Printing, Branding, Graphic Design, Large Format, DTF, Embroidery, ID Cards, Banners', offerBusinessCards: '15,000', offerMug: '8,000', offerSabaSaba: '50,000' }, botSavedAt: '', botLeads: [],
-    qsPeriodOpen: false, period: 'This Month', periodOpen: false, screen: (function(){try{return localStorage.getItem('fp_screen')||'home';}catch(e){return 'home';}})(), customerIdx: 0, item: 6, openMenu: '', report: 'sale', setTab: 'transaction', multiPay: false, globalSearch: '', searchFocused: false, hiddenCards: [], customerSearch: '', hoverIdx: null,
+    qsPeriodOpen: false, period: 'This Month', periodOpen: false, screen: (function(){try{return sessionStorage.getItem('fp_screen')||'home';}catch(e){return 'home';}})(), customerIdx: 0, item: 6, openMenu: '', report: 'sale', setTab: 'transaction', multiPay: false, globalSearch: '', searchFocused: false, hiddenCards: [], customerSearch: '', hoverIdx: null,
     saleOpen: false, saleTitle: 'Sale', customerFormOpen: false, itemFormOpen: false, payInOpen: false, payInForm: { customer: '', amount: '', payMode: '', relType: '', relId: '', ref: '', notes: '' }, payInErr: '', contactsOpen: false, waOpen: false, toast: '', saleMode: 'credit', discountPct: 0, discountShManual: '', discountMode: 'pct', taxPct: 0, roundOff: true, received: false, receivedAmt: '',
     customer: '', customerOpen: false, paymentType: null, payTypeOpen: false, invFilter: 'all', invFilterOpen: false, unitOpenRow: null, cmdOpen: false, cmdQuery: '', itemTab: 'products', adjustOpen: false, adjustMode: 'add', adjustQty: '', widgets: [], widgetPickerOpen: false, selectedContacts: [], contactSource: 'gmail', storeCategory: 'All', storeStock: {},
     settingsChecks: [true,false,false,false,true,true,false,true,true,true,false,false,true,true,true,true,true,true,true,true,true,false,true,true,true,true,false,false,true,true,true,false,false,true,false,true],
@@ -4858,7 +4858,7 @@ class Component extends DCLogic {
         if (Array.isArray(r.expenses)) {
           const le = r.expenses.map(x => ({ client: x.Name || '', goods: x.Reason || '', qty: String(x.Qty || ''), price: String(x.UnitPrice || ''), _eid: x.ExpenseID || '' }));
           le.forEach(rw => { if (rw._eid) expDone[rw._eid] = rw.client + '|' + rw.goods + '|' + rw.qty + '|' + rw.price; });
-          if (le.length) expRows = [...le, { client: '', goods: '', qty: '', price: '' }];
+          if (le.length) { var _tpl = []; try { _tpl = (this.fpDailyExpTpl_() || []).map(function(x){ return { client: x.name, goods: 'Nauli', qty: '1', price: String(x.price==null?'':x.price) }; }); } catch(e){} var _have = {}; le.forEach(function(rw){ _have[String(rw.client||'').trim().toLowerCase()] = 1; }); var _miss = _tpl.filter(function(rw){ return rw.client && !_have[String(rw.client||'').trim().toLowerCase()]; }); expRows = [...le, ..._miss, { client: '', goods: '', qty: '', price: '' }]; }
         }
         this.setState({ qsSales: rows, qsSyncedIds: done, qsExpenses: expRows, qsExpSyncedIds: expDone, qsStatus: 'synced' });
       } else { this.setState({ qsStatus: '' }); }
@@ -6094,7 +6094,7 @@ class Component extends DCLogic {
     const mkNav = (name) => {
       const on = screen === name;
       return {
-        click: () => { try { localStorage.setItem('fp_screen', name); } catch (e) {} this.setState({ screen: name }); },
+        click: () => { try { sessionStorage.setItem('fp_screen', name); } catch (e) {} this.setState({ screen: name }); },
         style: 'display:flex;align-items:center;gap:11px;padding:9px 12px;border-radius:9px;font-size:13.5px;text-decoration:none;position:relative;cursor:pointer;' + (on ? 'font-weight:600;color:#ffffff;background:rgba(46,144,240,.22);' : 'font-weight:500;color:#c2d0e3;'),
         bar: 'position:absolute;left:-12px;top:50%;transform:translateY(-50%);width:3px;height:18px;border-radius:0 3px 3px 0;background:' + (on ? '#008ece' : 'transparent'),
         stroke: on ? '#5fb0f7' : '#8aa0c0'
@@ -6117,7 +6117,7 @@ class Component extends DCLogic {
     const mkSub = (name) => {
       const on = screen === name;
       return {
-        click: () => { try { localStorage.setItem('fp_screen', name); } catch (e) {} this.setState({ screen: name }); },
+        click: () => { try { sessionStorage.setItem('fp_screen', name); } catch (e) {} this.setState({ screen: name }); },
         style: 'display:block;padding:7px 12px 7px 41px;border-radius:8px;font-size:12.5px;text-decoration:none;cursor:pointer;' + (on ? 'font-weight:700;color:#ffffff;background:rgba(46,144,240,.22);' : 'font-weight:500;color:#9fb1cb;')
       };
     };
@@ -6288,7 +6288,7 @@ class Component extends DCLogic {
           rows: prows, hasRows: prows.length > 0, empty: prows.length === 0,
           isPayScreen: true,
           payPresetChips: [presetChipP('today', 'Today'), presetChipP('week', 'This Week'), presetChipP('month', 'This Month'), presetChipP('year', 'This Year'), presetChipP('all', 'All Time'), presetChipP('custom', 'Custom')],
-          payModeChipsF: ['All', 'Cash', 'Bank', 'Voda', 'Yas', 'Other'].map(m => chip(modeF, m, 'payModeFilter')),
+          payModeChipsF: ['All', 'Cash', 'Bank', 'Voda', 'Yas', 'Simu', 'Other'].map(m => chip(modeF, m, 'payModeFilter')),
           payRelChipsF: ['All', 'Advance', 'Sale', 'Order', 'Invoice', 'Other'].map(t => chip(relF, t, 'payRelFilter')),
           payIsCustom: preset === 'custom', payRangeStart: cs, payRangeEnd: ce,
           onPayRangeStart: (e) => this.setState({ payRangeStart: e.target.value }), onPayRangeEnd: (e) => this.setState({ payRangeEnd: e.target.value }),
@@ -7059,7 +7059,7 @@ class Component extends DCLogic {
       const bal = amount - paid;
       const clientFilled = !!(r.client || '').trim();
       const pm = r.payMode || 'Cash';
-      const pmColor = { Cash: '#16a34a', Bank: '#008ece', Voda: '#e11d48', Yas: '#e0a400' }[pm] || '#13315a';
+      const pmColor = { Cash: '#16a34a', Bank: '#008ece', Voda: '#e11d48', Yas: '#e0a400', Simu: '#8b5cf6' }[pm] || '#13315a';
       return {
         i, sno: i + 1, client: r.client, goods: r.goods, qty: r.qty, price: r.price, paid: r.paid,
         amount: qsMoney(amount), balance: qsMoney(bal),
@@ -7069,8 +7069,8 @@ class Component extends DCLogic {
         pmModeOpen: this.state.qsDD === ('pm' + i),
         pmToggle: () => this.qsToggleDD('pm' + i),
         pmBtnStyle: 'display:flex;align-items:center;justify-content:space-between;gap:4px;width:100%;border:1px solid ' + pmColor + '4d;border-radius:8px;padding:6px 9px;font-size:11.5px;font-weight:700;font-family:inherit;color:' + pmColor + ';background:' + pmColor + '14;cursor:pointer',
-        pmOptions: ['Cash', 'Bank', 'Voda', 'Yas'].map(mode => {
-          const c = { Cash: '#16a34a', Bank: '#008ece', Voda: '#e11d48', Yas: '#e0a400' }[mode];
+        pmOptions: ['Cash', 'Bank', 'Voda', 'Yas', 'Simu'].map(mode => {
+          const c = { Cash: '#16a34a', Bank: '#008ece', Voda: '#e11d48', Yas: '#e0a400', Simu: '#8b5cf6' }[mode];
           return { mode, color: c, active: pm === mode, pick: () => this.qsPickMode(i, mode) };
         }),
         clOpen: this.state.qsDD === ('cl' + i),
@@ -7137,7 +7137,7 @@ class Component extends DCLogic {
     const qsTotalExpenses = (this.state.qsExpenses || []).reduce((a, r) => a + qsNum(r.qty) * qsNum(r.price), 0);
     // per-mode totals are based on what was actually PAID, grouped by payment mode
     const qsModeTotal = (mode) => (this.state.qsSales || []).reduce((a, r) => a + ((r.payMode || 'Cash') === mode ? qsNum(r.paid) : 0), 0);
-    const qsTotVoda = qsModeTotal('Voda'), qsTotYas = qsModeTotal('Yas'), qsTotBank = qsModeTotal('Bank'), qsTotCash = qsModeTotal('Cash');
+    const qsTotVoda = qsModeTotal('Voda'), qsTotYas = qsModeTotal('Yas'), qsTotBank = qsModeTotal('Bank'), qsTotCash = qsModeTotal('Cash'), qsTotSimu = qsModeTotal('Simu');
     // physical cash drawer = cash collected − expenses (bank/voda/yas don't touch the drawer)
     const qsCashInHand = qsTotCash - qsTotalExpenses;
     // customer name list for autocomplete
@@ -7166,7 +7166,7 @@ class Component extends DCLogic {
       saleRows: qsSaleRows, expenseRows: qsExpenseRows,
       totalSales: qsMoney(qsTotalSales), totalExpenses: qsMoney(qsTotalExpenses),
       totalPaid: qsMoney(qsTotalPaid), cashInHand: qsMoney(qsCashInHand),
-      totVoda: qsMoney(qsTotVoda), totYas: qsMoney(qsTotYas), totBank: qsMoney(qsTotBank), totCash: qsMoney(qsTotCash),
+      totVoda: qsMoney(qsTotVoda), totYas: qsMoney(qsTotYas), totBank: qsMoney(qsTotBank), totCash: qsMoney(qsTotCash), totSimu: qsMoney(qsTotSimu), totSimu: qsMoney(qsTotSimu),
       salesCount: qsSalesCount, expCount: qsExpCount,
       cashColor: qsCashInHand > 0 ? '#16a34a' : (qsCashInHand < 0 ? '#e11d48' : '#94a3b8'),
       customerOptions: qsCustomerNodes,
@@ -7362,7 +7362,7 @@ class Component extends DCLogic {
       const waHref = ph ? ('https://wa.me/' + ph + '?text=' + encodeURIComponent('Heri ya siku ya kuzaliwa ' + (r.name || '') + '! Tunakutakia kila la kheri. Kutoka FEMMAS PRINT.')) : '';
       return { name: r.name, title: r.title || '', isToday: mmdd === bdayMMDD, when: diff === 0 ? 'LEO' : (diff === 1 ? 'Kesho' : ('Baada ya siku ' + diff)), waHref: waHref, hasWa: !!waHref };
     }).filter(Boolean).sort(function (a, b) { return (a.isToday ? -1 : 0) - (b.isToday ? -1 : 0); });
-    const payOnScreen = screen === 'payroll' || screen === 'quicksale';
+    const payOnScreen = false;
     const sidebarHidden = false;
     const asideStyle = 'width:248px;flex:none;background:#13315a;border-right:1px solid rgba(255,255,255,.06);display:flex;flex-direction:column;height:100vh;top:0;'
       + (payOnScreen
@@ -7883,7 +7883,7 @@ class Component extends DCLogic {
           rcSearchV: this.state.rcSearch || '', onRcSearch: (e) => this.setState({ rcSearch: e.target.value }),
           rcModeFilter: modeF, rcModeDropOpen: this.state.rcModeDropOpen,
           toggleRcModeDrop: () => this.setState(s => ({ rcModeDropOpen: !s.rcModeDropOpen, rcDropOpen: false, rcCalOpen: false })),
-          rcModeOptions: ['All', 'Cash', 'Bank', 'Voda', 'Yas', 'Other'].map(st => ({ label: st, pick: () => this.setState({ rcModeFilter: st, rcModeDropOpen: false }), style: 'padding:8px 12px;border-radius:8px;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap;' + (modeF === st ? 'background:#e9f3fe;color:#00578d' : 'color:#475569') })),
+          rcModeOptions: ['All', 'Cash', 'Bank', 'Voda', 'Yas', 'Simu', 'Other'].map(st => ({ label: st, pick: () => this.setState({ rcModeFilter: st, rcModeDropOpen: false }), style: 'padding:8px 12px;border-radius:8px;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap;' + (modeF === st ? 'background:#e9f3fe;color:#00578d' : 'color:#475569') })),
           openReceiptForm: this.openReceiptForm, closeReceiptForm: this.closeReceiptForm, saveReceipt: this.saveReceipt,
           receiptOpen: this.state.receiptOpen, receiptForm: this.state.receiptForm || {}, receiptErr: this.state.receiptErr || '',
           onReceiptCustomer: this.onReceiptField('customer'), capReceiptCustomer: this.capReceiptCustomer,
@@ -8036,7 +8036,7 @@ class Component extends DCLogic {
           purSearch: this.state.purSearch || '', onPurSearch: (e) => this.setState({ purSearch: e.target.value }),
           purModeFilter: modeF, purModeDropOpen: this.state.purModeDropOpen,
           togglePurModeDrop: () => this.setState(s => ({ purModeDropOpen: !s.purModeDropOpen, purDropOpen: false, purCalOpen: false })),
-          purModeOptions: ['All', 'Cash', 'Bank', 'Voda', 'Yas', 'Other'].map(m => ({ label: m, pick: () => this.setState({ purModeFilter: m, purModeDropOpen: false }), style: 'padding:8px 12px;border-radius:8px;font-size:12.5px;font-weight:700;cursor:pointer;' + (modeF === m ? 'background:#e9f3fe;color:#00578d' : 'color:#475569') }))
+          purModeOptions: ['All', 'Cash', 'Bank', 'Voda', 'Yas', 'Simu', 'Other'].map(m => ({ label: m, pick: () => this.setState({ purModeFilter: m, purModeDropOpen: false }), style: 'padding:8px 12px;border-radius:8px;font-size:12.5px;font-weight:700;cursor:pointer;' + (modeF === m ? 'background:#e9f3fe;color:#00578d' : 'color:#475569') }))
         };
       })(),
       openPaymentIn: this.openPayIn,
@@ -8101,7 +8101,7 @@ class Component extends DCLogic {
           expSearch: this.state.expSearch || '', onExpSearch: (e) => this.setState({ expSearch: e.target.value }),
           expModeFilter: modeF, expModeDropOpen: this.state.expModeDropOpen,
           toggleExpModeDrop: () => this.setState(s => ({ expModeDropOpen: !s.expModeDropOpen, expDropOpen: false, expCalOpen: false })),
-          expModeOptions: ['All', 'Cash', 'Bank', 'Voda', 'Yas', 'Other'].map(m => ({ label: m, pick: () => this.setState({ expModeFilter: m, expModeDropOpen: false }), style: 'padding:8px 12px;border-radius:8px;font-size:12.5px;font-weight:700;cursor:pointer;' + (modeF === m ? 'background:#e9f3fe;color:#00578d' : 'color:#475569') }))
+          expModeOptions: ['All', 'Cash', 'Bank', 'Voda', 'Yas', 'Simu', 'Other'].map(m => ({ label: m, pick: () => this.setState({ expModeFilter: m, expModeDropOpen: false }), style: 'padding:8px 12px;border-radius:8px;font-size:12.5px;font-weight:700;cursor:pointer;' + (modeF === m ? 'background:#e9f3fe;color:#00578d' : 'color:#475569') }))
         };
       })(),
       openProformaForm: () => this.openForm('Proforma Invoice'),
