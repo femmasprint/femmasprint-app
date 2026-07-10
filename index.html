@@ -8850,7 +8850,7 @@ class Component extends DCLogic {
     ['Transaction History','Historia ya Miamala']
   ];
   var toSW={},toEN={},i;
-  for(i=0;i<PAIRS.length;i++){ toSW[PAIRS[i][0]]=PAIRS[i][1]; toEN[PAIRS[i][1]]=PAIRS[i][0]; }
+  for(i=0;i<PAIRS.length;i++){ toSW[PAIRS[i][0]]=PAIRS[i][1]; toEN[PAIRS[i][1]]=PAIRS[i][0]; } toEN['Ongeza Mauzo']='Add Sale'; toEN['Ongeza Manunuzi']='Add Purchase'; toEN['Ongeza Bidhaa']='Add Item'; toEN['Bonus (hiari)']='Bonus (optional)';
   function lang(){ try{return localStorage.getItem('fp_lang')||'sw';}catch(e){return 'sw';} }
   function tr(map){
     try{
