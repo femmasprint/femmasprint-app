@@ -1,4 +1,4 @@
-/* FEMMAS PRINT — sidebar enhancer v2.2
+/* FEMMAS PRINT — sidebar enhancer v2.3
  * 1) fp logo (top) toggles collapse/expand (body.fp-rail).
  * 2) every nav item gets a tooltip (title); items without an icon get a fallback icon.
  * 3) the flat 25-item menu is grouped into a FEW main menus, each collapsible (accordion):
@@ -7,8 +7,9 @@
  *    Legacy section dividers are hidden STRUCTURALLY (any plain text-only nav label,
  *    in ANY language) so they stay hidden through re-renders and the i18n translation.
  * 4) collapsed (rail) shows ONLY 8 clean, meaningful icons: Home, Quick Sale + the 6 group icons.
- * v2.2: divider hiding is language-independent (fixes dividers reappearing after i18n
- *       translates them to Swahili); group + Home/Quick Sale matching handle SW & EN.
+ * v2.2: divider hiding is language-independent (fixes dividers reappearing after i18n).
+ * v2.3: anti-flicker — the menu stays hidden until it is grouped, so the flat list
+ *       never flashes on refresh; a 2.5s safety timeout guarantees it is revealed.
  */
 (function () {
   try {
@@ -31,7 +32,10 @@
       ' body.fp-rail .fp-grp-body{display:none !important}' +
       ' body.fp-rail aside nav > div:not(.fp-grp){display:none !important}' +
       ' body.fp-rail .fp-grp-hdr > span:not(.fp-gi){font-size:0 !important}' +
-      ' body.fp-rail .fp-grp-hdr .fp-chev{display:none !important}';
+      ' body.fp-rail .fp-grp-hdr .fp-chev{display:none !important}' +
+      /* anti-flicker: hide the menu until it is grouped, so the flat list never flashes */
+      ' aside nav:not(.fp-ready){opacity:0}' +
+      ' aside nav.fp-ready{opacity:1;transition:opacity .25s ease}';
     document.head.appendChild(css);
 
     var FALL = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8aa0c0" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>';
@@ -151,6 +155,7 @@
       });
 
       nav.setAttribute('data-fpgrouped', '1');
+      nav.classList.add('fp-ready'); /* reveal the (now grouped) menu */
     }
 
     function enhance() {
@@ -199,6 +204,12 @@
       var a = document.querySelector('aside');
       if (a) { try { new MutationObserver(function () { enhance(); }).observe(a, { childList: true, subtree: true }); } catch (e) {} }
       setInterval(enhance, 2000);
+      /* safety: never leave the menu hidden — reveal after a short max wait even if
+         grouping did not run (e.g. an unexpected nav structure). */
+      setTimeout(function () {
+        var n = document.querySelector('aside nav');
+        if (n) n.classList.add('fp-ready');
+      }, 2500);
     }
 
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
