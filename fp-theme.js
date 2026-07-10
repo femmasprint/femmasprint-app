@@ -1,11 +1,10 @@
-/* fp-theme.js — FemmasBot: professional Light / Dark / System theme control + a
- * language helper. The theme control drives the app's OWN toggle so the darkMode
- * state and html.fp-dark class stay in sync; persistent CSS darkens the app's light
- * surfaces so nothing can flash white on any re-render; and the saved language is
- * kept applied on a short cadence (killing the flash-of-English on reload AND
- * in-app navigation) plus a large supplementary Swahili dictionary for inner-page
- * labels (reports, filters, subtitles, column headers, forms, placeholders) the
- * app's own i18n misses. */
+/* fp-theme.js — FemmasBot: Light / Dark / System theme control + language helper.
+ * Drives the app's own toggle so darkMode state and the html.fp-dark class agree;
+ * persistent CSS darkens the app's light surfaces so nothing flashes white on any
+ * re-render; the CSS is injected the instant this (deferred) script runs — before the
+ * app mounts on a reload — so even the sidebar can't flash light for a frame; and the
+ * saved language is kept applied on a short cadence with a large supplementary Swahili
+ * dictionary for inner-page labels the app's own i18n misses. */
 (function () {
   var LS_MODE = 'fp_mode', LS_DARK = 'fp_dark';
   function get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
@@ -13,6 +12,9 @@
 
   var CSS =
     'html.fp-dark,html.fp-dark body{background:#0a0e1a !important}' +
+    /* Pin the sidebar to its dark colour so it can never flash light for a frame on a
+       dark-mode reload (its dark bg is a state-driven inline style that paints a beat late). */
+    'html.fp-dark aside{background:#13315a !important}' +
     'button[title*="Light / Dark"],button[title*="Mwanga / Giza"]{display:none !important}' +
     'html.fp-dark .fp-fd{background:#131a2b !important;background-color:#131a2b !important;' +
     'border-color:rgba(255,255,255,.07) !important;color:#e6edf7 !important}' +
@@ -36,6 +38,16 @@
     '.fp-theme button.on{background:#2e90f0;color:#fff;box-shadow:0 2px 6px rgba(46,144,240,.4)}' +
     '.fp-theme svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2;' +
     'stroke-linecap:round;stroke-linejoin:round}';
+
+  // Inject the theme CSS IMMEDIATELY (synchronously, the moment this deferred script
+  // executes — before the app mounts on a reload), not on DOMContentLoaded, so the dark
+  // rules (especially the sidebar) are in place before the first paint. No flash.
+  function injectCss() {
+    if (document.getElementById('fpThemeCss')) return;
+    var st = document.createElement('style'); st.id = 'fpThemeCss'; st.textContent = CSS;
+    (document.head || document.documentElement).appendChild(st);
+  }
+  injectCss();
 
   function icon(m) {
     if (m === 'light') return '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>';
@@ -164,11 +176,6 @@
     }, 60);
   }
 
-  // Supplementary Swahili for strings the app's main i18n dictionary misses across the
-  // inner pages (subtitles, filter chips, report names, column headers, form labels,
-  // placeholders). PHRASE_SW = distinctive multi-word substrings (longest first).
-  // EXACT_SW = short/ambiguous single words, replaced only when they are the WHOLE
-  // trimmed text node/placeholder, so "All" never corrupts "Small", etc.
   var PHRASE_SW = [
     ['Manage customer profiles and activity', 'Simamia wasifu na shughuli za wateja'],
     ['Create a sale or payment for this customer', 'Tengeneza mauzo au malipo kwa mteja huyu'],
@@ -251,7 +258,6 @@
         }
         if (nv !== v) n.nodeValue = nv;
       }
-      // placeholders are attributes, not text nodes — translate them too
       var ins = document.querySelectorAll('input[placeholder],textarea[placeholder]');
       for (var k = 0; k < ins.length; k++) {
         var p = ins[k].getAttribute('placeholder'); if (!p || p.length > 70) continue;
@@ -264,9 +270,6 @@
     } catch (e) {}
   }
 
-  // Keep the whole app in the saved language on a short cadence so navigating to a
-  // new page (whose fresh English DOM the app's slow 2.5s i18n pass would otherwise
-  // leave in English for a beat) is translated almost immediately.
   function keepLang() {
     var lang;
     try { lang = localStorage.getItem('fp_lang') || 'sw'; } catch (e) { lang = 'sw'; }
@@ -275,7 +278,7 @@
   }
 
   function boot() {
-    var st = document.createElement('style'); st.textContent = CSS; document.head.appendChild(st);
+    injectCss();
     initMode();
     build();
     fastLang();
