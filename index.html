@@ -4470,7 +4470,7 @@ class Component extends DCLogic {
   state = {
     darkMode: false,
     botConfig: { businessName: 'Femmas Print', phone: '+255 658 843 344', email: 'femmasprint@gmail.com', address: 'Amani & Congo Street, Jangwani, Ilala — Dar es Salaam', greeting: 'Karibu! Mimi ni FemmasBot wa Femmas Print. Naweza kukusaidiaje leo — makadirio ya bei, ujumbe kwa mteja, au taarifa ya huduma zetu?', services: 'Printing, Branding, Graphic Design, Large Format, DTF, Embroidery, ID Cards, Banners', offerBusinessCards: '15,000', offerMug: '8,000', offerSabaSaba: '50,000' }, botSavedAt: '', botLeads: [],
-    qsPeriodOpen: false, period: 'This Month', periodOpen: false, screen: 'home', customerIdx: 0, item: 6, openMenu: '', report: 'sale', setTab: 'transaction', multiPay: false, globalSearch: '', searchFocused: false, hiddenCards: [], customerSearch: '', hoverIdx: null,
+    qsPeriodOpen: false, period: 'This Month', periodOpen: false, screen: (function(){try{return localStorage.getItem('fp_screen')||'home';}catch(e){return 'home';}})(), customerIdx: 0, item: 6, openMenu: '', report: 'sale', setTab: 'transaction', multiPay: false, globalSearch: '', searchFocused: false, hiddenCards: [], customerSearch: '', hoverIdx: null,
     saleOpen: false, saleTitle: 'Sale', customerFormOpen: false, itemFormOpen: false, payInOpen: false, payInForm: { customer: '', amount: '', payMode: '', relType: '', relId: '', ref: '', notes: '' }, payInErr: '', contactsOpen: false, waOpen: false, toast: '', saleMode: 'credit', discountPct: 0, discountShManual: '', discountMode: 'pct', taxPct: 0, roundOff: true, received: false, receivedAmt: '',
     customer: '', customerOpen: false, paymentType: null, payTypeOpen: false, invFilter: 'all', invFilterOpen: false, unitOpenRow: null, cmdOpen: false, cmdQuery: '', itemTab: 'products', adjustOpen: false, adjustMode: 'add', adjustQty: '', widgets: [], widgetPickerOpen: false, selectedContacts: [], contactSource: 'gmail', storeCategory: 'All', storeStock: {},
     settingsChecks: [true,false,false,false,true,true,false,true,true,true,false,false,true,true,true,true,true,true,true,true,true,false,true,true,true,true,false,false,true,true,true,false,false,true,false,true],
@@ -6094,7 +6094,7 @@ class Component extends DCLogic {
     const mkNav = (name) => {
       const on = screen === name;
       return {
-        click: () => this.setState({ screen: name }),
+        click: () => { try { localStorage.setItem('fp_screen', name); } catch (e) {} this.setState({ screen: name }); },
         style: 'display:flex;align-items:center;gap:11px;padding:9px 12px;border-radius:9px;font-size:13.5px;text-decoration:none;position:relative;cursor:pointer;' + (on ? 'font-weight:600;color:#ffffff;background:rgba(46,144,240,.22);' : 'font-weight:500;color:#c2d0e3;'),
         bar: 'position:absolute;left:-12px;top:50%;transform:translateY(-50%);width:3px;height:18px;border-radius:0 3px 3px 0;background:' + (on ? '#008ece' : 'transparent'),
         stroke: on ? '#5fb0f7' : '#8aa0c0'
@@ -6117,7 +6117,7 @@ class Component extends DCLogic {
     const mkSub = (name) => {
       const on = screen === name;
       return {
-        click: () => this.setState({ screen: name }),
+        click: () => { try { localStorage.setItem('fp_screen', name); } catch (e) {} this.setState({ screen: name }); },
         style: 'display:block;padding:7px 12px 7px 41px;border-radius:8px;font-size:12.5px;text-decoration:none;cursor:pointer;' + (on ? 'font-weight:700;color:#ffffff;background:rgba(46,144,240,.22);' : 'font-weight:500;color:#9fb1cb;')
       };
     };
@@ -7363,7 +7363,7 @@ class Component extends DCLogic {
       return { name: r.name, title: r.title || '', isToday: mmdd === bdayMMDD, when: diff === 0 ? 'LEO' : (diff === 1 ? 'Kesho' : ('Baada ya siku ' + diff)), waHref: waHref, hasWa: !!waHref };
     }).filter(Boolean).sort(function (a, b) { return (a.isToday ? -1 : 0) - (b.isToday ? -1 : 0); });
     const payOnScreen = screen === 'payroll' || screen === 'quicksale';
-    const sidebarHidden = payOnScreen && !this.state.sidebarPeek;
+    const sidebarHidden = false;
     const asideStyle = 'width:248px;flex:none;background:#13315a;border-right:1px solid rgba(255,255,255,.06);display:flex;flex-direction:column;height:100vh;top:0;'
       + (payOnScreen
           ? 'position:fixed;left:0;z-index:60;transition:transform .25s ease;box-shadow:6px 0 30px rgba(0,0,0,.28);transform:translateX(' + (this.state.sidebarPeek ? '0' : '-100%') + ');'
