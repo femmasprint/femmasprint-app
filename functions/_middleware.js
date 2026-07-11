@@ -41,7 +41,10 @@ var HEAD_CSS =
   '  main header button[title*="Chapa"],main header button[title*="Print"]{display:none !important}' +
   // WhatsApp/contact strip: on desktop a flex:1 spacer pushes the address to the right; on
   // phones that spacer just leaves the right half empty. Drop it so the info fills the width.
-  '  div[data-topbanner="1"]{gap:4px 12px !important;row-gap:3px !important;padding:7px 14px 7px 58px !important;align-items:center !important}' +
+  // Extra left padding keeps the fp logo clear of the floating menu (burger) button so they
+  // don't touch/merge; the logo also gets a little breathing room.
+  '  div[data-topbanner="1"]{gap:4px 10px !important;row-gap:3px !important;padding:8px 16px 8px 68px !important;align-items:center !important;justify-content:flex-start !important}' +
+  '  div[data-topbanner="1"]>img{margin-right:4px !important}' +
   '  div[data-topbanner="1"]>div:empty{display:none !important}' +
   // Quick Sale card: logo + title stay on one row; the toolbar icons stay on one line AND
   // FIT inside the card (tight gap + smaller button padding, no cut-off, no scroll).
