@@ -39,12 +39,13 @@ var HEAD_CSS =
   '  .fp-theme{gap:1px !important;padding:2px !important}' +
   '  .fp-theme button:nth-child(3){display:none !important}' +
   '  main header button[title*="Chapa"],main header button[title*="Print"]{display:none !important}' +
-  // Quick Sale card: logo + title stay on one row; the toolbar icons stay on one line.
+  // Quick Sale card: logo + title stay on one row; the toolbar icons stay on one line AND
+  // FIT inside the card (tight gap + smaller button padding, no cut-off, no scroll).
   '  main div[style*="linear-gradient"] div[style*="gap: 14px"]{flex-wrap:nowrap !important;min-width:0 !important}' +
   '  main div[style*="linear-gradient"] div[style*="gap: 14px"]>div{min-width:0 !important}' +
-  '  main div[style*="linear-gradient"] div[style*="gap: 10px"]{flex-wrap:nowrap !important;gap:6px !important;overflow-x:auto !important;scrollbar-width:none}' +
-  '  main div[style*="linear-gradient"] div[style*="gap: 10px"]::-webkit-scrollbar{display:none}' +
-  '  main div[style*="linear-gradient"] div[style*="gap: 10px"]>*{flex:none !important}' +
+  '  main div[style*="linear-gradient"] div[style*="gap: 10px"]{flex-wrap:nowrap !important;gap:4px !important;overflow:hidden !important}' +
+  '  main div[style*="linear-gradient"] div[style*="gap: 10px"]>*{flex:0 0 auto !important}' +
+  '  main div[style*="linear-gradient"] div[style*="gap: 10px"] button,main div[style*="linear-gradient"] div[style*="gap: 10px"] label{padding:6px !important}' +
   '  html,body{overflow-x:hidden !important;max-width:100vw}' +
   '  aside{position:fixed !important;left:0 !important;top:0 !important;bottom:0 !important;height:100vh !important;' +
   'z-index:1002 !important;width:274px !important;max-width:84vw;transform:translateX(-100%) !important;' +
