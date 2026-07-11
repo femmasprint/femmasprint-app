@@ -30,9 +30,14 @@ var HEAD_CSS =
   '  main{width:100% !important;min-width:0 !important;overflow-x:hidden !important}' +
   '  main header{flex-wrap:wrap !important;height:auto !important;row-gap:8px !important;' +
   'padding-left:56px !important;align-items:center}' +
+  // stack any 2-col (or wider) grid into a single column: Quick Sale Sales/Expenses
+  // panels, dashboard card grids, accounting tiles, etc. This is the key fix so you no
+  // longer scroll the page sideways to move between Sales and Expenses.
+  '  main div[style*="grid-template-columns"]{grid-template-columns:1fr !important}' +
   '  main div[style*="width:"]{max-width:100% !important}' +
   '  main div[style*="flex"]{flex-wrap:wrap !important}' +
-  '  main table{max-width:100% !important}' +
+  // wide data tables scroll INSIDE their own panel instead of pushing the page wide
+  '  main table{display:block !important;overflow-x:auto !important;max-width:100% !important;-webkit-overflow-scrolling:touch}' +
   '  .fp-burger{display:flex !important}' +
   '  .fp-nav-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:2147481000}' +
   '  body.fp-nav-open .fp-nav-backdrop{display:block}' +
