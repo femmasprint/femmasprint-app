@@ -39,11 +39,11 @@ var HEAD_CSS =
   '  .fp-theme{gap:1px !important;padding:2px !important}' +
   '  .fp-theme button:nth-child(3){display:none !important}' +
   '  main header button[title*="Chapa"],main header button[title*="Print"]{display:none !important}' +
-  // WhatsApp/contact strip: on desktop a flex:1 spacer pushes the address to the right; on
-  // phones that spacer just leaves the right half empty. Drop it so the info fills the width.
-  // Extra left padding keeps the fp logo clear of the floating menu (burger) button so they
-  // don't touch/merge; the logo also gets a little breathing room.
-  '  div[data-topbanner="1"]{gap:4px 10px !important;row-gap:3px !important;padding:8px 16px 8px 68px !important;align-items:center !important;justify-content:flex-start !important}' +
+  // WhatsApp/contact strip: drop the desktop flex spacer so the info fills the width; extra
+  // left padding keeps the fp logo clear of the floating menu (burger) button; and force a
+  // full symmetric width — the app's negative margins + max-width:100% otherwise left the
+  // blue strip ~20px short on the right (a black gutter, very visible in dark mode).
+  '  div[data-topbanner="1"]{gap:4px 10px !important;row-gap:3px !important;padding:8px 16px 8px 68px !important;align-items:center !important;justify-content:flex-start !important;margin-left:0 !important;margin-right:0 !important;width:100% !important;max-width:none !important;box-sizing:border-box !important}' +
   '  div[data-topbanner="1"]>img{margin-right:4px !important}' +
   '  div[data-topbanner="1"]>div:empty{display:none !important}' +
   // Quick Sale card: logo + title stay on one row; the toolbar icons stay on one line AND
