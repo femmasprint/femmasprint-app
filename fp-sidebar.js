@@ -1,8 +1,8 @@
-/* FEMMAS PRINT — sidebar v8 (safe minimal + FP-branded mobile drawer toggle).
+/* FEMMAS PRINT — sidebar v9 (safe minimal + hamburger mobile drawer toggle).
  *
  * Never moves/removes an app node (that crashes React). It adds: tooltips, a fallback
  * icon where the app left none, clear section headings, full-width rows, a compact Arifa
- * card, and — for phones/tablets — an "fp"-branded button that opens the sidebar as a
+ * card, and — for phones/tablets — a hamburger button that opens the sidebar as a
  * drawer, plus a click on the app's own fp logo (inside the drawer) to close it. The
  * responsive CSS lives in the edge <head> injection; this only adds the button/backdrop
  * and toggles a body class. */
@@ -17,6 +17,7 @@
     document.head.appendChild(css);
 
     var FALL = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8aa0c0" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="1.6" fill="#8aa0c0" stroke="none"/></svg>';
+    var BURGER = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"></line><line x1="4" y1="12" x2="20" y2="12"></line><line x1="4" y1="17" x2="20" y2="17"></line></svg>';
 
     function looksLikeHeading(el) {
       if (!el || el.nodeType !== 1) return false;
@@ -29,13 +30,13 @@
 
     function toggleNav(e) { if (e) { e.preventDefault(); e.stopPropagation(); } document.body.classList.toggle('fp-nav-open'); }
 
-    // Mobile drawer: our own "fp"-branded button opens it; the app's own fp logo (inside
+    // Mobile drawer: our own hamburger button opens it; the app's own fp logo (inside
     // the drawer) closes it; a backdrop and any nav-link tap also close it. All additive.
     function addMobileNav(aside) {
       if (!document.querySelector('.fp-burger')) {
         var b = document.createElement('button');
         b.className = 'fp-burger'; b.setAttribute('aria-label', 'Menu'); b.type = 'button';
-        b.innerHTML = '<span style="font-weight:700;font-size:15px;letter-spacing:-.5px">fp</span>';
+        b.innerHTML = BURGER;
         var bd = document.createElement('div'); bd.className = 'fp-nav-backdrop';
         b.addEventListener('click', toggleNav);
         bd.addEventListener('click', function () { document.body.classList.remove('fp-nav-open'); });
