@@ -8945,6 +8945,15 @@ class Component extends DCLogic {
   }
   var engaged=false;
   setInterval(function(){ if(isDark()){ if(!engaged){engaged=true;on();} } else if(engaged){ engaged=false; off(); } }, 2500);
+  /* INSTANT SYNC: the app's own toggle flips html.fp-dark immediately, but the per-element
+     dark styling used to wait for the 2.5s interval — that gap showed a torn frame (e.g. a
+     dark header on an already-light page). Watch the class and engage/disengage in the SAME
+     microtask (before paint) so the switch is atomic — no flicker on toggle OR refresh. */
+  try{
+    var _clsSync=function(){ var d=document.documentElement.classList.contains('fp-dark');
+      if(d){ if(!engaged){ engaged=true; on(); } } else if(engaged){ engaged=false; off(); } };
+    new MutationObserver(_clsSync).observe(document.documentElement,{attributes:true,attributeFilter:['class']});
+  }catch(e){}
   function fpBoot(){ if(isDark()){ if(!engaged){ engaged=true; on(); } } }
   fpBoot();
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',fpBoot);
