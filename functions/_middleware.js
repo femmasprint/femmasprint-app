@@ -29,18 +29,18 @@ var HEAD_CSS =
   'border:1px solid rgba(255,255,255,.18);cursor:pointer;box-shadow:0 3px 12px rgba(0,0,0,.35)}' +
   ' .fp-nav-backdrop{display:none}' +
   ' @media(max-width:900px){' +
-  // compact header controls so the short CTAs + language + theme + print + avatar fit one row
   '  main header{gap:3px !important;column-gap:3px !important}' +
   '  main header button{padding:6px 7px !important;font-size:12px !important;font-weight:600 !important;' +
   'gap:4px !important;min-height:34px}' +
   '  main header button svg{width:14px !important;height:14px !important}' +
   '  #fpLangTop{padding:0 8px !important;min-width:34px !important}' +
-  // theme control (Light/Dark/System) -> drop the System icon on small screens, tighten
   '  .fp-theme{gap:1px !important;padding:2px !important}' +
   '  .fp-theme button:nth-child(3){display:none !important}' +
   ' }' +
   ' @media(max-width:820px){' +
   '  html,body{overflow-x:hidden !important;max-width:100vw}' +
+  // print button rarely used on a phone — hide it so the CTAs + lang + theme + avatar fit one row
+  '  main header button[title*="Chapa"],main header button[title*="Print"]{display:none !important}' +
   '  aside{position:fixed !important;left:0 !important;top:0 !important;bottom:0 !important;height:100vh !important;' +
   'z-index:1002 !important;width:274px !important;max-width:84vw;transform:translateX(-100%) !important;' +
   'transition:transform .26s ease !important;box-shadow:2px 0 26px rgba(0,0,0,.55);overflow-y:auto;overflow-x:hidden}' +
