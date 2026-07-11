@@ -1,26 +1,39 @@
-/* Cloudflare Pages Function middleware — dark theme + sidebar polish, injected into the
- * page <head> at the EDGE so it is in the document BEFORE the browser's first paint
- * (no flash, no reflow) and applies to the app's OWN native menu without moving or
- * removing any node (so it can never crash the React app).
+/* Cloudflare Pages Function middleware — dark theme, sidebar polish, and RESPONSIVE
+ * (phone/tablet) layout, injected into the page <head> at the EDGE so it applies before
+ * the browser's first paint (no flash, no reflow) and never moves/removes an app node
+ * (so it can't crash the React app).
  *
  * Fully defensive: only HTML responses are touched, and ANY error falls straight
  * through to the original, unmodified response — it can never break the site. */
 
 var HEAD_CSS =
-  // Sidebar LAYOUT — full-width rows + compact Arifa card, from the first paint.
   ' aside nav a{display:flex !important;align-items:center;width:100% !important;box-sizing:border-box}' +
   ' aside>nav~*>div>div:nth-of-type(2){display:none !important}' +
-  // Dark colours — sidebar + backdrop dark from the first frame.
   ' html.fp-dark,html.fp-dark body{background:#0a0e1a !important}' +
   ' html.fp-dark aside{background:#13315a !important}' +
-  // COOL POLISH — a smooth blue hover, brighter icons, and a soft left accent on hover,
-  // applied to the app's native menu items (no restructuring, purely visual).
   ' aside nav a{position:relative;transition:background .16s ease,color .16s ease !important}' +
   ' aside nav a:hover{background:rgba(46,144,240,.14) !important;color:#fff !important}' +
   ' aside nav a svg,aside nav a i{transition:color .16s,stroke .16s,opacity .16s}' +
   ' aside nav a:hover svg,aside nav a:hover i{color:#fff !important;stroke:#fff !important;opacity:1 !important}' +
   ' aside nav a::before{content:"";position:absolute;left:1px;top:9px;bottom:9px;width:3px;border-radius:3px;background:transparent;transition:background .16s ease}' +
-  ' aside nav a:hover::before{background:#2e90f0}';
+  ' aside nav a:hover::before{background:#2e90f0}' +
+  // ===== RESPONSIVE: phone & small tablet =====
+  // Hamburger button (added by fp-sidebar.js) — hidden on desktop, shown on small screens.
+  ' .fp-burger{display:none;position:fixed;top:10px;left:10px;z-index:1300;width:40px;height:40px;' +
+  'border-radius:11px;background:#13315a;color:#fff;align-items:center;justify-content:center;' +
+  'border:1px solid rgba(255,255,255,.16);cursor:pointer;box-shadow:0 3px 12px rgba(0,0,0,.35)}' +
+  ' .fp-nav-backdrop{display:none}' +
+  ' @media(max-width:820px){' +
+  '  aside{position:fixed !important;left:0;top:0;bottom:0;height:100vh !important;z-index:1200 !important;' +
+  'width:274px !important;max-width:84vw;transform:translateX(-100%);transition:transform .26s ease;' +
+  'box-shadow:2px 0 26px rgba(0,0,0,.55);overflow-y:auto;overflow-x:hidden}' +
+  '  body.fp-nav-open aside{transform:translateX(0)}' +
+  '  main{width:100% !important;min-width:0 !important}' +
+  '  main > *:first-child{padding-left:54px !important}' +
+  '  .fp-burger{display:flex !important}' +
+  '  .fp-nav-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1150}' +
+  '  body.fp-nav-open .fp-nav-backdrop{display:block}' +
+  ' }';
 
 export async function onRequest(context) {
   const response = await context.next();
