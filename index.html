@@ -8875,7 +8875,7 @@ class Component extends DCLogic {
   function setLang(l){ try{localStorage.setItem('fp_lang',l);}catch(e){} apply(); }
   window.FPSetLang=setLang;
   function injectToggle(){
-    var themeBtn=document.querySelector('button[title="Light / Dark mode"]'); if(!themeBtn||!themeBtn.parentNode) return;
+    var themeBtn=document.querySelector('button[title="Light / Dark mode"],button[title="Mwanga / Giza"]'); if(!themeBtn||!themeBtn.parentNode) return;
     if(document.getElementById('fpLangTop')) return;
     var box=document.createElement('div'); box.id='fpLangTop';
     box.setAttribute('style','display:flex;gap:3px;padding:3px;background:#eef2f7;border:1px solid #e3e6eb;border-radius:11px;height:40px;box-sizing:border-box;align-items:center;flex:none;margin-right:2px');
