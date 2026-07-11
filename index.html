@@ -8927,7 +8927,7 @@ class Component extends DCLogic {
   var _pend=[], _ft=null;
   function _flush(){ _ft=null; var arr=_pend; _pend=[]; for(var i=0;i<arr.length;i++) walk(arr[i]); }
   function on(){ document.documentElement.style.setProperty('background','#0a0e1a','important'); document.body.style.setProperty('background','#0a0e1a','important'); walk(document.body);
-    if(!obs){ obs=new MutationObserver(function(muts){ if(!isDark())return; for(var j=0;j<muts.length;j++){ var a=muts[j].addedNodes; for(var i=0;i<a.length;i++){ if(a[i].nodeType===1)_pend.push(a[i]); } } if(!_ft&&_pend.length)_ft=setTimeout(_flush,250); }); obs.observe(document.body,{childList:true,subtree:true}); } }
+    if(!obs){ obs=new MutationObserver(function(muts){ if(!isDark())return; for(var j=0;j<muts.length;j++){ var a=muts[j].addedNodes; for(var i=0;i<a.length;i++){ if(a[i].nodeType===1)_pend.push(a[i]); } } if(!_ft&&_pend.length)_ft=setTimeout(_flush,30); }); obs.observe(document.body,{childList:true,subtree:true}); } }
   function off(){ if(obs){obs.disconnect();obs=null;} document.documentElement.style.background=''; document.body.style.background=''; restore(document.body); }
   function isDark(){ try{return localStorage.getItem('fp_dark')==='1';}catch(e){return false;} }
   function setDark(v){ try{localStorage.setItem('fp_dark',v?'1':'0');}catch(e){} if(v)on(); else off(); paint(); }
@@ -8950,8 +8950,14 @@ class Component extends DCLogic {
      dark header on an already-light page). Watch the class and engage/disengage in the SAME
      microtask (before paint) so the switch is atomic — no flicker on toggle OR refresh. */
   try{
-    var _clsSync=function(){ var d=document.documentElement.classList.contains('fp-dark');
-      if(d){ if(!engaged){ engaged=true; on(); } } else if(engaged){ engaged=false; off(); } };
+    var _clsSync=function(){ var dk=document.documentElement.classList.contains('fp-dark');
+      if(dk){ if(!engaged){ engaged=true; on(); }
+        /* Switching to dark: the app re-renders the content right after the toggle, which
+           resets inline styles back to light. Re-walk on the next frames so those surfaces
+           darken immediately instead of sweeping in over ~0.4s. */
+        requestAnimationFrame(function(){ if(document.documentElement.classList.contains('fp-dark')) walk(document.body); });
+        setTimeout(function(){ if(document.documentElement.classList.contains('fp-dark')) walk(document.body); }, 70);
+      } else if(engaged){ engaged=false; off(); } };
     new MutationObserver(_clsSync).observe(document.documentElement,{attributes:true,attributeFilter:['class']});
   }catch(e){}
   function fpBoot(){ if(isDark()){ if(!engaged){ engaged=true; on(); } } }
