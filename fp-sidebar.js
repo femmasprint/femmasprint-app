@@ -1,10 +1,11 @@
-/* FEMMAS PRINT — sidebar v7 (safe minimal + mobile drawer toggle).
+/* FEMMAS PRINT — sidebar v8 (safe minimal + FP-branded mobile drawer toggle).
  *
- * Never moves or removes an app node (moving React's menu nodes crashes the app). It
- * only: tooltips, a fallback icon where the app left none, clear section headings,
- * full-width rows, a compact Arifa card, AND — for phones/tablets — a hamburger button
- * that slides the native sidebar in/out as a drawer (the responsive CSS lives in the
- * edge <head> injection; this just adds the button + backdrop and toggles a body class). */
+ * Never moves/removes an app node (that crashes React). It adds: tooltips, a fallback
+ * icon where the app left none, clear section headings, full-width rows, a compact Arifa
+ * card, and — for phones/tablets — an "fp"-branded button that opens the sidebar as a
+ * drawer, plus a click on the app's own fp logo (inside the drawer) to close it. The
+ * responsive CSS lives in the edge <head> injection; this only adds the button/backdrop
+ * and toggles a body class. */
 (function () {
   try {
     var css = document.createElement('style');
@@ -26,28 +27,38 @@
       return tx.length >= 2 && tx.length <= 26;
     }
 
-    // Mobile drawer: add our own hamburger + backdrop, toggle body.fp-nav-open. All new
-    // elements are ours — nothing of the app's is touched, so it can never crash it.
-    function addMobileNav() {
-      if (document.querySelector('.fp-burger')) return;
-      var b = document.createElement('button');
-      b.className = 'fp-burger'; b.setAttribute('aria-label', 'Menu'); b.type = 'button';
-      b.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>';
-      var bd = document.createElement('div'); bd.className = 'fp-nav-backdrop';
-      b.addEventListener('click', function (e) { e.stopPropagation(); document.body.classList.toggle('fp-nav-open'); });
-      bd.addEventListener('click', function () { document.body.classList.remove('fp-nav-open'); });
-      document.addEventListener('click', function (e) {
-        var a = e.target && e.target.closest && e.target.closest('aside nav a');
-        if (a) document.body.classList.remove('fp-nav-open');
-      });
-      document.body.appendChild(bd);
-      document.body.appendChild(b);
+    function toggleNav(e) { if (e) { e.preventDefault(); e.stopPropagation(); } document.body.classList.toggle('fp-nav-open'); }
+
+    // Mobile drawer: our own "fp"-branded button opens it; the app's own fp logo (inside
+    // the drawer) closes it; a backdrop and any nav-link tap also close it. All additive.
+    function addMobileNav(aside) {
+      if (!document.querySelector('.fp-burger')) {
+        var b = document.createElement('button');
+        b.className = 'fp-burger'; b.setAttribute('aria-label', 'Menu'); b.type = 'button';
+        b.innerHTML = '<span style="font-weight:700;font-size:15px;letter-spacing:-.5px">fp</span>';
+        var bd = document.createElement('div'); bd.className = 'fp-nav-backdrop';
+        b.addEventListener('click', toggleNav);
+        bd.addEventListener('click', function () { document.body.classList.remove('fp-nav-open'); });
+        document.addEventListener('click', function (e) {
+          var a = e.target && e.target.closest && e.target.closest('aside nav a');
+          if (a) document.body.classList.remove('fp-nav-open');
+        });
+        document.body.appendChild(bd);
+        document.body.appendChild(b);
+      }
+      // make the app's own fp logo close the drawer when tapped (no node moved)
+      var img = aside.querySelector('img');
+      var logo = img ? (img.parentElement) : null;
+      if (logo && !logo.__fpTog) {
+        logo.__fpTog = 1; logo.style.cursor = 'pointer';
+        logo.addEventListener('click', function () { document.body.classList.remove('fp-nav-open'); });
+      }
     }
 
     function enhance() {
       var aside = document.querySelector('aside');
       if (!aside) return;
-      addMobileNav();
+      addMobileNav(aside);
       var items = aside.querySelectorAll('nav a, nav button');
       for (var i = 0; i < items.length; i++) {
         var el = items[i];
