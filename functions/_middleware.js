@@ -38,11 +38,14 @@ var HEAD_CSS =
   '  main header{flex-wrap:wrap !important;height:auto !important;row-gap:8px !important;' +
   'padding-left:56px !important;align-items:center}' +
   // Quick Sale Sales/Expenses (auto-fit minmax(330px..)) becomes a horizontal SWIPE PAGER.
+  // Each panel is 88% wide so the NEXT panel peeks at the edge (a built-in "swipe me" hint),
+  // and capped in height so a short Sales panel doesn't leave a big empty gap before the
+  // summary below (the taller Expenses panel just scrolls internally).
   '  main div[style*="minmax(330px"]{display:flex !important;overflow-x:auto !important;' +
   'scroll-snap-type:x mandatory;gap:12px !important;scrollbar-width:none}' +
   '  main div[style*="minmax(330px"]::-webkit-scrollbar{display:none}' +
-  '  main div[style*="minmax(330px"]>div{flex:0 0 100% !important;scroll-snap-align:start;' +
-  'min-width:0 !important;overflow-x:auto !important;-webkit-overflow-scrolling:touch}' +
+  '  main div[style*="minmax(330px"]>div{flex:0 0 88% !important;scroll-snap-align:start;' +
+  'min-width:0 !important;max-height:64vh !important;overflow:auto !important;-webkit-overflow-scrolling:touch}' +
   // 5 payment tiles (Cash/Bank/Voda/Yas/Simu) -> one compact flex row.
   '  main div[style*="repeat(5"]{display:flex !important;gap:4px !important;flex-wrap:nowrap !important}' +
   '  main div[style*="repeat(5"]>div{flex:1 1 0 !important;min-width:0 !important;padding:5px 4px !important;overflow:hidden}' +
