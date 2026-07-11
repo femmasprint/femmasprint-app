@@ -21,7 +21,6 @@ var HEAD_CSS =
   ' aside nav a:hover svg,aside nav a:hover i{color:#fff !important;stroke:#fff !important;opacity:1 !important}' +
   ' aside nav a::before{content:"";position:absolute;left:1px;top:9px;bottom:9px;width:3px;border-radius:3px;background:transparent;transition:background .16s ease}' +
   ' aside nav a:hover::before{background:#2e90f0}' +
-  // Hide the app's flickery 2-pill SW/EN toggle; we replace it with a single button (#fpLang1).
   ' #fpLangTop{display:none !important}' +
   ' #fpLang1{flex:none !important}' +
   ' #fp-dots{display:none}' +
@@ -30,6 +29,12 @@ var HEAD_CSS =
   'border-radius:11px;background:#13315a;color:#fff;align-items:center;justify-content:center;' +
   'border:1px solid rgba(255,255,255,.18);cursor:pointer;box-shadow:0 3px 12px rgba(0,0,0,.35)}' +
   ' .fp-nav-backdrop{display:none}' +
+  ' @media(max-width:900px){' +
+  // compact header buttons (Add Sale/Purchase, theme, print) so they take less width
+  '  main header button{padding:7px 11px !important;font-size:12px !important;font-weight:600 !important;' +
+  'gap:5px !important;min-height:36px}' +
+  '  main header button svg{width:14px !important;height:14px !important}' +
+  ' }' +
   ' @media(max-width:820px){' +
   '  html,body{overflow-x:hidden !important;max-width:100vw}' +
   '  aside{position:fixed !important;left:0 !important;top:0 !important;bottom:0 !important;height:100vh !important;' +
