@@ -4918,7 +4918,7 @@ class Component extends DCLogic {
     try { this._staffTip = this.staffTips()[Math.floor(Math.random() * this.staffTips().length)]; } catch (e) {}
     try { const d = localStorage.getItem('fp_dark'); if (d === '1') { this.setState({ darkMode: true }); document.documentElement.classList.add('fp-dark'); } } catch (e) {}
     try { const saved = localStorage.getItem('fp_user_photo'); if (saved) this.setState({ userPhoto: saved }); } catch (e) {}
-    try { const burl = localStorage.getItem('fp_backend_url'); if (burl) { this.setState({ backendUrl: burl, syncStatus: 'saved', backendConnected: /\/exec$/.test(burl.trim()) }); setTimeout(() => this.loadTodaySales(), 400); this.startBotPolling(); this.startSyncPoll_(); } } catch (e) {}
+    try { const burl = localStorage.getItem('fp_backend_url'); if (burl) { this.setState({ backendUrl: burl, syncStatus: 'saved', backendConnected: /\/exec$/.test(burl.trim()) }); setTimeout(() => this.loadTodaySales(), 400); this.startBotPolling(); this.startSyncPoll_(); this.loadAdminPhotoCloud_(); } } catch (e) {}
     try { const sc = localStorage.getItem('fp_saved_customers'); if (sc) { const arr = JSON.parse(sc); if (Array.isArray(arr) && arr.length) this.setState({ savedCustomers: arr }, () => this.runCustomerAudit_(false)); } } catch (e) {}
     // restore Quick Sale + saved documents from browser so a page refresh keeps them on screen
     try {
@@ -5217,6 +5217,27 @@ class Component extends DCLogic {
     this.backendPost_({ action: 'saveBotConfig', config: cfg })
       .then(() => this.showToast('✓ FemmasBot settings saved to Google Sheet'))
       .catch(e => { console.error('Bot config save failed', e); this.showToast('Could not save settings — check Sync'); });
+  };
+  // Admin profile photo — saved to the cloud (Google Sheet) so it shows on EVERY device,
+  // not just the one it was uploaded on. Photo is compressed to ~128px before sending.
+  // Uses the backend's existing generic saveRow / getTable (a dedicated "FP_Settings" tab)
+  // so NO backend changes are needed.
+  saveAdminPhotoCloud_ = (durl) => {
+    if (!durl || !/\/exec$/.test((this.state.backendUrl || '').trim())) return;
+    this.backendPost_({ action: 'saveRow', tab: 'FP_Settings', record: { Key: 'adminPhoto', Value: durl } }).catch(function () {});
+  };
+  loadAdminPhotoCloud_ = async () => {
+    if (!/\/exec$/.test((this.state.backendUrl || '').trim())) return;
+    try {
+      const r = await this.backendGet_('getTable', { tab: 'FP_Settings' });
+      if (r && r.ok && Array.isArray(r.rows)) {
+        const ph = r.rows.filter(x => String(x.Key) === 'adminPhoto');
+        if (ph.length) {
+          const val = ph[ph.length - 1].Value;
+          if (val) { try { localStorage.setItem('fp_user_photo', val); } catch (e) {} this.setState({ userPhoto: val }); }
+        }
+      }
+    } catch (e) {}
   };
   loadBotLeads = async () => {
     if (!/\/exec$/.test((this.state.backendUrl || '').trim())) return;
@@ -7493,7 +7514,7 @@ class Component extends DCLogic {
       periods,
       togglePeriod: () => this.setState(s => ({ periodOpen: !s.periodOpen })),
       isHome: screen === 'home', home, isSale: screen === 'sale', isCustomers: screen === 'customers', isItems: screen === 'items', isReports: screen === 'reports',
-      onUserPhoto: (e) => { const f = e.target.files && e.target.files[0]; if (!f) return; const r = new FileReader(); r.onload = () => { try { localStorage.setItem('fp_user_photo', r.result); } catch (err) {} this.setState({ userPhoto: r.result }); }; r.readAsDataURL(f); },
+      onUserPhoto: (e) => { const f = e.target.files && e.target.files[0]; if (!f) return; const r = new FileReader(); r.onload = () => { const done = (durl) => { try { localStorage.setItem('fp_user_photo', durl); } catch (err) {} this.setState({ userPhoto: durl }); this.saveAdminPhotoCloud_(durl); }; try { const im = new Image(); im.onload = () => { try { const c = document.createElement('canvas'); const sz = 128; c.width = sz; c.height = sz; const x = c.getContext('2d'); const s = Math.min(im.width, im.height); x.drawImage(im, (im.width - s) / 2, (im.height - s) / 2, s, s, 0, 0, sz, sz); done(c.toDataURL('image/jpeg', 0.72)); } catch (e2) { done(r.result); } }; im.onerror = () => done(r.result); im.src = r.result; } catch (e3) { done(r.result); } }; r.readAsDataURL(f); },
       userPhotoNode: this.state.userPhoto ? React.createElement('img', { src: this.state.userPhoto, alt: '', style: { position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' } }) : null,
       userPhotoNode2: this.state.userPhoto ? React.createElement('img', { src: this.state.userPhoto, alt: '', style: { position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' } }) : null,
       userIconStyle: this.state.userPhoto ? 'display:none' : '',
