@@ -1,14 +1,17 @@
 /* Cloudflare Pages Function middleware — dark theme, sidebar polish, and RESPONSIVE
- * (phone/tablet) layout. CSS ONLY: injected into the page <head> at the EDGE so it applies
+ * (phone + tablet) layout. CSS ONLY: injected into the page <head> at the EDGE so it applies
  * before first paint. It never inserts, moves, or edits an app DOM node, so it cannot crash
  * the React app. (Earlier JS that inserted a language button / dots / rewrote label text
  * intermittently threw "removeChild ... not a child of this node" and crashed the app —
  * hence CSS-only now.) Fully defensive: only HTML responses are touched; any error falls
  * through untouched.
  *
+ * Breakpoint: <=1024px = phones AND tablets get the mobile-friendly layout; desktops (wider)
+ * keep the full layout.
+ *
  * MOBILE TILE-ROW RULE (reusable across pages): a row of small tiles/cards the app lays out
  * with `grid-template-columns:repeat(N,1fr)` (or minmax variants) wraps its last tile onto a
- * new line on a narrow phone. Fix: make the container a single flex row
+ * new line on a narrow screen. Fix: make the container a single flex row
  * (`display:flex;flex-wrap:nowrap`), each tile `flex:1 1 0;min-width:0`, shrink inner text. */
 
 var HEAD_CSS =
@@ -23,12 +26,12 @@ var HEAD_CSS =
   ' aside nav a::before{content:"";position:absolute;left:1px;top:9px;bottom:9px;width:3px;border-radius:3px;background:transparent;transition:background .16s ease}' +
   ' aside nav a:hover::before{background:#2e90f0}' +
   ' #fpLangTop{flex:none !important}' +
-  // ===== RESPONSIVE: phone & small tablet =====
+  // ===== RESPONSIVE: phone & tablet (<=1024px) =====
   ' .fp-burger{display:none;position:fixed;top:10px;left:10px;z-index:2147483000;width:40px;height:40px;' +
   'border-radius:11px;background:#13315a;color:#fff;align-items:center;justify-content:center;' +
   'border:1px solid rgba(255,255,255,.18);cursor:pointer;box-shadow:0 3px 12px rgba(0,0,0,.35)}' +
   ' .fp-nav-backdrop{display:none}' +
-  ' @media(max-width:900px){' +
+  ' @media(max-width:1024px){' +
   '  main header{gap:3px !important;column-gap:3px !important}' +
   '  main header button{padding:6px 7px !important;font-size:12px !important;font-weight:600 !important;' +
   'gap:4px !important;min-height:34px}' +
@@ -36,11 +39,8 @@ var HEAD_CSS =
   '  #fpLangTop{padding:0 8px !important;min-width:34px !important}' +
   '  .fp-theme{gap:1px !important;padding:2px !important}' +
   '  .fp-theme button:nth-child(3){display:none !important}' +
-  ' }' +
-  ' @media(max-width:820px){' +
-  '  html,body{overflow-x:hidden !important;max-width:100vw}' +
-  // print button rarely used on a phone — hide it so the CTAs + lang + theme + avatar fit one row
   '  main header button[title*="Chapa"],main header button[title*="Print"]{display:none !important}' +
+  '  html,body{overflow-x:hidden !important;max-width:100vw}' +
   '  aside{position:fixed !important;left:0 !important;top:0 !important;bottom:0 !important;height:100vh !important;' +
   'z-index:1002 !important;width:274px !important;max-width:84vw;transform:translateX(-100%) !important;' +
   'transition:transform .26s ease !important;box-shadow:2px 0 26px rgba(0,0,0,.55);overflow-y:auto;overflow-x:hidden}' +
