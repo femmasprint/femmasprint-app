@@ -39,6 +39,10 @@ var HEAD_CSS =
   '  .fp-theme{gap:1px !important;padding:2px !important}' +
   '  .fp-theme button:nth-child(3){display:none !important}' +
   '  main header button[title*="Chapa"],main header button[title*="Print"]{display:none !important}' +
+  // WhatsApp/contact strip: on desktop a flex:1 spacer pushes the address to the right; on
+  // phones that spacer just leaves the right half empty. Drop it so the info fills the width.
+  '  div[data-topbanner="1"]{gap:4px 12px !important;row-gap:3px !important;padding:7px 14px 7px 58px !important;align-items:center !important}' +
+  '  div[data-topbanner="1"]>div:empty{display:none !important}' +
   // Quick Sale card: logo + title stay on one row; the toolbar icons stay on one line AND
   // FIT inside the card (tight gap + smaller button padding, no cut-off, no scroll).
   '  main div[style*="linear-gradient"] div[style*="gap: 14px"]{flex-wrap:nowrap !important;min-width:0 !important}' +
