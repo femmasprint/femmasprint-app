@@ -5224,7 +5224,7 @@ class Component extends DCLogic {
   // so NO backend changes are needed.
   saveAdminPhotoCloud_ = (durl) => {
     if (!durl || !/\/exec$/.test((this.state.backendUrl || '').trim())) return;
-    this.backendPost_({ action: 'saveRow', tab: 'FP_Settings', record: { Key: 'adminPhoto', Value: durl } }).catch(function () {});
+    this.backendPost_({ action: 'saveRow', tab: 'FP_Settings', data: { Key: 'adminPhoto', Value: durl } }).catch(function () {});
   };
   loadAdminPhotoCloud_ = async () => {
     if (!/\/exec$/.test((this.state.backendUrl || '').trim())) return;
