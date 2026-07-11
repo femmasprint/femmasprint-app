@@ -8,8 +8,7 @@
  * lays out with `grid-template-columns:repeat(N,1fr)` (or minmax variants) wraps its last
  * tile onto a new line on a narrow phone. The fix pattern is always the same — turn the
  * container into a single flex row (`display:flex;flex-wrap:nowrap`) with each tile
- * `flex:1 1 0;min-width:0`, and shrink the inner text so N tiles fit one clean line. Apply
- * this same pattern when tidying other pages for mobile. */
+ * `flex:1 1 0;min-width:0`, and shrink the inner text so N tiles fit one clean line. */
 
 var HEAD_CSS =
   ' aside nav a{display:flex !important;align-items:center;width:100% !important;box-sizing:border-box}' +
@@ -39,26 +38,21 @@ var HEAD_CSS =
   '  main header{flex-wrap:wrap !important;height:auto !important;row-gap:8px !important;' +
   'padding-left:56px !important;align-items:center}' +
   '  #fp-dots{display:flex !important}' +
-  // Quick Sale Sales/Expenses (auto-fit minmax(330px..)) becomes a horizontal SWIPE PAGER.
-  // Each panel is 88% wide so the NEXT panel peeks at the edge (a built-in "swipe me" hint),
-  // and capped in height so a short Sales panel doesn't leave a big empty gap before the
-  // summary below (the taller Expenses panel just scrolls internally). Dots (added by JS
-  // below) sit under it as an explicit swipe indicator.
+  // Quick Sale Sales/Expenses swipe pager (peek + capped height), dots below.
   '  main div[style*="minmax(330px"]{display:flex !important;overflow-x:auto !important;' +
   'scroll-snap-type:x mandatory;gap:12px !important;scrollbar-width:none}' +
   '  main div[style*="minmax(330px"]::-webkit-scrollbar{display:none}' +
   '  main div[style*="minmax(330px"]>div{flex:0 0 88% !important;scroll-snap-align:start;' +
   'min-width:0 !important;max-height:64vh !important;overflow:auto !important;-webkit-overflow-scrolling:touch}' +
-  // 5 payment tiles (Cash/Bank/Voda/Yas/Simu) -> one compact flex row.
+  // 5 payment tiles -> one compact flex row.
   '  main div[style*="repeat(5"]{display:flex !important;gap:4px !important;flex-wrap:nowrap !important}' +
   '  main div[style*="repeat(5"]>div{flex:1 1 0 !important;min-width:0 !important;padding:5px 4px !important;overflow:hidden}' +
   '  main div[style*="repeat(5"]>div *{font-size:9px !important;line-height:1.2 !important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
-  // Bottom summary: 3 tiles (Total Sales/Expenses/Cash in Hand) on one row, Note full-width below.
+  // Bottom summary: 3 tiles on one row, Note full-width below.
   '  main div[style*="minmax(280px"]{display:flex !important;flex-wrap:wrap !important;gap:6px !important}' +
   '  main div[style*="minmax(280px"]>div{flex:1 1 0 !important;min-width:0 !important;padding:8px 7px !important;overflow:hidden}' +
   '  main div[style*="minmax(280px"]>div:last-child{flex:1 1 100% !important;order:9 !important}' +
   '  main div[style*="minmax(280px"]>div:not(:last-child) *{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
-  // generic: other grids relax their fixed column min so children can shrink
   '  main div[style*="grid-template-columns"]>div{min-width:0 !important}' +
   '  main div[style*="width:"]{max-width:100% !important}' +
   '  main div[style*="flex"]{flex-wrap:wrap !important}' +
@@ -68,27 +62,27 @@ var HEAD_CSS =
   '  body.fp-nav-open .fp-nav-backdrop{display:block}' +
   ' }';
 
-/* Self-healing SW/EN language toggle (anchored to the theme button by a language-independent
- * match, so it survives i18n title translation + React re-renders). */
+/* Self-healing SW/EN language toggle. Anchored to the theme button by a language-independent
+ * match (survives i18n title translation). IMPORTANT: uses a TRANSPARENT background (not a
+ * light fill) — a light fill made the app's dark-mode engine re-darken it ~20x/second in a
+ * loop, which flickered the whole header. It also only CREATES the toggle when missing and
+ * repaints on click, never on a timer, so it can't fight the app's own repaint. */
 var LANG_JS =
   "(function(){try{" +
   "function cur(){try{return localStorage.getItem('fp_lang')||'sw';}catch(e){return 'sw';}}" +
   "function findTheme(){var b=document.querySelectorAll('header button');for(var i=0;i<b.length;i++){var t=b[i].getAttribute('title')||'';if(/giza|mwanga|dark|light/i.test(t))return b[i];}return null;}" +
-  "function paint(box){var l=cur();var k=box.children;for(var i=0;i<k.length;i++){var on=k[i].getAttribute('data-l')===l;k[i].style.cssText='padding:4px 9px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;line-height:1;'+(on?'background:#2e90f0;color:#fff;':'background:transparent;color:#5b7197;');}}" +
-  "function ensure(){if(!window.FPSetLang)return;var box=document.getElementById('fpLangTop');if(box){paint(box);return;}var tb=findTheme();if(!tb||!tb.parentNode)return;box=document.createElement('div');box.id='fpLangTop';box.style.cssText='display:flex;gap:3px;padding:3px;background:#eef2f7;border:1px solid #e3e6eb;border-radius:11px;height:40px;box-sizing:border-box;align-items:center;flex:none;margin:0 2px';['sw','en'].forEach(function(l){var d=document.createElement('div');d.setAttribute('data-l',l);d.textContent=l.toUpperCase();d.addEventListener('click',function(){try{window.FPSetLang(l);}catch(e){}paint(box);});box.appendChild(d);});tb.parentNode.insertBefore(box,tb);paint(box);}" +
-  "setInterval(ensure,1500);if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',ensure);else ensure();" +
+  "function paint(box){var l=cur();var k=box.children;for(var i=0;i<k.length;i++){var on=k[i].getAttribute('data-l')===l;k[i].style.cssText='padding:4px 10px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;line-height:1;transition:none;'+(on?'background:#2e90f0;color:#fff;':'background:transparent;color:#8aa0c0;');}}" +
+  "function ensure(){if(!window.FPSetLang)return;if(document.getElementById('fpLangTop'))return;var tb=findTheme();if(!tb||!tb.parentNode)return;var box=document.createElement('div');box.id='fpLangTop';box.setAttribute('data-fp-skin','1');box.style.cssText='display:flex;gap:2px;padding:2px;background:transparent;border:1px solid rgba(130,150,180,.4);border-radius:11px;height:36px;box-sizing:border-box;align-items:center;flex:none;margin:0 2px';['sw','en'].forEach(function(l){var d=document.createElement('div');d.setAttribute('data-l',l);d.textContent=l.toUpperCase();d.addEventListener('click',function(){try{window.FPSetLang(l);}catch(e){}paint(box);});box.appendChild(d);});tb.parentNode.insertBefore(box,tb);paint(box);}" +
+  "setInterval(ensure,1800);if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',ensure);else ensure();" +
   "}catch(e){}})();";
 
-/* Mobile swipe-pager dots for Quick Sale (Sales / Expenses). Adds a small dots bar right
- * after the pager and keeps the active dot (a blue pill) synced to the scroll position;
- * tapping a dot scrolls to that panel. Only on phones; self-heals if a re-render drops it;
- * removed on desktop. */
+/* Mobile swipe-pager dots for Quick Sale (Sales / Expenses). */
 var DOTS_JS =
   "(function(){try{" +
   "function mm(){return window.matchMedia('(max-width:820px)').matches;}" +
   "function sync(p,dots){var w=p.children[0].offsetWidth+12;var idx=Math.round(p.scrollLeft/w);var k=dots.children;for(var i=0;i<k.length;i++){var on=i===idx;k[i].style.background=on?'#2e90f0':'#c3ccd8';k[i].style.width=on?'22px':'8px';k[i].style.borderRadius=on?'5px':'50%';}}" +
   "function tick(){var p=document.querySelector('main div[style*=\"minmax(330px\"]');var ex=document.getElementById('fp-dots');if(!mm()||!p||p.children.length<2){if(ex)ex.remove();return;}if(ex&&ex.__p===p){sync(p,ex);return;}if(ex)ex.remove();var dots=document.createElement('div');dots.id='fp-dots';dots.__p=p;dots.style.cssText='display:flex;justify-content:center;align-items:center;gap:7px;padding:9px 0 3px';for(var i=0;i<p.children.length;i++){(function(i){var dot=document.createElement('div');dot.style.cssText='width:8px;height:8px;border-radius:50%;background:#c3ccd8;transition:all .2s ease;cursor:pointer';dot.addEventListener('click',function(){p.scrollTo({left:i*(p.children[0].offsetWidth+12),behavior:'smooth'});});dots.appendChild(dot);})(i);}p.parentNode.insertBefore(dots,p.nextSibling);p.addEventListener('scroll',function(){sync(p,dots);},{passive:true});sync(p,dots);}" +
-  "setInterval(tick,800);if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',tick);else tick();" +
+  "setInterval(tick,900);if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',tick);else tick();" +
   "}catch(e){}})();";
 
 export async function onRequest(context) {
