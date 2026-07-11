@@ -6,8 +6,8 @@
  * hence CSS-only now.) Fully defensive: only HTML responses are touched; any error falls
  * through untouched.
  *
- * Breakpoint: <=1024px = phones AND tablets get the mobile-friendly layout; desktops (wider)
- * keep the full layout.
+ * Breakpoint: <=1024px = phones AND tablets get the mobile-friendly layout; desktops keep
+ * the full layout.
  *
  * MOBILE TILE-ROW RULE (reusable across pages): a row of small tiles/cards the app lays out
  * with `grid-template-columns:repeat(N,1fr)` (or minmax variants) wraps its last tile onto a
@@ -26,6 +26,15 @@ var HEAD_CSS =
   ' aside nav a::before{content:"";position:absolute;left:1px;top:9px;bottom:9px;width:3px;border-radius:3px;background:transparent;transition:background .16s ease}' +
   ' aside nav a:hover::before{background:#2e90f0}' +
   ' #fpLangTop{flex:none !important}' +
+  // Toolbar/action buttons that sit on the app's blue gradient cards were being darkened
+  // (dark-mode) until they blended into the card and vanished. Give them a visible glass
+  // look (light translucent fill + a clear light border, white icons) in BOTH light and
+  // dark mode. High-specificity selectors so they beat the app's own dark-mode !important.
+  ' html.fp-dark body main div[style*="linear-gradient"] button,html.fp-dark body main div[style*="linear-gradient"] label,' +
+  'html:not(.fp-dark) body main div[style*="linear-gradient"] button,html:not(.fp-dark) body main div[style*="linear-gradient"] label' +
+  '{background:rgba(255,255,255,.16) !important;border:1.5px solid rgba(255,255,255,.5) !important;box-shadow:none !important}' +
+  ' body main div[style*="linear-gradient"] button svg,body main div[style*="linear-gradient"] label svg{stroke:#fff !important;opacity:1 !important}' +
+  ' body main div[style*="linear-gradient"] button,body main div[style*="linear-gradient"] label{color:#fff !important}' +
   // ===== RESPONSIVE: phone & tablet (<=1024px) =====
   ' .fp-burger{display:none;position:fixed;top:10px;left:10px;z-index:2147483000;width:40px;height:40px;' +
   'border-radius:11px;background:#13315a;color:#fff;align-items:center;justify-content:center;' +
