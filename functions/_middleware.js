@@ -30,8 +30,11 @@ var HEAD_CSS =
   '  main{width:100% !important;min-width:0 !important;overflow-x:hidden !important}' +
   '  main header{flex-wrap:wrap !important;height:auto !important;row-gap:8px !important;' +
   'padding-left:56px !important;align-items:center}' +
-  // stack 2-col grids (Quick Sale Sales/Expenses panels, dashboard cards) into one column
-  '  main div[style*="grid-template-columns"]{grid-template-columns:1fr !important}' +
+  // The Quick Sale Sales/Expenses container is now a responsive auto-fit grid (in the app),
+  // so it stacks to one column on phones. Here we let each panel keep its wide data table
+  // scrollable WITHIN itself (min-width:0 so the panel shrinks to the screen; overflow-x so
+  // the table scrolls sideways inside its own box) — the page never scrolls sideways.
+  '  main div[style*="grid-template-columns"]>div{min-width:0 !important;overflow-x:auto !important;-webkit-overflow-scrolling:touch}' +
   '  main div[style*="width:"]{max-width:100% !important}' +
   '  main div[style*="flex"]{flex-wrap:wrap !important}' +
   '  main table{max-width:100% !important}' +
