@@ -8915,7 +8915,7 @@ class Component extends DCLogic {
   function mapTx(h){ if(TXT[h])return TXT[h]; if(h==='#ffffff'||h==='#fefefe')return null; var a=hslOf(h); if(a[2]>=0.62)return null; if(a[1]<0.12)return a[2]<0.25?'#eaf1fb':'#a6b6d2'; return hsl2hex(a[0],Math.min(Math.max(a[1],0.5),0.85),0.70); }
   function mapBd(h){ if(BORD[h])return BORD[h]; var a=hslOf(h); if(a[2]<0.60)return null; if(a[1]<0.12)return '#212d45'; return hsl2hex(a[0],Math.min(a[1],0.4),0.24); }
   function fx(el,prop,fn){ try{ var v=el.style[prop]; if(!v)return; var hx=rgb2hex(v); if(!hx)return; var d=fn(hx); if(d)el.style.setProperty(prop,d,'important'); }catch(e){} }
-  function darkenEl(el){ if(!el||!el.style)return; if(el.id==='fpLangTop'||(el.closest&&el.closest('#fpLangTop')))return; if(el.getAttribute('data-fpl')===null){ el.setAttribute('data-fpl', el.getAttribute('style')||''); }
+  function darkenEl(el){ if(!el||!el.style)return; if(el.id==='fpLangTop'||(el.closest&&el.closest('#fpLangTop')))return; if((el.tagName==='BUTTON'||el.tagName==='LABEL')&&el.closest&&el.closest('[style*="linear-gradient"]'))return; if(el.getAttribute('data-fpl')===null){ el.setAttribute('data-fpl', el.getAttribute('style')||''); }
     var cs; try{ cs=getComputedStyle(el); }catch(e){ return; }
     var bh=rgb2hex(cs.backgroundColor); if(bh){ var db=mapBg(bh); if(db)el.style.setProperty('background-color',db,'important'); }
     var ch=rgb2hex(cs.color); if(ch){ var dc=mapTx(ch); if(dc)el.style.setProperty('color',dc,'important'); }
