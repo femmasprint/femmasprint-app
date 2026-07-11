@@ -86,10 +86,15 @@ var HEAD_CSS =
   '  main div[style*="minmax(280px"]>div{flex:1 1 0 !important;min-width:0 !important;padding:8px 7px !important;overflow:hidden}' +
   '  main div[style*="minmax(280px"]>div:last-child{flex:1 1 100% !important;order:9 !important}' +
   '  main div[style*="minmax(280px"]>div:not(:last-child) *{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
-  // Premium metric tiles (marked data-fpmetric): STACK full-width; never clip the money value.
-  '  main div[style*="minmax(280px"]>div[data-fpmetric]{flex:1 1 100% !important;order:0 !important;overflow:hidden !important;padding:16px 18px 0 !important}' +
+  // Premium metric tiles (marked data-fpmetric): 2-PER-ROW compact grid on mobile (shorter page).
+  '  main div[style*="minmax(280px"]>div[data-fpmetric]{flex:1 1 calc(50% - 6px) !important;order:0 !important;overflow:hidden !important;padding:13px 13px 0 !important}' +
   '  main div[style*="minmax(280px"]>div[data-fpmetric] *{white-space:normal !important;overflow:visible !important;text-overflow:clip !important}' +
-  '  main div[style*="minmax(280px"]>div[data-fpmetric] svg{display:block !important;width:100% !important}' +
+  '  main div[style*="minmax(280px"]>div[data-fpmetric] svg{display:block !important;width:100% !important;height:22px !important}' +
+  '  main div[style*="minmax(280px"]>div[data-fpmetric] div[style*="font-size:24px"]{font-size:17px !important;margin-top:7px !important}' +
+  '  main div[style*="minmax(280px"]>div[data-fpmetric] span[style*="width:36px"]{width:30px !important;height:30px !important}' +
+  '  main div[style*="minmax(280px"]>div[data-fpmetric] span[style*="uppercase"]{font-size:9px !important}' +
+  '  main div[style*="minmax(280px"]>div[data-fpmetric] span[style*="border-radius:20px"]{display:none !important}' +
+  '  main div[style*="minmax(280px"]>div[data-fpmetric] div[style*="font-size:11px"]{font-size:10px !important;margin:3px 0 8px !important}' +
   '  main div[style*="grid-template-columns"]>div{min-width:0 !important}' +
   '  main div[style*="width:"]{max-width:100% !important}' +
   '  main div[style*="flex"]{flex-wrap:wrap !important}' +
