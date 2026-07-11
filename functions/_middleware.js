@@ -1,5 +1,5 @@
 /* Cloudflare Pages Function middleware — dark theme, sidebar polish, RESPONSIVE
- * (phone/tablet) layout, a SELF-HEALING language toggle, and mobile swipe-pager dots.
+ * (phone/tablet) layout, a single-button language toggle, and mobile swipe-pager dots.
  * All injected into the page <head> at the EDGE so it applies before first paint and
  * never moves/removes an app node (so it can't crash the React app). Fully defensive:
  * only HTML responses are touched; any error falls through untouched.
@@ -21,7 +21,9 @@ var HEAD_CSS =
   ' aside nav a:hover svg,aside nav a:hover i{color:#fff !important;stroke:#fff !important;opacity:1 !important}' +
   ' aside nav a::before{content:"";position:absolute;left:1px;top:9px;bottom:9px;width:3px;border-radius:3px;background:transparent;transition:background .16s ease}' +
   ' aside nav a:hover::before{background:#2e90f0}' +
-  ' #fpLangTop{flex:none !important}' +
+  // Hide the app's flickery 2-pill SW/EN toggle; we replace it with a single button (#fpLang1).
+  ' #fpLangTop{display:none !important}' +
+  ' #fpLang1{flex:none !important}' +
   ' #fp-dots{display:none}' +
   // ===== RESPONSIVE: phone & small tablet =====
   ' .fp-burger{display:none;position:fixed;top:10px;left:10px;z-index:2147483000;width:40px;height:40px;' +
@@ -59,16 +61,16 @@ var HEAD_CSS =
   '  body.fp-nav-open .fp-nav-backdrop{display:block}' +
   ' }';
 
-/* Self-healing SW/EN language toggle. The app's own code both creates AND paints this
- * toggle, but its create step anchors to the theme button's ENGLISH title, so once i18n
- * translates that title the app can't re-create the toggle after a re-render drops it.
- * We ONLY re-create the element when it is missing (language-independent anchor) and then
- * leave ALL styling to the app's own painter. Painting it ourselves too made two painters
- * alternate ~20x/second, which flickered the whole header — so we never paint it. */
+/* Single-button SW/EN language toggle. The app's own 2-pill toggle (#fpLangTop) had two
+ * painters fighting over its active/inactive pill styles ~20x/second, flickering the whole
+ * header. We hide it (CSS above) and add ONE self-owned button (#fpLang1) that shows the
+ * current language and switches on tap via the app's window.FPSetLang. One label, painted
+ * once, updated only when the language actually changes — no flicker, less space. */
 var LANG_JS =
   "(function(){try{" +
+  "function cur(){try{return (localStorage.getItem('fp_lang')||'sw').toUpperCase();}catch(e){return 'SW';}}" +
   "function findTheme(){var b=document.querySelectorAll('header button');for(var i=0;i<b.length;i++){var t=b[i].getAttribute('title')||'';if(/giza|mwanga|dark|light/i.test(t))return b[i];}return null;}" +
-  "function ensure(){if(!window.FPSetLang)return;if(document.getElementById('fpLangTop'))return;var tb=findTheme();if(!tb||!tb.parentNode)return;var box=document.createElement('div');box.id='fpLangTop';box.style.cssText='display:flex;gap:2px;padding:2px;border-radius:11px;box-sizing:border-box;align-items:center;flex:none;margin:0 2px';['sw','en'].forEach(function(l){var d=document.createElement('div');d.setAttribute('data-l',l);d.textContent=l.toUpperCase();d.style.cssText='padding:4px 10px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit';d.addEventListener('click',function(){try{window.FPSetLang(l);}catch(e){}});box.appendChild(d);});tb.parentNode.insertBefore(box,tb);}" +
+  "function ensure(){if(!window.FPSetLang)return;var b=document.getElementById('fpLang1');if(b){var c=cur();if(b.textContent!==c)b.textContent=c;return;}var tb=findTheme();if(!tb||!tb.parentNode)return;b=document.createElement('button');b.id='fpLang1';b.type='button';b.setAttribute('aria-label','Language');b.style.cssText='height:36px;min-width:46px;padding:0 12px;border-radius:10px;border:1px solid rgba(130,150,180,.5);background:transparent;color:#2e90f0;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;flex:none;margin:0 2px';b.textContent=cur();b.addEventListener('click',function(){var nl=(cur()==='SW')?'en':'sw';try{window.FPSetLang(nl);}catch(e){}b.textContent=nl.toUpperCase();});tb.parentNode.insertBefore(b,tb);}" +
   "setInterval(ensure,1800);if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',ensure);else ensure();" +
   "}catch(e){}})();";
 
