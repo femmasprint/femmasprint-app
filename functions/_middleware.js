@@ -1,18 +1,10 @@
 /* Cloudflare Pages Function middleware — dark theme, sidebar polish, and RESPONSIVE
  * (phone + tablet) layout. CSS ONLY: injected into the page <head> at the EDGE so it applies
  * before first paint. It never inserts, moves, or edits an app DOM node, so it cannot crash
- * the React app. (Earlier JS that inserted a language button / dots / rewrote label text
- * intermittently threw "removeChild ... not a child of this node" and crashed the app —
- * hence CSS-only now.) Fully defensive: only HTML responses are touched; any error falls
- * through untouched.
+ * the React app. Fully defensive: only HTML responses are touched; any error falls through.
  *
  * Breakpoint: <=1024px = phones AND tablets get the mobile-friendly layout; desktops keep
- * the full layout.
- *
- * MOBILE TILE-ROW RULE (reusable across pages): a row of small tiles/cards the app lays out
- * with `grid-template-columns:repeat(N,1fr)` (or minmax variants) wraps its last tile onto a
- * new line on a narrow screen. Fix: make the container a single flex row
- * (`display:flex;flex-wrap:nowrap`), each tile `flex:1 1 0;min-width:0`, shrink inner text. */
+ * the full layout. */
 
 var HEAD_CSS =
   ' aside nav a{display:flex !important;align-items:center;width:100% !important;box-sizing:border-box}' +
@@ -26,10 +18,8 @@ var HEAD_CSS =
   ' aside nav a::before{content:"";position:absolute;left:1px;top:9px;bottom:9px;width:3px;border-radius:3px;background:transparent;transition:background .16s ease}' +
   ' aside nav a:hover::before{background:#2e90f0}' +
   ' #fpLangTop{flex:none !important}' +
-  // Toolbar/action buttons that sit on the app's blue gradient cards were being darkened
-  // (dark-mode) until they blended into the card and vanished. Give them a visible glass
-  // look (light translucent fill + a clear light border, white icons) in BOTH light and
-  // dark mode. High-specificity selectors so they beat the app's own dark-mode !important.
+  // Buttons on the app's blue gradient cards were darkened until invisible; give them a
+  // visible glass look (light fill + clear border + white icons) in BOTH light and dark mode.
   ' html.fp-dark body main div[style*="linear-gradient"] button,html.fp-dark body main div[style*="linear-gradient"] label,' +
   'html:not(.fp-dark) body main div[style*="linear-gradient"] button,html:not(.fp-dark) body main div[style*="linear-gradient"] label' +
   '{background:rgba(255,255,255,.16) !important;border:1.5px solid rgba(255,255,255,.5) !important;box-shadow:none !important}' +
@@ -49,6 +39,12 @@ var HEAD_CSS =
   '  .fp-theme{gap:1px !important;padding:2px !important}' +
   '  .fp-theme button:nth-child(3){display:none !important}' +
   '  main header button[title*="Chapa"],main header button[title*="Print"]{display:none !important}' +
+  // Quick Sale card: logo + title stay on one row; the toolbar icons stay on one line.
+  '  main div[style*="linear-gradient"] div[style*="gap: 14px"]{flex-wrap:nowrap !important;min-width:0 !important}' +
+  '  main div[style*="linear-gradient"] div[style*="gap: 14px"]>div{min-width:0 !important}' +
+  '  main div[style*="linear-gradient"] div[style*="gap: 10px"]{flex-wrap:nowrap !important;gap:6px !important;overflow-x:auto !important;scrollbar-width:none}' +
+  '  main div[style*="linear-gradient"] div[style*="gap: 10px"]::-webkit-scrollbar{display:none}' +
+  '  main div[style*="linear-gradient"] div[style*="gap: 10px"]>*{flex:none !important}' +
   '  html,body{overflow-x:hidden !important;max-width:100vw}' +
   '  aside{position:fixed !important;left:0 !important;top:0 !important;bottom:0 !important;height:100vh !important;' +
   'z-index:1002 !important;width:274px !important;max-width:84vw;transform:translateX(-100%) !important;' +
