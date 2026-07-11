@@ -30,16 +30,19 @@ var HEAD_CSS =
   '  main{width:100% !important;min-width:0 !important;overflow-x:hidden !important}' +
   '  main header{flex-wrap:wrap !important;height:auto !important;row-gap:8px !important;' +
   'padding-left:56px !important;align-items:center}' +
-  // Quick Sale Sales/Expenses (the app renders this container with auto-fit minmax(330px..))
-  // becomes a horizontal SWIPE PAGER on phones: one full-width panel at a time, swipe
-  // left for Expenses, right for Sales — no cramped side-by-side, no endless vertical
-  // scroll. scroll-snap makes each swipe land cleanly on a panel.
+  // Quick Sale Sales/Expenses (auto-fit minmax(330px..)) becomes a horizontal SWIPE PAGER
+  // on phones: one full-width panel at a time, swipe left for Expenses, right for Sales.
   '  main div[style*="minmax(330px"]{display:flex !important;overflow-x:auto !important;' +
   'scroll-snap-type:x mandatory;gap:12px !important;scrollbar-width:none}' +
   '  main div[style*="minmax(330px"]::-webkit-scrollbar{display:none}' +
   '  main div[style*="minmax(330px"]>div{flex:0 0 100% !important;scroll-snap-align:start;' +
   'min-width:0 !important;overflow-x:auto !important;-webkit-overflow-scrolling:touch}' +
-  // generic: other 2-col grids stack; their inner tables scroll within
+  // The 5 payment tiles (Cash/Bank/Voda/Yas/Simu) render as a repeat(5,1fr) grid that
+  // wraps the 5th tile onto a new row on a phone. Force them into one compact flex row.
+  '  main div[style*="repeat(5"]{display:flex !important;gap:4px !important;flex-wrap:nowrap !important}' +
+  '  main div[style*="repeat(5"]>div{flex:1 1 0 !important;min-width:0 !important;padding:5px 4px !important;overflow:hidden}' +
+  '  main div[style*="repeat(5"]>div *{font-size:9px !important;line-height:1.2 !important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
+  // generic: other grids relax their fixed column min so children can shrink
   '  main div[style*="grid-template-columns"]>div{min-width:0 !important}' +
   '  main div[style*="width:"]{max-width:100% !important}' +
   '  main div[style*="flex"]{flex-wrap:wrap !important}' +
