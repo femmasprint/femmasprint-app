@@ -30,7 +30,6 @@ var HEAD_CSS =
   'border:1px solid rgba(255,255,255,.18);cursor:pointer;box-shadow:0 3px 12px rgba(0,0,0,.35)}' +
   ' .fp-nav-backdrop{display:none}' +
   ' @media(max-width:900px){' +
-  // compact header buttons (Add Sale/Purchase, theme, print) so they take less width
   '  main header button{padding:7px 11px !important;font-size:12px !important;font-weight:600 !important;' +
   'gap:5px !important;min-height:36px}' +
   '  main header button svg{width:14px !important;height:14px !important}' +
@@ -45,6 +44,12 @@ var HEAD_CSS =
   '  main header{flex-wrap:wrap !important;height:auto !important;row-gap:8px !important;' +
   'padding-left:56px !important;align-items:center}' +
   '  #fp-dots{display:flex !important}' +
+  // Quick Sale toolbar: turn the labelled action buttons (Jump to, Record Advance, Daily
+  // Report, Load Data) into compact icon-only buttons (font-size:0 hides the label, the
+  // svg icon stays). The action still fires / the picker still opens on tap.
+  '  main div[style*="linear-gradient"] button,main div[style*="linear-gradient"] label{font-size:0 !important;' +
+  'padding:9px !important;min-width:0 !important;gap:0 !important}' +
+  '  main div[style*="linear-gradient"] button svg,main div[style*="linear-gradient"] label svg{width:18px !important;height:18px !important}' +
   '  main div[style*="minmax(330px"]{display:flex !important;overflow-x:auto !important;' +
   'scroll-snap-type:x mandatory;gap:12px !important;scrollbar-width:none}' +
   '  main div[style*="minmax(330px"]::-webkit-scrollbar{display:none}' +
@@ -66,11 +71,7 @@ var HEAD_CSS =
   '  body.fp-nav-open .fp-nav-backdrop{display:block}' +
   ' }';
 
-/* Single-button SW/EN language toggle. The app's own 2-pill toggle (#fpLangTop) had two
- * painters fighting over its active/inactive pill styles ~20x/second, flickering the whole
- * header. We hide it (CSS above) and add ONE self-owned button (#fpLang1) that shows the
- * current language and switches on tap via the app's window.FPSetLang. One label, painted
- * once, updated only when the language actually changes — no flicker, less space. */
+/* Single-button SW/EN language toggle (replaces the app's flickery 2-pill toggle). */
 var LANG_JS =
   "(function(){try{" +
   "function cur(){try{return (localStorage.getItem('fp_lang')||'sw').toUpperCase();}catch(e){return 'SW';}}" +
