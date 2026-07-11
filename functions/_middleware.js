@@ -11,6 +11,27 @@ var HEAD_CSS =
   ' aside>nav~*>div>div:nth-of-type(2){display:none !important}' +
   ' html.fp-dark,html.fp-dark body{background:#0a0e1a !important}' +
   ' html.fp-dark aside{background:#13315a !important}' +
+  // ===== INSTANT dark mode =====
+  // Darken the app's common light surfaces via static CSS so the moment html.fp-dark is set
+  // (on toggle OR at first paint on refresh) they are already dark — no ~0.2s light "sweep"
+  // while the JS dark-engine walks the DOM. Colours mirror that engine's own map, so the JS
+  // pass a moment later only re-confirms them (no visible change). Scoped to html.fp-dark, so
+  // light mode is completely untouched.
+  ' html.fp-dark [style*="rgb(255, 255, 255)"],html.fp-dark [style*="rgb(255,255,255)"],html.fp-dark [style*="background:#ffffff"],html.fp-dark [style*="background:#fff;"],html.fp-dark [style*="background: #fff"],html.fp-dark [style*="background:#fafbfc"],html.fp-dark [style*="background:#f8f9fb"],html.fp-dark [style*="background:#f4f5f7"],html.fp-dark [style*="background:#f4f7fb"],html.fp-dark [style*="background:#f8fafc"],html.fp-dark [style*="background:#f1f5f9"]{background-color:#141d31 !important}' +
+  ' html.fp-dark [style*="background:#e9f3fe"],html.fp-dark [style*="background:#eff8ff"],html.fp-dark [style*="background:#eaf1fb"],html.fp-dark [style*="background:#eaf4fc"]{background-color:#15263f !important}' +
+  ' html.fp-dark [style*="background:#d6ecfd"]{background-color:#1a3352 !important}' +
+  ' html.fp-dark [style*="background:#f5faff"],html.fp-dark [style*="background:#f8fbff"],html.fp-dark [style*="background:#f6fbff"],html.fp-dark [style*="background:#fafbff"]{background-color:#0e1626 !important}' +
+  ' html.fp-dark [style*="background:#fff7ed"],html.fp-dark [style*="background:#fffbeb"]{background-color:#2a2010 !important}' +
+  ' html.fp-dark [style*="background:#ffedd5"]{background-color:#33270f !important}' +
+  ' html.fp-dark [style*="background:#fff1f2"],html.fp-dark [style*="background:#fef2f2"]{background-color:#2a1417 !important}' +
+  ' html.fp-dark [style*="background:#ffe4e6"]{background-color:#33191d !important}' +
+  ' html.fp-dark [style*="background:#f0fdf4"],html.fp-dark [style*="background:#ecfdf5"]{background-color:#0f2a1b !important}' +
+  ' html.fp-dark [style*="color:#0f172a"],html.fp-dark [style*="color:#1f2733"],html.fp-dark [style*="color:#0f2747"]{color:#eaf1fb !important}' +
+  ' html.fp-dark [style*="color:#13315a"],html.fp-dark [style*="color:#1e293b"]{color:#e3ecf9 !important}' +
+  ' html.fp-dark [style*="color:#334155"]{color:#adbeda !important}' +
+  ' html.fp-dark [style*="color:#475569"],html.fp-dark [style*="color:#5b6675"]{color:#a6b8d5 !important}' +
+  ' html.fp-dark [style*="color:#64748b"]{color:#7d90ae !important}' +
+  ' html.fp-dark [style*="color:#94a3b8"]{color:#7a8ca9 !important}' +
   ' aside nav a{position:relative;transition:background .16s ease,color .16s ease !important}' +
   ' aside nav a:hover{background:rgba(46,144,240,.14) !important;color:#fff !important}' +
   ' aside nav a svg,aside nav a i{transition:color .16s,stroke .16s,opacity .16s}' +
