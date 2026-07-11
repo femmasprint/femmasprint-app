@@ -30,11 +30,17 @@ var HEAD_CSS =
   '  main{width:100% !important;min-width:0 !important;overflow-x:hidden !important}' +
   '  main header{flex-wrap:wrap !important;height:auto !important;row-gap:8px !important;' +
   'padding-left:56px !important;align-items:center}' +
-  // The Quick Sale Sales/Expenses container is now a responsive auto-fit grid (in the app),
-  // so it stacks to one column on phones. Here we let each panel keep its wide data table
-  // scrollable WITHIN itself (min-width:0 so the panel shrinks to the screen; overflow-x so
-  // the table scrolls sideways inside its own box) — the page never scrolls sideways.
-  '  main div[style*="grid-template-columns"]>div{min-width:0 !important;overflow-x:auto !important;-webkit-overflow-scrolling:touch}' +
+  // Quick Sale Sales/Expenses (the app renders this container with auto-fit minmax(330px..))
+  // becomes a horizontal SWIPE PAGER on phones: one full-width panel at a time, swipe
+  // left for Expenses, right for Sales — no cramped side-by-side, no endless vertical
+  // scroll. scroll-snap makes each swipe land cleanly on a panel.
+  '  main div[style*="minmax(330px"]{display:flex !important;overflow-x:auto !important;' +
+  'scroll-snap-type:x mandatory;gap:12px !important;scrollbar-width:none}' +
+  '  main div[style*="minmax(330px"]::-webkit-scrollbar{display:none}' +
+  '  main div[style*="minmax(330px"]>div{flex:0 0 100% !important;scroll-snap-align:start;' +
+  'min-width:0 !important;overflow-x:auto !important;-webkit-overflow-scrolling:touch}' +
+  // generic: other 2-col grids stack; their inner tables scroll within
+  '  main div[style*="grid-template-columns"]>div{min-width:0 !important}' +
   '  main div[style*="width:"]{max-width:100% !important}' +
   '  main div[style*="flex"]{flex-wrap:wrap !important}' +
   '  main table{max-width:100% !important}' +
