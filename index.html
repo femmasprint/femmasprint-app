@@ -4857,7 +4857,10 @@ class Component extends DCLogic {
         // further apart in time) are KEPT so nothing real is lost.
         (function(){
           var num=function(v){ var n=parseFloat(String(v).replace(/,/g,'')); return isNaN(n)?0:n; };
-          var timeOf=function(s){ var m=String((s&&s.SaleID)||'').match(/(\d{12,})/); if(m) return +m[1]; var d=Date.parse((s&&s.CreatedAt)||''); return isNaN(d)?0:d; };
+          // Order by the real entry time. Prefer CreatedAt (when the row was written) — the
+          // SaleID timestamp is unreliable for older rows, so CreatedAt gives the true
+          // first-of-the-day -> last order.
+          var timeOf=function(s){ var d=Date.parse((s&&s.CreatedAt)||''); if(!isNaN(d)) return d; var m=String((s&&s.SaleID)||'').match(/(\d{12,})/); if(m) return +m[1]; return 0; };
           var arr=(r.sales||[]).filter(Boolean).map(function(s){ return { s:s, t:timeOf(s) }; });
           arr.sort(function(a,b){ return a.t-b.t; });
           var idSeen={}, byContent={}, out=[], WIN=180000;
@@ -4880,7 +4883,7 @@ class Component extends DCLogic {
           // DEDUP + ORDER expenses the same way (by ExpenseID, or same content within ~3 min).
           (function(){
             var num=function(v){ var n=parseFloat(String(v).replace(/,/g,'')); return isNaN(n)?0:n; };
-            var timeOf=function(x){ var m=String((x&&x.ExpenseID)||'').match(/(\d{12,})/); if(m) return +m[1]; var d=Date.parse((x&&x.CreatedAt)||''); return isNaN(d)?0:d; };
+            var timeOf=function(x){ var d=Date.parse((x&&x.CreatedAt)||''); if(!isNaN(d)) return d; var m=String((x&&x.ExpenseID)||'').match(/(\d{12,})/); if(m) return +m[1]; return 0; };
             var arr=(r.expenses||[]).filter(Boolean).map(function(x){ return { x:x, t:timeOf(x) }; });
             arr.sort(function(a,b){ return a.t-b.t; });
             var idSeen={}, byContent={}, out=[], WIN=180000;
