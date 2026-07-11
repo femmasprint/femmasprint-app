@@ -14,9 +14,7 @@ var HEAD_CSS =
   // ===== INSTANT dark mode =====
   // Darken the app's common light BACKGROUNDS via static CSS so the moment html.fp-dark is set
   // they are already dark — no ~0.2s light "sweep". IMPORTANT: every selector below is scoped
-  // to "background..." so it only matches a background colour, NOT text colour. (An earlier
-  // version matched rgb(255,255,255) anywhere, which also hit color:rgb(255,255,255) and drew
-  // a dark box behind every white title/total.)
+  // to "background..." so it only matches a background colour, NOT text colour.
   ' html.fp-dark [style*="background:rgb(255, 255, 255)"],html.fp-dark [style*="background: rgb(255, 255, 255)"],html.fp-dark [style*="background:rgb(255,255,255)"],html.fp-dark [style*="background: rgb(255,255,255)"],html.fp-dark [style*="background:#ffffff"],html.fp-dark [style*="background:#fff;"],html.fp-dark [style*="background: #fff"],html.fp-dark [style*="background:#fafbfc"],html.fp-dark [style*="background:#f8f9fb"],html.fp-dark [style*="background:#f4f5f7"],html.fp-dark [style*="background:#f4f7fb"],html.fp-dark [style*="background:#f8fafc"],html.fp-dark [style*="background:#f1f5f9"]{background-color:#141d31 !important}' +
   ' html.fp-dark [style*="background:#e9f3fe"],html.fp-dark [style*="background:#eff8ff"],html.fp-dark [style*="background:#eaf1fb"],html.fp-dark [style*="background:#eaf4fc"]{background-color:#15263f !important}' +
   ' html.fp-dark [style*="background:#d6ecfd"]{background-color:#1a3352 !important}' +
@@ -38,8 +36,6 @@ var HEAD_CSS =
   ' aside nav a::before{content:"";position:absolute;left:1px;top:9px;bottom:9px;width:3px;border-radius:3px;background:transparent;transition:background .16s ease}' +
   ' aside nav a:hover::before{background:#2e90f0}' +
   ' #fpLangTop{flex:none !important}' +
-  // Buttons on the app's blue gradient cards were darkened until invisible; give them a
-  // visible glass look (light fill + clear border + white icons) in BOTH light and dark mode.
   ' html.fp-dark body main div[style*="linear-gradient"] button,html.fp-dark body main div[style*="linear-gradient"] label,' +
   'html:not(.fp-dark) body main div[style*="linear-gradient"] button,html:not(.fp-dark) body main div[style*="linear-gradient"] label' +
   '{background:rgba(255,255,255,.16) !important;border:1.5px solid rgba(255,255,255,.5) !important;box-shadow:none !important}' +
@@ -59,15 +55,9 @@ var HEAD_CSS =
   '  .fp-theme{gap:1px !important;padding:2px !important}' +
   '  .fp-theme button:nth-child(3){display:none !important}' +
   '  main header button[title*="Chapa"],main header button[title*="Print"]{display:none !important}' +
-  // WhatsApp/contact strip: drop the desktop flex spacer so the info fills the width; extra
-  // left padding keeps the fp logo clear of the floating menu (burger) button; and force a
-  // full symmetric width — the app's negative margins + max-width:100% otherwise left the
-  // blue strip ~20px short on the right (a black gutter, very visible in dark mode).
   '  div[data-topbanner="1"]{gap:4px 10px !important;row-gap:3px !important;padding:8px 16px 8px 68px !important;align-items:center !important;justify-content:flex-start !important;margin-left:0 !important;margin-right:0 !important;width:100% !important;max-width:none !important;box-sizing:border-box !important}' +
   '  div[data-topbanner="1"]>img{margin-right:4px !important}' +
   '  div[data-topbanner="1"]>div:empty{display:none !important}' +
-  // Quick Sale card: logo + title stay on one row; the toolbar icons stay on one line AND
-  // FIT inside the card (tight gap + smaller button padding, no cut-off, no scroll).
   '  main div[style*="linear-gradient"] div[style*="gap: 14px"]{flex-wrap:nowrap !important;min-width:0 !important}' +
   '  main div[style*="linear-gradient"] div[style*="gap: 14px"]>div{min-width:0 !important}' +
   '  main div[style*="linear-gradient"] div[style*="gap: 10px"]{flex-wrap:nowrap !important;gap:4px !important;overflow:hidden !important}' +
@@ -96,6 +86,10 @@ var HEAD_CSS =
   '  main div[style*="minmax(280px"]>div{flex:1 1 0 !important;min-width:0 !important;padding:8px 7px !important;overflow:hidden}' +
   '  main div[style*="minmax(280px"]>div:last-child{flex:1 1 100% !important;order:9 !important}' +
   '  main div[style*="minmax(280px"]>div:not(:last-child) *{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
+  // Metric tiles (Design 6, marked data-fpmetric): never clip the money value — show it in full.
+  '  main div[style*="minmax(280px"]>div[data-fpmetric]{overflow:visible !important;padding:14px 5px 12px !important}' +
+  '  main div[style*="minmax(280px"]>div[data-fpmetric] *{white-space:nowrap !important;overflow:visible !important;text-overflow:clip !important}' +
+  '  main div[style*="minmax(280px"]>div[data-fpmetric] div[style*="font-size:16px"]{font-size:13px !important}' +
   '  main div[style*="grid-template-columns"]>div{min-width:0 !important}' +
   '  main div[style*="width:"]{max-width:100% !important}' +
   '  main div[style*="flex"]{flex-wrap:wrap !important}' +
