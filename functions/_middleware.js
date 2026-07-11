@@ -1,8 +1,8 @@
 /* Cloudflare Pages Function middleware — dark theme, sidebar polish, RESPONSIVE
- * (phone/tablet) layout, a SELF-HEALING language toggle, and a small SW i18n top-up.
- * All injected into the page <head> at the EDGE so it applies before first paint and
- * never moves/removes an app node (so it can't crash the React app). Fully defensive:
- * only HTML responses are touched; any error falls through untouched. */
+ * (phone/tablet) layout, and a SELF-HEALING language toggle. All injected into the
+ * page <head> at the EDGE so it applies before first paint and never moves/removes an
+ * app node (so it can't crash the React app). Fully defensive: only HTML responses are
+ * touched; any error falls through untouched. */
 
 var HEAD_CSS =
   ' aside nav a{display:flex !important;align-items:center;width:100% !important;box-sizing:border-box}' +
@@ -38,22 +38,19 @@ var HEAD_CSS =
   '  body.fp-nav-open .fp-nav-backdrop{display:block}' +
   ' }';
 
-/* Self-healing SW/EN language toggle + a small Swahili i18n top-up for the few strings
- * the app leaves in English (Google Profile card, dashboard chart header, Customers
- * banner, Item labels). The toggle anchors to the theme button by a LANGUAGE-INDEPENDENT
- * match so it survives i18n title translation + React re-renders; the translation pass
- * only runs when the saved language is Swahili and only replaces a short whitelist, so it
- * can't corrupt unrelated text. Reuses the app's own window.FPSetLang. */
+/* Self-healing SW/EN language toggle. The app builds a #fpLangTop toggle in index.html,
+ * but it anchors to the theme button via its ENGLISH title ("Light / Dark mode"); once
+ * i18n translates that title to "Mwanga / Giza", the app can no longer re-create the
+ * toggle after a React re-render removes it — so it silently disappears (worse on mobile).
+ * This re-creates it whenever missing, finding the theme button by a LANGUAGE-INDEPENDENT
+ * match, reusing the app's own window.FPSetLang. Idempotent: if present it just repaints. */
 var LANG_JS =
   "(function(){try{" +
   "function cur(){try{return localStorage.getItem('fp_lang')||'sw';}catch(e){return 'sw';}}" +
   "function findTheme(){var b=document.querySelectorAll('header button');for(var i=0;i<b.length;i++){var t=b[i].getAttribute('title')||'';if(/giza|mwanga|dark|light/i.test(t))return b[i];}return null;}" +
   "function paint(box){var l=cur();var k=box.children;for(var i=0;i<k.length;i++){var on=k[i].getAttribute('data-l')===l;k[i].style.cssText='padding:4px 9px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;line-height:1;'+(on?'background:#2e90f0;color:#fff;':'background:transparent;color:#5b7197;');}}" +
   "function ensure(){if(!window.FPSetLang)return;var box=document.getElementById('fpLangTop');if(box){paint(box);return;}var tb=findTheme();if(!tb||!tb.parentNode)return;box=document.createElement('div');box.id='fpLangTop';box.style.cssText='display:flex;gap:3px;padding:3px;background:#eef2f7;border:1px solid #e3e6eb;border-radius:11px;height:40px;box-sizing:border-box;align-items:center;flex:none;margin:0 2px';['sw','en'].forEach(function(l){var d=document.createElement('div');d.setAttribute('data-l',l);d.textContent=l.toUpperCase();d.addEventListener('click',function(){try{window.FPSetLang(l);}catch(e){}paint(box);});box.appendChild(d);});tb.parentNode.insertBefore(box,tb);paint(box);}" +
-  "var TR=[['Good morning','Habari za asubuhi'],['Good afternoon','Habari za mchana'],['Good evening','Habari za jioni'],['Total Sale','Jumla ya Mauzo'],['vs last month','vs mwezi jana'],['7-day reviews','Mapitio ya siku 7'],['response rate','kiwango cha majibu'],['Use contacts from your Phone or Gmail to quickly create customers.','Tumia anwani kutoka Simu au Gmail kutengeneza wateja haraka.'],['Google Profile','Wasifu wa Google'],['Reputation manager','Meneja wa sifa'],['Category:','Kategoria:'],['Unit:','Kipimo:']];" +
-  "function trans(){if(cur()!=='sw')return;try{var w=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,null,false),n;while(n=w.nextNode()){var v=n.nodeValue;if(!v||v.length>90)continue;var t=v;for(var i=0;i<TR.length;i++){if(t.indexOf(TR[i][0])>=0)t=t.split(TR[i][0]).join(TR[i][1]);}if(t!==v)n.nodeValue=t;}}catch(e){}}" +
-  "function tick(){ensure();trans();}" +
-  "setInterval(tick,1200);if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',tick);else tick();" +
+  "setInterval(ensure,1500);if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',ensure);else ensure();" +
   "}catch(e){}})();";
 
 export async function onRequest(context) {
