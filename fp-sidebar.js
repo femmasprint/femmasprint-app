@@ -1,11 +1,12 @@
-/* FEMMAS PRINT — sidebar v9 (safe minimal + hamburger mobile drawer toggle).
+/* FEMMAS PRINT — sidebar v10 (safe minimal, no duplicate hamburger).
  *
  * Never moves/removes an app node (that crashes React). It adds: tooltips, a fallback
- * icon where the app left none, clear section headings, full-width rows, a compact Arifa
- * card, and — for phones/tablets — a hamburger button that opens the sidebar as a
- * drawer, plus a click on the app's own fp logo (inside the drawer) to close it. The
- * responsive CSS lives in the edge <head> injection; this only adds the button/backdrop
- * and toggles a body class. */
+ * icon where the app left none, clear section headings, and full-width rows.
+ *
+ * NOTE (v10): the app's OWN header menu button already opens the sidebar as a drawer
+ * (body.fp-drawer). Earlier versions ALSO added a separate floating hamburger, which
+ * overlapped the native one and looked like two burgers. That floating button is now
+ * removed — we rely on the app's native menu button only. */
 (function () {
   try {
     var css = document.createElement('style');
@@ -17,7 +18,6 @@
     document.head.appendChild(css);
 
     var FALL = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8aa0c0" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="1.6" fill="#8aa0c0" stroke="none"/></svg>';
-    var BURGER = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"></line><line x1="4" y1="12" x2="20" y2="12"></line><line x1="4" y1="17" x2="20" y2="17"></line></svg>';
 
     function looksLikeHeading(el) {
       if (!el || el.nodeType !== 1) return false;
@@ -28,38 +28,17 @@
       return tx.length >= 2 && tx.length <= 26;
     }
 
-    function toggleNav(e) { if (e) { e.preventDefault(); e.stopPropagation(); } document.body.classList.toggle('fp-nav-open'); }
-
-    // Mobile drawer: our own hamburger button opens it; the app's own fp logo (inside
-    // the drawer) closes it; a backdrop and any nav-link tap also close it. All additive.
-    function addMobileNav(aside) {
-      if (!document.querySelector('.fp-burger')) {
-        var b = document.createElement('button');
-        b.className = 'fp-burger'; b.setAttribute('aria-label', 'Menu'); b.type = 'button';
-        b.innerHTML = BURGER;
-        var bd = document.createElement('div'); bd.className = 'fp-nav-backdrop';
-        b.addEventListener('click', toggleNav);
-        bd.addEventListener('click', function () { document.body.classList.remove('fp-nav-open'); });
-        document.addEventListener('click', function (e) {
-          var a = e.target && e.target.closest && e.target.closest('aside nav a');
-          if (a) document.body.classList.remove('fp-nav-open');
-        });
-        document.body.appendChild(bd);
-        document.body.appendChild(b);
-      }
-      // make the app's own fp logo close the drawer when tapped (no node moved)
-      var img = aside.querySelector('img');
-      var logo = img ? (img.parentElement) : null;
-      if (logo && !logo.__fpTog) {
-        logo.__fpTog = 1; logo.style.cursor = 'pointer';
-        logo.addEventListener('click', function () { document.body.classList.remove('fp-nav-open'); });
-      }
+    // v10: clean up any floating hamburger/backdrop that an older cached sidebar may
+    // have added, so a stale version never leaves a duplicate burger behind.
+    function removeLegacyBurger() {
+      var b = document.querySelectorAll('.fp-burger, .fp-nav-backdrop');
+      for (var i = 0; i < b.length; i++) { if (b[i] && b[i].parentNode) b[i].parentNode.removeChild(b[i]); }
     }
 
     function enhance() {
+      removeLegacyBurger();
       var aside = document.querySelector('aside');
       if (!aside) return;
-      addMobileNav(aside);
       var items = aside.querySelectorAll('nav a, nav button');
       for (var i = 0; i < items.length; i++) {
         var el = items[i];
