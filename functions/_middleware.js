@@ -1,10 +1,7 @@
 /* Cloudflare Pages Function middleware — dark theme, sidebar polish, and RESPONSIVE
  * (phone/tablet) layout, injected into the page <head> at the EDGE so it applies before
- * the browser's first paint (no flash, no reflow) and never moves/removes an app node
- * (so it can't crash the React app).
- *
- * Fully defensive: only HTML responses are touched, and ANY error falls straight
- * through to the original, unmodified response — it can never break the site. */
+ * first paint and never moves/removes an app node (so it can't crash the React app).
+ * Fully defensive: only HTML responses are touched; any error falls through untouched. */
 
 var HEAD_CSS =
   ' aside nav a{display:flex !important;align-items:center;width:100% !important;box-sizing:border-box}' +
@@ -18,20 +15,22 @@ var HEAD_CSS =
   ' aside nav a::before{content:"";position:absolute;left:1px;top:9px;bottom:9px;width:3px;border-radius:3px;background:transparent;transition:background .16s ease}' +
   ' aside nav a:hover::before{background:#2e90f0}' +
   // ===== RESPONSIVE: phone & small tablet =====
-  // Hamburger button (added by fp-sidebar.js) — hidden on desktop, shown on small screens.
-  ' .fp-burger{display:none;position:fixed;top:10px;left:10px;z-index:1300;width:40px;height:40px;' +
+  ' .fp-burger{display:none;position:fixed;top:10px;left:10px;z-index:2147483000;width:40px;height:40px;' +
   'border-radius:11px;background:#13315a;color:#fff;align-items:center;justify-content:center;' +
-  'border:1px solid rgba(255,255,255,.16);cursor:pointer;box-shadow:0 3px 12px rgba(0,0,0,.35)}' +
+  'border:1px solid rgba(255,255,255,.18);cursor:pointer;box-shadow:0 3px 12px rgba(0,0,0,.35)}' +
   ' .fp-nav-backdrop{display:none}' +
   ' @media(max-width:820px){' +
-  '  aside{position:fixed !important;left:0;top:0;bottom:0;height:100vh !important;z-index:1200 !important;' +
-  'width:274px !important;max-width:84vw;transform:translateX(-100%);transition:transform .26s ease;' +
-  'box-shadow:2px 0 26px rgba(0,0,0,.55);overflow-y:auto;overflow-x:hidden}' +
-  '  body.fp-nav-open aside{transform:translateX(0)}' +
+  '  aside{position:fixed !important;left:0 !important;top:0 !important;bottom:0 !important;height:100vh !important;' +
+  'z-index:2147482000 !important;width:274px !important;max-width:84vw;transform:translateX(-100%) !important;' +
+  'transition:transform .26s ease !important;box-shadow:2px 0 26px rgba(0,0,0,.55);overflow-y:auto;overflow-x:hidden}' +
+  '  body.fp-nav-open aside{transform:translateX(0) !important}' +
   '  main{width:100% !important;min-width:0 !important}' +
-  '  main > *:first-child{padding-left:54px !important}' +
+  // let the top toolbar wrap so the search, buttons, language (SW/EN) and theme are all
+  // visible instead of overflowing off the right edge; make room for the hamburger.
+  '  main header{flex-wrap:wrap !important;height:auto !important;row-gap:8px !important;' +
+  'padding-left:56px !important;align-items:center}' +
   '  .fp-burger{display:flex !important}' +
-  '  .fp-nav-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1150}' +
+  '  .fp-nav-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:2147481000}' +
   '  body.fp-nav-open .fp-nav-backdrop{display:block}' +
   ' }';
 
