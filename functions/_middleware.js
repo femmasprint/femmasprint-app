@@ -56,6 +56,8 @@ var HEAD_CSS =
   ' main div:has(>div[data-qsorder="note"])>div[style*="minmax(330px"]{order:2 !important}' +
   ' main div:has(>div[data-qsorder="note"])>div[data-qsorder="chips"]{order:3 !important}' +
   ' main div:has(>div[data-qsorder="note"])>div[data-qsorder="note"]{order:4 !important}' +
+  // Give the toolbar a top gap so it clears the sticky header (the removed banner used to do this)
+  ' main div:has(>div[data-qsorder="note"])>div:first-child{margin-top:32px !important}' +
   // Remove the top location / WhatsApp-support banner (user request)
   ' div[data-topbanner="1"]{display:none !important}' +
   // ===== RESPONSIVE: phone & tablet (<=1024px) =====
