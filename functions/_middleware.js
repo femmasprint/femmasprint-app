@@ -82,14 +82,14 @@ var HEAD_CSS =
   '  main div[style*="repeat(5"]{display:flex !important;gap:4px !important;flex-wrap:nowrap !important}' +
   '  main div[style*="repeat(5"]>div{flex:1 1 0 !important;min-width:0 !important;padding:5px 4px !important;overflow:hidden}' +
   '  main div[style*="repeat(5"]>div *{font-size:9px !important;line-height:1.2 !important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
-  '  main div[style*="minmax(280px"]{display:flex !important;flex-wrap:wrap !important;gap:6px !important}' +
+  '  main div[style*="minmax(280px"]{display:flex !important;flex-wrap:wrap !important;gap:11px !important}' +
   '  main div[style*="minmax(280px"]>div{flex:1 1 0 !important;min-width:0 !important;padding:8px 7px !important;overflow:hidden}' +
   '  main div[style*="minmax(280px"]>div:last-child{flex:1 1 100% !important;order:9 !important}' +
   '  main div[style*="minmax(280px"]>div:not(:last-child) *{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
-  // Metric tiles (Design 6, marked data-fpmetric): never clip the money value — show it in full.
-  '  main div[style*="minmax(280px"]>div[data-fpmetric]{overflow:visible !important;padding:14px 5px 12px !important}' +
-  '  main div[style*="minmax(280px"]>div[data-fpmetric] *{white-space:nowrap !important;overflow:visible !important;text-overflow:clip !important}' +
-  '  main div[style*="minmax(280px"]>div[data-fpmetric] div[style*="font-size:16px"]{font-size:13px !important}' +
+  // Premium metric tiles (marked data-fpmetric): STACK full-width; never clip the money value.
+  '  main div[style*="minmax(280px"]>div[data-fpmetric]{flex:1 1 100% !important;order:0 !important;overflow:hidden !important;padding:16px 18px 0 !important}' +
+  '  main div[style*="minmax(280px"]>div[data-fpmetric] *{white-space:normal !important;overflow:visible !important;text-overflow:clip !important}' +
+  '  main div[style*="minmax(280px"]>div[data-fpmetric] svg{display:block !important;width:100% !important}' +
   '  main div[style*="grid-template-columns"]>div{min-width:0 !important}' +
   '  main div[style*="width:"]{max-width:100% !important}' +
   '  main div[style*="flex"]{flex-wrap:wrap !important}' +
