@@ -869,7 +869,7 @@ window.addEventListener('load', function () {
           </div>
 
           <!-- totals + note on one line -->
-          <div style="display:grid;grid-template-columns:repeat(3,minmax(150px,1fr)) minmax(280px,1.4fr);gap:14px;margin-top:22px;align-items:stretch">
+          <div style="display:grid;grid-template-columns:repeat(4,minmax(140px,1fr)) minmax(280px,1.4fr);gap:14px;margin-top:22px;align-items:stretch">
             <div data-fpmetric="1" style="position:relative;overflow:hidden;background:linear-gradient(165deg,#17233f,#0e1526);border:1px solid #212d45;border-radius:18px;padding:16px 18px 0;box-shadow:0 12px 30px -16px rgba(0,0,0,.85)">
               <div style="position:absolute;top:0;left:20px;right:20px;height:2px;background:linear-gradient(90deg,transparent,#37d39a,transparent);box-shadow:0 0 12px #37d39a;animation:fpGlow 2.4s ease-in-out infinite"></div>
               <div style="display:flex;align-items:center;justify-content:space-between">
@@ -899,6 +899,16 @@ window.addEventListener('load', function () {
               <div style="font-size:24px;font-weight:800;color:#fff;letter-spacing:-.3px;margin-top:12px;white-space:nowrap"><span style="font-size:12px;color:#8ba6cc;margin-right:3px">Sh</span><span data-fpcount="1" data-fpval="{{ qs.cashInHand }}">0</span></div>
               <div style="font-size:11px;color:#8ba6cc;font-weight:600;margin:5px 0 12px">Cash collected − expenses</div>
               <svg style="display:block;width:100%;height:36px" viewBox="0 0 320 36" preserveAspectRatio="none"><defs><linearGradient id="fpspk3" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#54b6f8" stop-opacity=".28"></stop><stop offset="1" stop-color="#54b6f8" stop-opacity="0"></stop></linearGradient></defs><path d="M0,28 L40,24 L80,26 L120,17 L160,21 L200,15 L240,19 L280,11 L320,13 L320,36 L0,36 Z" fill="url(#fpspk3)"></path><path d="M0,28 L40,24 L80,26 L120,17 L160,21 L200,15 L240,19 L280,11 L320,13" fill="none" stroke="#54b6f8" stroke-width="2"></path></svg>
+            </div>
+            <div data-fpmetric="1" style="position:relative;overflow:hidden;background:linear-gradient(165deg,#231d0e,#141122);border:1px solid #3a2f14;border-radius:18px;padding:16px 18px 0;box-shadow:0 12px 30px -16px rgba(0,0,0,.85)">
+              <div style="position:absolute;top:0;left:20px;right:20px;height:2px;background:linear-gradient(90deg,transparent,#fbbf24,transparent);box-shadow:0 0 12px #fbbf24;animation:fpGlow 2.4s ease-in-out infinite"></div>
+              <div style="display:flex;align-items:center;justify-content:space-between">
+                <div style="display:flex;align-items:center;gap:10px"><span style="width:36px;height:36px;border-radius:11px;background:rgba(251,191,36,.15);display:flex;align-items:center;justify-content:center;flex:none"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2.3"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v10M9.3 9.2c0-1 .9-1.7 2.7-1.7s2.7.8 2.7 1.8-1 1.5-2.7 1.7-2.7.7-2.7 1.8.9 1.7 2.7 1.7 2.7-.7 2.7-1.7"></path></svg></span><span style="font-size:11px;color:#8ba6cc;font-weight:700;text-transform:uppercase;letter-spacing:.05em">Total Profit</span></div>
+                <span style="font-size:10.5px;font-weight:800;padding:3px 10px;border-radius:20px;background:rgba(251,191,36,.16);color:#fbbf24;white-space:nowrap">LEO</span>
+              </div>
+              <div style="font-size:24px;font-weight:800;color:{{ qs.profitColor }};letter-spacing:-.3px;margin-top:12px;white-space:nowrap"><span style="font-size:12px;color:#8ba6cc;margin-right:3px">Sh</span><span data-fpcount="1" data-fpval="{{ qs.profit }}">0</span></div>
+              <div style="font-size:11px;color:#8ba6cc;font-weight:600;margin:5px 0 12px">Sales − expenses today</div>
+              <svg style="display:block;width:100%;height:36px" viewBox="0 0 320 36" preserveAspectRatio="none"><defs><linearGradient id="fpspk4" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fbbf24" stop-opacity=".28"></stop><stop offset="1" stop-color="#fbbf24" stop-opacity="0"></stop></linearGradient></defs><path d="M0,29 L40,25 L80,27 L120,18 L160,22 L200,13 L240,17 L280,9 L320,11 L320,36 L0,36 Z" fill="url(#fpspk4)"></path><path d="M0,29 L40,25 L80,27 L120,18 L160,22 L200,13 L240,17 L280,9 L320,11" fill="none" stroke="#fbbf24" stroke-width="2"></path></svg>
             </div>
             <div style="background:#fff;border:1px solid #eef1f4;border-radius:20px;padding:15px 17px;display:flex;flex-direction:column;box-shadow:0 1px 2px rgba(19,49,90,.04),0 18px 30px -20px rgba(19,49,90,.18)">
               <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:9px">
@@ -7208,6 +7218,8 @@ class Component extends DCLogic {
     // physical cash drawer = cash collected − expenses (bank/voda/yas don't touch the drawer)
     const qsExpCashOnly = (this.state.qsExpenses || []).reduce((a, r) => a + ((r.payMode || 'Cash') === 'Cash' ? qsNum(r.qty) * qsNum(r.price) : 0), 0);
     const qsCashInHand = qsTotCash - qsExpCashOnly;
+    // profit today = all sales − all expenses (faida ya leo)
+    const qsProfit = qsTotalSales - qsTotalExpenses;
     // customer name list for autocomplete
     const qsCustomerList = pdataAll.map(p => p[0]).filter(Boolean);
     const qsSalesCount = (this.state.qsSales || []).filter(r => (r.client || r.goods || r.price)).length;
@@ -7234,6 +7246,7 @@ class Component extends DCLogic {
       saleRows: qsSaleRows, expenseRows: qsExpenseRows,
       totalSales: qsMoney(qsTotalSales), totalExpenses: qsMoney(qsTotalExpenses),
       totalPaid: qsMoney(qsTotalPaid), cashInHand: qsMoney(qsCashInHand),
+      profit: qsMoney(qsProfit), profitColor: (qsProfit < 0 ? '#fb6f84' : '#ffffff'),
       totVoda: qsMoney(qsTotVoda), totYas: qsMoney(qsTotYas), totBank: qsMoney(qsTotBank), totCash: qsMoney(qsTotCash), totSimu: qsMoney(qsTotSimu), totSimu: qsMoney(qsTotSimu),
       salesCount: qsSalesCount, expCount: qsExpCount,
       cashColor: qsCashInHand > 0 ? '#16a34a' : (qsCashInHand < 0 ? '#e11d48' : '#94a3b8'),
@@ -9030,7 +9043,7 @@ class Component extends DCLogic {
 /* FEMMAS PRINT — Metric count-up (namba zinapanda; salama kwa re-render) */
 (function(){
   try{ var st=document.createElement('style'); st.textContent='@keyframes fpGlow{0%,100%{opacity:.5}50%{opacity:1}}'; (document.head||document.documentElement).appendChild(st); }catch(e){}
-  function parseNum(s){ var m=String(s==null?'':s).replace(/[^0-9.]/g,''); var n=parseFloat(m); return isNaN(n)?0:n; }
+  function parseNum(s){ s=String(s==null?'':s); var neg=/-/.test(s); var m=s.replace(/[^0-9.]/g,''); var n=parseFloat(m); if(isNaN(n))n=0; return neg?-n:n; }
   function fmt(n){ return Math.round(n).toLocaleString('en-US'); }
   function animateEl(el,target){
     var cur=(el.__fpv==null)?0:el.__fpv;
