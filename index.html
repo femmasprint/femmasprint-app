@@ -8877,13 +8877,12 @@ class Component extends DCLogic {
   function injectToggle(){
     var themeBtn=document.querySelector('button[title="Light / Dark mode"],button[title="Mwanga / Giza"]'); if(!themeBtn||!themeBtn.parentNode) return;
     if(document.getElementById('fpLangTop')) return;
-    var box=document.createElement('div'); box.id='fpLangTop';
-    box.setAttribute('style','display:flex;gap:3px;padding:3px;background:#eef2f7;border:1px solid #e3e6eb;border-radius:11px;height:40px;box-sizing:border-box;align-items:center;flex:none;margin-right:2px');
-    var sw=document.createElement('div'); sw.setAttribute('data-l','sw'); sw.textContent='SW'; sw.onclick=function(){setLang('sw');};
-    var en=document.createElement('div'); en.setAttribute('data-l','en'); en.textContent='EN'; en.onclick=function(){setLang('en');};
-    box.appendChild(sw); box.appendChild(en);
-    themeBtn.parentNode.insertBefore(box, themeBtn);
-    paintToggle();
+    var btn=document.createElement('button'); btn.id='fpLangTop'; btn.type='button';
+    btn.setAttribute('style','height:40px;min-width:48px;padding:0 13px;border-radius:11px;border:1px solid rgba(130,150,180,.5);background:transparent;color:#2e90f0;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;flex:none;margin-right:2px');
+    function fpCur(){ try{return localStorage.getItem('fp_lang')||'sw';}catch(e){return 'sw';} }
+    btn.textContent=fpCur().toUpperCase();
+    btn.onclick=function(){ var nl=fpCur()==='sw'?'en':'sw'; setLang(nl); btn.textContent=nl.toUpperCase(); };
+    themeBtn.parentNode.insertBefore(btn, themeBtn);
   }
   setInterval(function(){ injectToggle(); apply(); }, 2500);
   setTimeout(function(){ injectToggle(); apply(); }, 1000);
