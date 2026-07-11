@@ -1,15 +1,10 @@
-/* FEMMAS PRINT — sidebar v6 (safe minimal, no restructuring).
+/* FEMMAS PRINT — sidebar v7 (safe minimal + mobile drawer toggle).
  *
- * IMPORTANT LESSON: an external script must NOT move the app's own menu nodes. The app
- * is React-based; relocating its <a> nodes into custom group containers breaks React's
- * reconciliation ("Failed to execute 'removeChild' on 'Node'") and blanks the whole app.
- * So we do NOT restructure the menu here. A collapsible "accordion" sidebar has to be
- * built INTO the app's own source (native), not patched from outside.
- *
- * What this safe layer does: tooltips, a fallback icon where the app left none, clear
- * section headings, full-width rows (fixes the jumbled Usimamizi section), and shrinks
- * the Arifa notification card to a compact static line. All additive and idempotent —
- * it never moves or removes an app node, so it can't crash the app. */
+ * Never moves or removes an app node (moving React's menu nodes crashes the app). It
+ * only: tooltips, a fallback icon where the app left none, clear section headings,
+ * full-width rows, a compact Arifa card, AND — for phones/tablets — a hamburger button
+ * that slides the native sidebar in/out as a drawer (the responsive CSS lives in the
+ * edge <head> injection; this just adds the button + backdrop and toggles a body class). */
 (function () {
   try {
     var css = document.createElement('style');
@@ -31,9 +26,28 @@
       return tx.length >= 2 && tx.length <= 26;
     }
 
+    // Mobile drawer: add our own hamburger + backdrop, toggle body.fp-nav-open. All new
+    // elements are ours — nothing of the app's is touched, so it can never crash it.
+    function addMobileNav() {
+      if (document.querySelector('.fp-burger')) return;
+      var b = document.createElement('button');
+      b.className = 'fp-burger'; b.setAttribute('aria-label', 'Menu'); b.type = 'button';
+      b.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>';
+      var bd = document.createElement('div'); bd.className = 'fp-nav-backdrop';
+      b.addEventListener('click', function (e) { e.stopPropagation(); document.body.classList.toggle('fp-nav-open'); });
+      bd.addEventListener('click', function () { document.body.classList.remove('fp-nav-open'); });
+      document.addEventListener('click', function (e) {
+        var a = e.target && e.target.closest && e.target.closest('aside nav a');
+        if (a) document.body.classList.remove('fp-nav-open');
+      });
+      document.body.appendChild(bd);
+      document.body.appendChild(b);
+    }
+
     function enhance() {
       var aside = document.querySelector('aside');
       if (!aside) return;
+      addMobileNav();
       var items = aside.querySelectorAll('nav a, nav button');
       for (var i = 0; i < items.length; i++) {
         var el = items[i];
