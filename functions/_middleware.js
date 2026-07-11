@@ -2,7 +2,14 @@
  * (phone/tablet) layout, and a SELF-HEALING language toggle. All injected into the
  * page <head> at the EDGE so it applies before first paint and never moves/removes an
  * app node (so it can't crash the React app). Fully defensive: only HTML responses are
- * touched; any error falls through untouched. */
+ * touched; any error falls through untouched.
+ *
+ * MOBILE TILE-ROW RULE (reusable across pages): a row of small tiles/cards that the app
+ * lays out with `grid-template-columns:repeat(N,1fr)` (or minmax variants) wraps its last
+ * tile onto a new line on a narrow phone. The fix pattern is always the same — turn the
+ * container into a single flex row (`display:flex;flex-wrap:nowrap`) with each tile
+ * `flex:1 1 0;min-width:0`, and shrink the inner text so N tiles fit one clean line. Apply
+ * this same pattern when tidying other pages for mobile. */
 
 var HEAD_CSS =
   ' aside nav a{display:flex !important;align-items:center;width:100% !important;box-sizing:border-box}' +
@@ -30,18 +37,21 @@ var HEAD_CSS =
   '  main{width:100% !important;min-width:0 !important;overflow-x:hidden !important}' +
   '  main header{flex-wrap:wrap !important;height:auto !important;row-gap:8px !important;' +
   'padding-left:56px !important;align-items:center}' +
-  // Quick Sale Sales/Expenses (auto-fit minmax(330px..)) becomes a horizontal SWIPE PAGER
-  // on phones: one full-width panel at a time, swipe left for Expenses, right for Sales.
+  // Quick Sale Sales/Expenses (auto-fit minmax(330px..)) becomes a horizontal SWIPE PAGER.
   '  main div[style*="minmax(330px"]{display:flex !important;overflow-x:auto !important;' +
   'scroll-snap-type:x mandatory;gap:12px !important;scrollbar-width:none}' +
   '  main div[style*="minmax(330px"]::-webkit-scrollbar{display:none}' +
   '  main div[style*="minmax(330px"]>div{flex:0 0 100% !important;scroll-snap-align:start;' +
   'min-width:0 !important;overflow-x:auto !important;-webkit-overflow-scrolling:touch}' +
-  // The 5 payment tiles (Cash/Bank/Voda/Yas/Simu) render as a repeat(5,1fr) grid that
-  // wraps the 5th tile onto a new row on a phone. Force them into one compact flex row.
+  // 5 payment tiles (Cash/Bank/Voda/Yas/Simu) -> one compact flex row.
   '  main div[style*="repeat(5"]{display:flex !important;gap:4px !important;flex-wrap:nowrap !important}' +
   '  main div[style*="repeat(5"]>div{flex:1 1 0 !important;min-width:0 !important;padding:5px 4px !important;overflow:hidden}' +
   '  main div[style*="repeat(5"]>div *{font-size:9px !important;line-height:1.2 !important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
+  // Bottom summary: 3 tiles (Total Sales/Expenses/Cash in Hand) on one row, Note full-width below.
+  '  main div[style*="minmax(280px"]{display:flex !important;flex-wrap:wrap !important;gap:6px !important}' +
+  '  main div[style*="minmax(280px"]>div{flex:1 1 0 !important;min-width:0 !important;padding:8px 7px !important;overflow:hidden}' +
+  '  main div[style*="minmax(280px"]>div:last-child{flex:1 1 100% !important;order:9 !important}' +
+  '  main div[style*="minmax(280px"]>div:not(:last-child) *{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
   // generic: other grids relax their fixed column min so children can shrink
   '  main div[style*="grid-template-columns"]>div{min-width:0 !important}' +
   '  main div[style*="width:"]{max-width:100% !important}' +
