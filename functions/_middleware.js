@@ -1,8 +1,9 @@
 /* Cloudflare Pages Function middleware — dark theme, sidebar polish, RESPONSIVE
- * (phone/tablet) layout, a single-button language toggle, and mobile swipe-pager dots.
- * All injected into the page <head> at the EDGE so it applies before first paint and
- * never moves/removes an app node (so it can't crash the React app). Fully defensive:
- * only HTML responses are touched; any error falls through untouched.
+ * (phone/tablet) layout, a single-button language toggle, mobile swipe-pager dots, and
+ * shortened header CTAs on small screens. All injected into the page <head> at the EDGE
+ * so it applies before first paint and never moves/removes an app node (so it can't crash
+ * the React app). Fully defensive: only HTML responses are touched; any error falls
+ * through untouched.
  *
  * MOBILE TILE-ROW RULE (reusable across pages): a row of small tiles/cards that the app
  * lays out with `grid-template-columns:repeat(N,1fr)` (or minmax variants) wraps its last
@@ -30,7 +31,7 @@ var HEAD_CSS =
   'border:1px solid rgba(255,255,255,.18);cursor:pointer;box-shadow:0 3px 12px rgba(0,0,0,.35)}' +
   ' .fp-nav-backdrop{display:none}' +
   ' @media(max-width:900px){' +
-  '  main header button{padding:7px 11px !important;font-size:12px !important;font-weight:600 !important;' +
+  '  main header button{padding:7px 10px !important;font-size:12px !important;font-weight:600 !important;' +
   'gap:5px !important;min-height:36px}' +
   '  main header button svg{width:14px !important;height:14px !important}' +
   ' }' +
@@ -44,9 +45,6 @@ var HEAD_CSS =
   '  main header{flex-wrap:wrap !important;height:auto !important;row-gap:8px !important;' +
   'padding-left:56px !important;align-items:center}' +
   '  #fp-dots{display:flex !important}' +
-  // Quick Sale toolbar: turn the labelled action buttons (Jump to, Record Advance, Daily
-  // Report, Load Data) into compact icon-only buttons (font-size:0 hides the label, the
-  // svg icon stays). The action still fires / the picker still opens on tap.
   '  main div[style*="linear-gradient"] button,main div[style*="linear-gradient"] label{font-size:0 !important;' +
   'padding:9px !important;min-width:0 !important;gap:0 !important}' +
   '  main div[style*="linear-gradient"] button svg,main div[style*="linear-gradient"] label svg{width:18px !important;height:18px !important}' +
@@ -80,6 +78,17 @@ var LANG_JS =
   "setInterval(ensure,1800);if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',ensure);else ensure();" +
   "}catch(e){}})();";
 
+/* Shorten the header call-to-action labels on small screens so they + the toggle/theme/
+ * print/avatar fit on one line. Only rewrites when the long label is present (idempotent —
+ * once it reads 'Mauzo' it stops), and only <=820px, so it never churns or flickers. */
+var SHORT_JS =
+  "(function(){try{" +
+  "var MAP={'Ongeza Mauzo':'Mauzo','Ongeza Manunuzi':'Manunuzi','Add Sale':'Sale','Add Purchase':'Purchase'};" +
+  "function mm(){return window.matchMedia('(max-width:820px)').matches;}" +
+  "function shorten(){if(!mm())return;var b=document.querySelectorAll('header button');for(var i=0;i<b.length;i++){var k=b[i].childNodes;for(var j=0;j<k.length;j++){var x=k[j];if(x.nodeType===3){var t=x.nodeValue.trim();if(MAP[t]){x.nodeValue=x.nodeValue.replace(t,MAP[t]);}}}}}" +
+  "setInterval(shorten,700);if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',shorten);else shorten();" +
+  "}catch(e){}})();";
+
 /* Mobile swipe-pager dots for Quick Sale (Sales / Expenses). */
 var DOTS_JS =
   "(function(){try{" +
@@ -99,6 +108,7 @@ export async function onRequest(context) {
         element(el) {
           el.append('<style id="fpEdgeDark">' + HEAD_CSS + '</style>', { html: true });
           el.append('<script id="fpEdgeLang">' + LANG_JS + '</script>', { html: true });
+          el.append('<script id="fpEdgeShort">' + SHORT_JS + '</script>', { html: true });
           el.append('<script id="fpEdgeDots">' + DOTS_JS + '</script>', { html: true });
         }
       })
