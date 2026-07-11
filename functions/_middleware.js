@@ -1,15 +1,18 @@
 /* Cloudflare Pages Function middleware — dark theme, sidebar polish, RESPONSIVE
- * (phone/tablet) layout, a single-button language toggle, mobile swipe-pager dots, and
- * shortened header CTAs on small screens. All injected into the page <head> at the EDGE
- * so it applies before first paint and never moves/removes an app node (so it can't crash
- * the React app). Fully defensive: only HTML responses are touched; any error falls
- * through untouched.
+ * (phone/tablet) layout, a single-button language toggle, and mobile swipe-pager dots.
+ * All injected into the page <head> at the EDGE so it applies before first paint and
+ * never moves/removes an app node (so it can't crash the React app). Fully defensive:
+ * only HTML responses are touched; any error falls through untouched.
  *
  * MOBILE TILE-ROW RULE (reusable across pages): a row of small tiles/cards that the app
  * lays out with `grid-template-columns:repeat(N,1fr)` (or minmax variants) wraps its last
  * tile onto a new line on a narrow phone. The fix pattern is always the same — turn the
  * container into a single flex row (`display:flex;flex-wrap:nowrap`) with each tile
- * `flex:1 1 0;min-width:0`, and shrink the inner text so N tiles fit one clean line. */
+ * `flex:1 1 0;min-width:0`, and shrink the inner text so N tiles fit one clean line.
+ *
+ * NOTE: never rewrite the app's React-managed text nodes from here — doing so throws
+ * "removeChild ... not a child of this node" and crashes the whole app. Shorten labels
+ * with CSS only (font-size:0 + icon), never by editing textContent/nodeValue. */
 
 var HEAD_CSS =
   ' aside nav a{display:flex !important;align-items:center;width:100% !important;box-sizing:border-box}' +
@@ -78,17 +81,6 @@ var LANG_JS =
   "setInterval(ensure,1800);if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',ensure);else ensure();" +
   "}catch(e){}})();";
 
-/* Shorten the header call-to-action labels on small screens so they + the toggle/theme/
- * print/avatar fit on one line. Only rewrites when the long label is present (idempotent —
- * once it reads 'Mauzo' it stops), and only <=820px, so it never churns or flickers. */
-var SHORT_JS =
-  "(function(){try{" +
-  "var MAP={'Ongeza Mauzo':'Mauzo','Ongeza Manunuzi':'Manunuzi','Add Sale':'Sale','Add Purchase':'Purchase'};" +
-  "function mm(){return window.matchMedia('(max-width:820px)').matches;}" +
-  "function shorten(){if(!mm())return;var b=document.querySelectorAll('header button');for(var i=0;i<b.length;i++){var k=b[i].childNodes;for(var j=0;j<k.length;j++){var x=k[j];if(x.nodeType===3){var t=x.nodeValue.trim();if(MAP[t]){x.nodeValue=x.nodeValue.replace(t,MAP[t]);}}}}}" +
-  "setInterval(shorten,700);if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',shorten);else shorten();" +
-  "}catch(e){}})();";
-
 /* Mobile swipe-pager dots for Quick Sale (Sales / Expenses). */
 var DOTS_JS =
   "(function(){try{" +
@@ -108,7 +100,6 @@ export async function onRequest(context) {
         element(el) {
           el.append('<style id="fpEdgeDark">' + HEAD_CSS + '</style>', { html: true });
           el.append('<script id="fpEdgeLang">' + LANG_JS + '</script>', { html: true });
-          el.append('<script id="fpEdgeShort">' + SHORT_JS + '</script>', { html: true });
           el.append('<script id="fpEdgeDots">' + DOTS_JS + '</script>', { html: true });
         }
       })
