@@ -845,6 +845,7 @@ window.addEventListener('load', function () {
                       <th style="padding:8px 6px;font-size:10px;font-weight:700;color:#5b7197;text-align:center;border:1px solid #e3e6eb;width:46px">Qty</th>
                       <th style="padding:8px 8px;font-size:10px;font-weight:700;color:#5b7197;text-align:right;border:1px solid #e3e6eb;width:84px">Unit Price</th>
                       <th style="padding:8px 8px;font-size:10px;font-weight:700;color:#5b7197;text-align:right;border:1px solid #e3e6eb;width:92px">Amount</th>
+                      <th style="padding:8px 8px;font-size:10px;font-weight:700;color:#5b7197;text-align:center;border:1px solid #e3e6eb;width:96px">Mode</th>
                       <th style="border:1px solid #e3e6eb;width:30px"></th>
                     </tr>
                   </thead>
@@ -856,7 +857,7 @@ window.addEventListener('load', function () {
                         <td style="border:1px solid #e3e6eb;padding:0"><input value="{{ r.goods }}" onChange="{{ r.onGoods }}" onBlur="{{ r.onGoodsBlur }}" disabled="{{ r.locked }}" placeholder="Reason/Item" style="width:100%;border:none;background:transparent;padding:7px 8px;font-size:12px;font-family:inherit;color:#0f172a;outline:none" style-focus="background:#e9f3fe"></td>
                         <td style="border:1px solid #e3e6eb;padding:0"><input value="{{ r.qty }}" onChange="{{ r.onQty }}" onBlur="{{ r.onQtyBlur }}" disabled="{{ r.locked }}" placeholder="0" style="width:100%;border:none;background:transparent;padding:7px 6px;font-size:12px;font-family:inherit;text-align:center;color:#0f172a;outline:none" style-focus="background:#e9f3fe"></td>
                         <td style="border:1px solid #e3e6eb;padding:0"><input value="{{ r.price }}" onChange="{{ r.onPrice }}" onBlur="{{ r.onPriceBlur }}" disabled="{{ r.locked }}" placeholder="0" style="width:100%;border:none;background:transparent;padding:7px 8px;font-size:12px;font-family:inherit;text-align:right;color:#0f172a;outline:none" style-focus="background:#e9f3fe"></td>
-                        <td style="border:1px solid #e3e6eb;text-align:right;padding:7px 8px;font-size:12px;font-weight:700;color:#0f172a">{{ r.amount }}</td>
+                        <td style="border:1px solid #e3e6eb;text-align:right;padding:7px 8px;font-size:12px;font-weight:700;color:#0f172a">{{ r.amount }}</td><td style="border:1px solid #e3e6eb;padding:3px;position:relative"><div onClick="{{ r.epmToggle }}" style="{{ r.epmBtnStyle }}">{{ r.payMode }}<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M6 9l6 6 6-6"></path></svg></div><sc-if value="{{ r.epmOpen }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;left:3px;right:3px;top:100%;margin-top:3px;z-index:60;background:rgba(255,255,255,.85);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid rgba(46,144,240,.25);border-radius:11px;box-shadow:0 14px 36px rgba(19,49,90,.22);padding:4px;overflow:hidden"><sc-for list="{{ r.epmOptions }}" as="opt" hint-placeholder-count="4"><div onClick="{{ opt.pick }}" style="display:flex;align-items:center;gap:8px;padding:8px 10px;font-size:12px;font-weight:700;color:{{ opt.color }};cursor:pointer;border-radius:8px" style-hover="background:rgba(46,144,240,.1)"><span style="width:8px;height:8px;border-radius:50%;background:{{ opt.color }};flex:none"></span>{{ opt.mode }}</div></sc-for></div></sc-if></td>
                         <td style="border:1px solid #e3e6eb;text-align:center;padding:0"><span onClick="{{ r.onRemove }}" style="cursor:pointer;color:#cbd5e1;font-size:14px;display:inline-block;padding:4px" style-hover="color:#e11d48">×</span></td>
                       </tr>
                     </sc-for>
@@ -4503,9 +4504,9 @@ class Component extends DCLogic {
       { client: '', goods: '', qty: '', price: '', paid: '', payMode: 'Cash' }
     ],
     qsExpenses: [
-      { client: '', goods: '', qty: '', price: '' },
-      { client: '', goods: '', qty: '', price: '' },
-      { client: '', goods: '', qty: '', price: '' }
+      { client: '', goods: '', qty: '', price: '', payMode: 'Cash' },
+      { client: '', goods: '', qty: '', price: '', payMode: 'Cash' },
+      { client: '', goods: '', qty: '', price: '', payMode: 'Cash' }
     ],
     saleRows: [
       { item: '', desc: '', count: '', qty: '', unit: 'NONE', price: '' },
@@ -4856,7 +4857,7 @@ class Component extends DCLogic {
         // expenses for today
         let expRows = this.state.qsExpenses, expDone = { ...(this.state.qsExpSyncedIds || {}) };
         if (Array.isArray(r.expenses)) {
-          const le = r.expenses.map(x => ({ client: x.Name || '', goods: x.Reason || '', qty: String(x.Qty || ''), price: String(x.UnitPrice || ''), _eid: x.ExpenseID || '' }));
+          const le = r.expenses.map(x => ({ client: x.Name || '', goods: x.Reason || '', qty: String(x.Qty || ''), price: String(x.UnitPrice || ''), payMode: x.PayMode || 'Cash', _eid: x.ExpenseID || '' }));
           le.forEach(rw => { if (rw._eid) expDone[rw._eid] = rw.client + '|' + rw.goods + '|' + rw.qty + '|' + rw.price; });
           if (le.length) { var _tpl = []; try { _tpl = (this.fpDailyExpTpl_() || []).map(function(x){ return { client: x.name, goods: 'Nauli', qty: '1', price: String(x.price==null?'':x.price) }; }); } catch(e){} var _have = {}; le.forEach(function(rw){ _have[String(rw.client||'').trim().toLowerCase()] = 1; }); var _miss = _tpl.filter(function(rw){ return rw.client && !_have[String(rw.client||'').trim().toLowerCase()]; }); expRows = [...le, ..._miss, { client: '', goods: '', qty: '', price: '' }]; }
         }
@@ -5879,6 +5880,7 @@ class Component extends DCLogic {
     }, () => this.showToast('✓ Customer ' + name + ' saved'));
   };
   qsPickMode = (i, mode) => this.setState(s => ({ qsSales: s.qsSales.map((r, j) => j === i ? { ...r, payMode: mode } : r), qsDD: null }), () => this.autoSaveQsRow(i));
+  qsPickExpMode = (i, mode) => this.setState(s => ({ qsExpenses: s.qsExpenses.map((r, j) => j === i ? { ...r, payMode: mode } : r), qsDD: null }), () => this.autoSaveQsExpense(i));
   // ===== custom Apple-style calendar =====
   calToISO = (d) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
   openCal = (key, baseISO) => {
@@ -5915,7 +5917,7 @@ class Component extends DCLogic {
     for (let k = 0; k < cells.length; k += 7) weeks.push(cells.slice(k, k + 7));
     return { label: months[m] + ' ' + y, weeks };
   };
-  addQsExpense = () => this.setState(s => ({ qsExpenses: [...s.qsExpenses, { client: '', goods: '', qty: '', price: '' }] }));
+  addQsExpense = () => this.setState(s => ({ qsExpenses: [...s.qsExpenses, { client: '', goods: '', qty: '', price: '', payMode: 'Cash' }] }));
   qsTodayISO = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
   changeQsDate = (newISO) => this.setState(s => { setTimeout(() => { try { this.loadTodaySales(); } catch (e) {} }, 150);
     const cur = s.qsDateISO || this.qsTodayISO();
@@ -7115,9 +7117,16 @@ class Component extends DCLogic {
     const qsExpenseRows = (this.state.qsExpenses || []).map((r, i) => {
       const amount = qsNum(r.qty) * qsNum(r.price);
       const nameFilled = !!(r.client || '').trim();
+      const epm = r.payMode || 'Cash';
+      const epmColor = { Cash: '#16a34a', Bank: '#008ece', Voda: '#e11d48', Yas: '#e0a400', Simu: '#8b5cf6' }[epm] || '#13315a';
       return {
         i, sno: i + 1, client: r.client, goods: r.goods, qty: r.qty, price: r.price,
         amount: qsMoney(amount), nameFilled, locked: !nameFilled,
+        payMode: epm, epmColor,
+        epmOpen: this.state.qsDD === ('epm' + i),
+        epmToggle: () => this.qsToggleDD('epm' + i),
+        epmBtnStyle: 'display:flex;align-items:center;justify-content:space-between;gap:4px;width:100%;border:1px solid ' + epmColor + '4d;border-radius:8px;padding:6px 9px;font-size:11.5px;font-weight:700;font-family:inherit;color:' + epmColor + ';background:' + epmColor + '14;cursor:pointer',
+        epmOptions: ['Cash', 'Bank', 'Voda', 'Yas', 'Simu'].map(mode => { const c = { Cash: '#16a34a', Bank: '#008ece', Voda: '#e11d48', Yas: '#e0a400', Simu: '#8b5cf6' }[mode]; return { mode, color: c, active: epm === mode, pick: () => this.qsPickExpMode(i, mode) }; }),
         onClient: (e) => this.updateQsExpense(i, 'client', e.target.value),
         onGoods: (e) => this.updateQsExpense(i, 'goods', e.target.value),
         exOpen: this.state.qsDD === ('ex' + i),
@@ -7139,7 +7148,8 @@ class Component extends DCLogic {
     const qsModeTotal = (mode) => (this.state.qsSales || []).reduce((a, r) => a + ((r.payMode || 'Cash') === mode ? qsNum(r.paid) : 0), 0);
     const qsTotVoda = qsModeTotal('Voda'), qsTotYas = qsModeTotal('Yas'), qsTotBank = qsModeTotal('Bank'), qsTotCash = qsModeTotal('Cash'), qsTotSimu = qsModeTotal('Simu');
     // physical cash drawer = cash collected − expenses (bank/voda/yas don't touch the drawer)
-    const qsCashInHand = qsTotCash - qsTotalExpenses;
+    const qsExpCashOnly = (this.state.qsExpenses || []).reduce((a, r) => a + ((r.payMode || 'Cash') === 'Cash' ? qsNum(r.qty) * qsNum(r.price) : 0), 0);
+    const qsCashInHand = qsTotCash - qsExpCashOnly;
     // customer name list for autocomplete
     const qsCustomerList = pdataAll.map(p => p[0]).filter(Boolean);
     const qsSalesCount = (this.state.qsSales || []).filter(r => (r.client || r.goods || r.price)).length;
