@@ -4849,10 +4849,26 @@ class Component extends DCLogic {
       const r = await this.backendGet_('getQuickSale', { date: iso });
       if (r && r.ok && Array.isArray(r.sales)) {
         const num = (v) => { const n = parseFloat(String(v).replace(/,/g, '')); return isNaN(n) ? 0 : n; };
-        // DEDUP: the cloud sheet can hold several rows for the same SaleID (the backend appends
-        // a new row on every save/edit). Keep only the LAST row per SaleID so the count/total is
-        // not inflated (e.g. showing a sale as #11 when it's really #1) on any device that reloads.
-        (function(){ var last={}; r.sales.forEach(function(s,k){ if(s&&s.SaleID) last[s.SaleID]=k; }); r.sales = r.sales.filter(function(s,k){ return !s || !s.SaleID || last[s.SaleID]===k; }); })();
+        // DEDUP + ORDER: the backend appends a new row on every save/edit and the read does not
+        // return a usable SaleID, so identical rows pile up. Fix on read: (1) ORDER by the real
+        // entry time (CreatedAt / SaleID timestamp) so it's first-of-day -> last; (2) DROP obvious
+        // double-saves = rows with the SAME SaleID, OR the same content (client+goods+qty+price+
+        // pay) entered within the same ~3-minute window. Genuinely separate repeat sales (spread
+        // further apart in time) are KEPT so nothing real is lost.
+        (function(){
+          var num=function(v){ var n=parseFloat(String(v).replace(/,/g,'')); return isNaN(n)?0:n; };
+          var timeOf=function(s){ var m=String((s&&s.SaleID)||'').match(/(\d{12,})/); if(m) return +m[1]; var d=Date.parse((s&&s.CreatedAt)||''); return isNaN(d)?0:d; };
+          var arr=(r.sales||[]).filter(Boolean).map(function(s){ return { s:s, t:timeOf(s) }; });
+          arr.sort(function(a,b){ return a.t-b.t; });
+          var idSeen={}, byContent={}, out=[], WIN=180000;
+          arr.forEach(function(o){ var s=o.s; var id=String(s.SaleID||'').trim();
+            if(id){ if(idSeen[id]) return; idSeen[id]=1; out.push(s); return; }
+            var sig='c:'+String(s.Client||'').toLowerCase().trim()+'|'+String(s.Goods||'').toLowerCase().trim()+'|'+num(s.Qty)+'|'+num(s.UnitPrice)+'|'+String(s.PayMode||'').toLowerCase().trim();
+            var times=byContent[sig]; if(times){ var dup=false; for(var i=times.length-1;i>=0;i--){ if(Math.abs(o.t-times[i])<=WIN){ dup=true; break; } } if(dup) return; times.push(o.t); } else { byContent[sig]=[o.t]; }
+            out.push(s);
+          });
+          r.sales=out;
+        })();
         const loaded = r.sales.map(s => ({ client: s.Client || '', goods: s.Goods || '', qty: String(s.Qty || ''), price: String(s.UnitPrice || ''), paid: (function(){ var p=String(s.Paid||''); var c=p.replace(/,/g,'').trim(); return (c!=='' && !/^[\d.]+$/.test(c)) ? String(num(s.Qty)*num(s.UnitPrice)) : p; })(), payMode: s.PayMode || 'Cash', _sid: s.SaleID || '' }));
         // mark loaded rows as already-synced so auto-save won't re-post them
         const done = { ...(this.state.qsSyncedIds || {}) };
@@ -4861,8 +4877,21 @@ class Component extends DCLogic {
         // expenses for today
         let expRows = this.state.qsExpenses, expDone = { ...(this.state.qsExpSyncedIds || {}) };
         if (Array.isArray(r.expenses)) {
-          // DEDUP expenses the same way (keep last row per ExpenseID).
-          (function(){ var last={}; r.expenses.forEach(function(x,k){ if(x&&x.ExpenseID) last[x.ExpenseID]=k; }); r.expenses = r.expenses.filter(function(x,k){ return !x || !x.ExpenseID || last[x.ExpenseID]===k; }); })();
+          // DEDUP + ORDER expenses the same way (by ExpenseID, or same content within ~3 min).
+          (function(){
+            var num=function(v){ var n=parseFloat(String(v).replace(/,/g,'')); return isNaN(n)?0:n; };
+            var timeOf=function(x){ var m=String((x&&x.ExpenseID)||'').match(/(\d{12,})/); if(m) return +m[1]; var d=Date.parse((x&&x.CreatedAt)||''); return isNaN(d)?0:d; };
+            var arr=(r.expenses||[]).filter(Boolean).map(function(x){ return { x:x, t:timeOf(x) }; });
+            arr.sort(function(a,b){ return a.t-b.t; });
+            var idSeen={}, byContent={}, out=[], WIN=180000;
+            arr.forEach(function(o){ var x=o.x; var id=String(x.ExpenseID||'').trim();
+              if(id){ if(idSeen[id]) return; idSeen[id]=1; out.push(x); return; }
+              var sig='c:'+String(x.Name||'').toLowerCase().trim()+'|'+String(x.Reason||'').toLowerCase().trim()+'|'+num(x.Qty)+'|'+num(x.UnitPrice);
+              var times=byContent[sig]; if(times){ var dup=false; for(var i=times.length-1;i>=0;i--){ if(Math.abs(o.t-times[i])<=WIN){ dup=true; break; } } if(dup) return; times.push(o.t); } else { byContent[sig]=[o.t]; }
+              out.push(x);
+            });
+            r.expenses=out;
+          })();
           const le = r.expenses.map(x => ({ client: x.Name || '', goods: x.Reason || '', qty: String(x.Qty || ''), price: String(x.UnitPrice || ''), payMode: x.PayMode || 'Cash', _eid: x.ExpenseID || '' }));
           le.forEach(rw => { if (rw._eid) expDone[rw._eid] = rw.client + '|' + rw.goods + '|' + rw.qty + '|' + rw.price; });
           if (le.length) { var _tpl = []; try { _tpl = (this.fpDailyExpTpl_() || []).map(function(x){ return { client: x.name, goods: 'Nauli', qty: '1', price: String(x.price==null?'':x.price) }; }); } catch(e){} var _have = {}; le.forEach(function(rw){ _have[String(rw.client||'').trim().toLowerCase()] = 1; }); var _miss = _tpl.filter(function(rw){ return rw.client && !_have[String(rw.client||'').trim().toLowerCase()]; }); expRows = [...le, ..._miss, { client: '', goods: '', qty: '', price: '' }]; }
