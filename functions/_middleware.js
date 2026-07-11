@@ -74,27 +74,29 @@ var HEAD_CSS =
   '  main div[style*="linear-gradient"] button,main div[style*="linear-gradient"] label{font-size:0 !important;' +
   'padding:9px !important;min-width:0 !important;gap:0 !important}' +
   '  main div[style*="linear-gradient"] button svg,main div[style*="linear-gradient"] label svg{width:18px !important;height:18px !important}' +
-  '  main div[style*="minmax(330px"]{display:flex !important;overflow-x:auto !important;' +
+  '  main div[style*="minmax(330px"]{display:flex !important;align-items:flex-start !important;overflow-x:auto !important;' +
   'scroll-snap-type:x mandatory;gap:12px !important;scrollbar-width:none}' +
   '  main div[style*="minmax(330px"]::-webkit-scrollbar{display:none}' +
-  '  main div[style*="minmax(330px"]>div{flex:0 0 88% !important;scroll-snap-align:start;' +
-  'min-width:0 !important;max-height:64vh !important;overflow:auto !important;-webkit-overflow-scrolling:touch}' +
+  '  main div[style*="minmax(330px"]>div{flex:0 0 88% !important;align-self:flex-start !important;scroll-snap-align:start;' +
+  'min-width:0 !important;max-height:42vh !important;overflow:auto !important;-webkit-overflow-scrolling:touch}' +
   '  main div[style*="repeat(5"]{display:flex !important;gap:4px !important;flex-wrap:nowrap !important}' +
   '  main div[style*="repeat(5"]>div{flex:1 1 0 !important;min-width:0 !important;padding:5px 4px !important;overflow:hidden}' +
   '  main div[style*="repeat(5"]>div *{font-size:9px !important;line-height:1.2 !important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
-  '  main div[style*="minmax(280px"]{display:flex !important;flex-wrap:wrap !important;gap:11px !important}' +
+  '  main div[style*="minmax(280px"]{display:flex !important;flex-wrap:wrap !important;gap:11px !important;margin-top:12px !important}' +
   '  main div[style*="minmax(280px"]>div{flex:1 1 0 !important;min-width:0 !important;padding:8px 7px !important;overflow:hidden}' +
   '  main div[style*="minmax(280px"]>div:last-child{flex:1 1 100% !important;order:9 !important}' +
   '  main div[style*="minmax(280px"]>div:not(:last-child) *{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
   // Premium metric tiles (marked data-fpmetric): 2-PER-ROW compact grid on mobile (shorter page).
+  // NOTE: the app re-serializes these tiles inline styles WITH a space after ":" (e.g. "font-size: 24px"),
+  // so every tile selector below includes both the no-space and the with-space variant.
   '  main div[style*="minmax(280px"]>div[data-fpmetric]{flex:1 1 calc(50% - 6px) !important;order:0 !important;overflow:hidden !important;padding:13px 13px 0 !important}' +
   '  main div[style*="minmax(280px"]>div[data-fpmetric] *{white-space:normal !important;overflow:visible !important;text-overflow:clip !important}' +
   '  main div[style*="minmax(280px"]>div[data-fpmetric] svg{display:block !important;width:100% !important;height:22px !important}' +
-  '  main div[style*="minmax(280px"]>div[data-fpmetric] div[style*="font-size:24px"]{font-size:17px !important;margin-top:7px !important}' +
-  '  main div[style*="minmax(280px"]>div[data-fpmetric] span[style*="width:36px"]{width:30px !important;height:30px !important}' +
+  '  main div[style*="minmax(280px"]>div[data-fpmetric] div[style*="font-size:24px"],main div[style*="minmax(280px"]>div[data-fpmetric] div[style*="font-size: 24px"]{font-size:17px !important;margin-top:6px !important}' +
+  '  main div[style*="minmax(280px"]>div[data-fpmetric] span[style*="width:36px"],main div[style*="minmax(280px"]>div[data-fpmetric] span[style*="width: 36px"]{width:30px !important;height:30px !important}' +
   '  main div[style*="minmax(280px"]>div[data-fpmetric] span[style*="uppercase"]{font-size:9px !important}' +
-  '  main div[style*="minmax(280px"]>div[data-fpmetric] span[style*="border-radius:20px"]{display:none !important}' +
-  '  main div[style*="minmax(280px"]>div[data-fpmetric] div[style*="font-size:11px"]{font-size:10px !important;margin:3px 0 8px !important}' +
+  '  main div[style*="minmax(280px"]>div[data-fpmetric] span[style*="border-radius:20px"],main div[style*="minmax(280px"]>div[data-fpmetric] span[style*="border-radius: 20px"]{display:none !important}' +
+  '  main div[style*="minmax(280px"]>div[data-fpmetric] div[style*="font-size:11px"],main div[style*="minmax(280px"]>div[data-fpmetric] div[style*="font-size: 11px"]{font-size:9.5px !important;margin:2px 0 7px !important}' +
   '  main div[style*="grid-template-columns"]>div{min-width:0 !important}' +
   '  main div[style*="width:"]{max-width:100% !important}' +
   '  main div[style*="flex"]{flex-wrap:wrap !important}' +
