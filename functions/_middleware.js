@@ -1,8 +1,8 @@
 /* Cloudflare Pages Function middleware — dark theme, sidebar polish, RESPONSIVE
- * (phone/tablet) layout, and a SELF-HEALING language toggle. All injected into the
- * page <head> at the EDGE so it applies before first paint and never moves/removes an
- * app node (so it can't crash the React app). Fully defensive: only HTML responses are
- * touched; any error falls through untouched.
+ * (phone/tablet) layout, a SELF-HEALING language toggle, and mobile swipe-pager dots.
+ * All injected into the page <head> at the EDGE so it applies before first paint and
+ * never moves/removes an app node (so it can't crash the React app). Fully defensive:
+ * only HTML responses are touched; any error falls through untouched.
  *
  * MOBILE TILE-ROW RULE (reusable across pages): a row of small tiles/cards that the app
  * lays out with `grid-template-columns:repeat(N,1fr)` (or minmax variants) wraps its last
@@ -23,6 +23,7 @@ var HEAD_CSS =
   ' aside nav a::before{content:"";position:absolute;left:1px;top:9px;bottom:9px;width:3px;border-radius:3px;background:transparent;transition:background .16s ease}' +
   ' aside nav a:hover::before{background:#2e90f0}' +
   ' #fpLangTop{flex:none !important}' +
+  ' #fp-dots{display:none}' +
   // ===== RESPONSIVE: phone & small tablet =====
   ' .fp-burger{display:none;position:fixed;top:10px;left:10px;z-index:2147483000;width:40px;height:40px;' +
   'border-radius:11px;background:#13315a;color:#fff;align-items:center;justify-content:center;' +
@@ -37,10 +38,12 @@ var HEAD_CSS =
   '  main{width:100% !important;min-width:0 !important;overflow-x:hidden !important}' +
   '  main header{flex-wrap:wrap !important;height:auto !important;row-gap:8px !important;' +
   'padding-left:56px !important;align-items:center}' +
+  '  #fp-dots{display:flex !important}' +
   // Quick Sale Sales/Expenses (auto-fit minmax(330px..)) becomes a horizontal SWIPE PAGER.
   // Each panel is 88% wide so the NEXT panel peeks at the edge (a built-in "swipe me" hint),
   // and capped in height so a short Sales panel doesn't leave a big empty gap before the
-  // summary below (the taller Expenses panel just scrolls internally).
+  // summary below (the taller Expenses panel just scrolls internally). Dots (added by JS
+  // below) sit under it as an explicit swipe indicator.
   '  main div[style*="minmax(330px"]{display:flex !important;overflow-x:auto !important;' +
   'scroll-snap-type:x mandatory;gap:12px !important;scrollbar-width:none}' +
   '  main div[style*="minmax(330px"]::-webkit-scrollbar{display:none}' +
@@ -65,12 +68,8 @@ var HEAD_CSS =
   '  body.fp-nav-open .fp-nav-backdrop{display:block}' +
   ' }';
 
-/* Self-healing SW/EN language toggle. The app builds a #fpLangTop toggle in index.html,
- * but it anchors to the theme button via its ENGLISH title ("Light / Dark mode"); once
- * i18n translates that title to "Mwanga / Giza", the app can no longer re-create the
- * toggle after a React re-render removes it — so it silently disappears (worse on mobile).
- * This re-creates it whenever missing, finding the theme button by a LANGUAGE-INDEPENDENT
- * match, reusing the app's own window.FPSetLang. Idempotent: if present it just repaints. */
+/* Self-healing SW/EN language toggle (anchored to the theme button by a language-independent
+ * match, so it survives i18n title translation + React re-renders). */
 var LANG_JS =
   "(function(){try{" +
   "function cur(){try{return localStorage.getItem('fp_lang')||'sw';}catch(e){return 'sw';}}" +
@@ -78,6 +77,18 @@ var LANG_JS =
   "function paint(box){var l=cur();var k=box.children;for(var i=0;i<k.length;i++){var on=k[i].getAttribute('data-l')===l;k[i].style.cssText='padding:4px 9px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;line-height:1;'+(on?'background:#2e90f0;color:#fff;':'background:transparent;color:#5b7197;');}}" +
   "function ensure(){if(!window.FPSetLang)return;var box=document.getElementById('fpLangTop');if(box){paint(box);return;}var tb=findTheme();if(!tb||!tb.parentNode)return;box=document.createElement('div');box.id='fpLangTop';box.style.cssText='display:flex;gap:3px;padding:3px;background:#eef2f7;border:1px solid #e3e6eb;border-radius:11px;height:40px;box-sizing:border-box;align-items:center;flex:none;margin:0 2px';['sw','en'].forEach(function(l){var d=document.createElement('div');d.setAttribute('data-l',l);d.textContent=l.toUpperCase();d.addEventListener('click',function(){try{window.FPSetLang(l);}catch(e){}paint(box);});box.appendChild(d);});tb.parentNode.insertBefore(box,tb);paint(box);}" +
   "setInterval(ensure,1500);if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',ensure);else ensure();" +
+  "}catch(e){}})();";
+
+/* Mobile swipe-pager dots for Quick Sale (Sales / Expenses). Adds a small dots bar right
+ * after the pager and keeps the active dot (a blue pill) synced to the scroll position;
+ * tapping a dot scrolls to that panel. Only on phones; self-heals if a re-render drops it;
+ * removed on desktop. */
+var DOTS_JS =
+  "(function(){try{" +
+  "function mm(){return window.matchMedia('(max-width:820px)').matches;}" +
+  "function sync(p,dots){var w=p.children[0].offsetWidth+12;var idx=Math.round(p.scrollLeft/w);var k=dots.children;for(var i=0;i<k.length;i++){var on=i===idx;k[i].style.background=on?'#2e90f0':'#c3ccd8';k[i].style.width=on?'22px':'8px';k[i].style.borderRadius=on?'5px':'50%';}}" +
+  "function tick(){var p=document.querySelector('main div[style*=\"minmax(330px\"]');var ex=document.getElementById('fp-dots');if(!mm()||!p||p.children.length<2){if(ex)ex.remove();return;}if(ex&&ex.__p===p){sync(p,ex);return;}if(ex)ex.remove();var dots=document.createElement('div');dots.id='fp-dots';dots.__p=p;dots.style.cssText='display:flex;justify-content:center;align-items:center;gap:7px;padding:9px 0 3px';for(var i=0;i<p.children.length;i++){(function(i){var dot=document.createElement('div');dot.style.cssText='width:8px;height:8px;border-radius:50%;background:#c3ccd8;transition:all .2s ease;cursor:pointer';dot.addEventListener('click',function(){p.scrollTo({left:i*(p.children[0].offsetWidth+12),behavior:'smooth'});});dots.appendChild(dot);})(i);}p.parentNode.insertBefore(dots,p.nextSibling);p.addEventListener('scroll',function(){sync(p,dots);},{passive:true});sync(p,dots);}" +
+  "setInterval(tick,800);if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',tick);else tick();" +
   "}catch(e){}})();";
 
 export async function onRequest(context) {
@@ -90,6 +101,7 @@ export async function onRequest(context) {
         element(el) {
           el.append('<style id="fpEdgeDark">' + HEAD_CSS + '</style>', { html: true });
           el.append('<script id="fpEdgeLang">' + LANG_JS + '</script>', { html: true });
+          el.append('<script id="fpEdgeDots">' + DOTS_JS + '</script>', { html: true });
         }
       })
       .transform(response);
