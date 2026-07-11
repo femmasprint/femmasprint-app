@@ -1,18 +1,15 @@
-/* Cloudflare Pages Function middleware — dark theme, sidebar polish, RESPONSIVE
- * (phone/tablet) layout, a single-button language toggle, and mobile swipe-pager dots.
- * All injected into the page <head> at the EDGE so it applies before first paint and
- * never moves/removes an app node (so it can't crash the React app). Fully defensive:
- * only HTML responses are touched; any error falls through untouched.
+/* Cloudflare Pages Function middleware — dark theme, sidebar polish, and RESPONSIVE
+ * (phone/tablet) layout. CSS ONLY: injected into the page <head> at the EDGE so it applies
+ * before first paint. It never inserts, moves, or edits an app DOM node, so it cannot crash
+ * the React app. (Earlier JS that inserted a language button / dots / rewrote label text
+ * intermittently threw "removeChild ... not a child of this node" and crashed the app —
+ * hence CSS-only now.) Fully defensive: only HTML responses are touched; any error falls
+ * through untouched.
  *
- * MOBILE TILE-ROW RULE (reusable across pages): a row of small tiles/cards that the app
- * lays out with `grid-template-columns:repeat(N,1fr)` (or minmax variants) wraps its last
- * tile onto a new line on a narrow phone. The fix pattern is always the same — turn the
- * container into a single flex row (`display:flex;flex-wrap:nowrap`) with each tile
- * `flex:1 1 0;min-width:0`, and shrink the inner text so N tiles fit one clean line.
- *
- * NOTE: never rewrite the app's React-managed text nodes from here — doing so throws
- * "removeChild ... not a child of this node" and crashes the whole app. Shorten labels
- * with CSS only (font-size:0 + icon), never by editing textContent/nodeValue. */
+ * MOBILE TILE-ROW RULE (reusable across pages): a row of small tiles/cards the app lays out
+ * with `grid-template-columns:repeat(N,1fr)` (or minmax variants) wraps its last tile onto a
+ * new line on a narrow phone. Fix: make the container a single flex row
+ * (`display:flex;flex-wrap:nowrap`), each tile `flex:1 1 0;min-width:0`, shrink inner text. */
 
 var HEAD_CSS =
   ' aside nav a{display:flex !important;align-items:center;width:100% !important;box-sizing:border-box}' +
@@ -25,9 +22,7 @@ var HEAD_CSS =
   ' aside nav a:hover svg,aside nav a:hover i{color:#fff !important;stroke:#fff !important;opacity:1 !important}' +
   ' aside nav a::before{content:"";position:absolute;left:1px;top:9px;bottom:9px;width:3px;border-radius:3px;background:transparent;transition:background .16s ease}' +
   ' aside nav a:hover::before{background:#2e90f0}' +
-  ' #fpLangTop{display:none !important}' +
-  ' #fpLang1{flex:none !important}' +
-  ' #fp-dots{display:none}' +
+  ' #fpLangTop{flex:none !important}' +
   // ===== RESPONSIVE: phone & small tablet =====
   ' .fp-burger{display:none;position:fixed;top:10px;left:10px;z-index:2147483000;width:40px;height:40px;' +
   'border-radius:11px;background:#13315a;color:#fff;align-items:center;justify-content:center;' +
@@ -47,7 +42,6 @@ var HEAD_CSS =
   '  main{width:100% !important;min-width:0 !important;overflow-x:hidden !important}' +
   '  main header{flex-wrap:wrap !important;height:auto !important;row-gap:8px !important;' +
   'padding-left:56px !important;align-items:center}' +
-  '  #fp-dots{display:flex !important}' +
   '  main div[style*="linear-gradient"] button,main div[style*="linear-gradient"] label{font-size:0 !important;' +
   'padding:9px !important;min-width:0 !important;gap:0 !important}' +
   '  main div[style*="linear-gradient"] button svg,main div[style*="linear-gradient"] label svg{width:18px !important;height:18px !important}' +
@@ -72,24 +66,6 @@ var HEAD_CSS =
   '  body.fp-nav-open .fp-nav-backdrop{display:block}' +
   ' }';
 
-/* Single-button SW/EN language toggle (replaces the app's flickery 2-pill toggle). */
-var LANG_JS =
-  "(function(){try{" +
-  "function cur(){try{return (localStorage.getItem('fp_lang')||'sw').toUpperCase();}catch(e){return 'SW';}}" +
-  "function findTheme(){var b=document.querySelectorAll('header button');for(var i=0;i<b.length;i++){var t=b[i].getAttribute('title')||'';if(/giza|mwanga|dark|light/i.test(t))return b[i];}return null;}" +
-  "function ensure(){if(!window.FPSetLang)return;var b=document.getElementById('fpLang1');if(b){var c=cur();if(b.textContent!==c)b.textContent=c;return;}var tb=findTheme();if(!tb||!tb.parentNode)return;b=document.createElement('button');b.id='fpLang1';b.type='button';b.setAttribute('aria-label','Language');b.style.cssText='height:36px;min-width:46px;padding:0 12px;border-radius:10px;border:1px solid rgba(130,150,180,.5);background:transparent;color:#2e90f0;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;flex:none;margin:0 2px';b.textContent=cur();b.addEventListener('click',function(){var nl=(cur()==='SW')?'en':'sw';try{window.FPSetLang(nl);}catch(e){}b.textContent=nl.toUpperCase();});tb.parentNode.insertBefore(b,tb);}" +
-  "setInterval(ensure,1800);if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',ensure);else ensure();" +
-  "}catch(e){}})();";
-
-/* Mobile swipe-pager dots for Quick Sale (Sales / Expenses). */
-var DOTS_JS =
-  "(function(){try{" +
-  "function mm(){return window.matchMedia('(max-width:820px)').matches;}" +
-  "function sync(p,dots){var w=p.children[0].offsetWidth+12;var idx=Math.round(p.scrollLeft/w);var k=dots.children;for(var i=0;i<k.length;i++){var on=i===idx;k[i].style.background=on?'#2e90f0':'#c3ccd8';k[i].style.width=on?'22px':'8px';k[i].style.borderRadius=on?'5px':'50%';}}" +
-  "function tick(){var p=document.querySelector('main div[style*=\"minmax(330px\"]');var ex=document.getElementById('fp-dots');if(!mm()||!p||p.children.length<2){if(ex)ex.remove();return;}if(ex&&ex.__p===p){sync(p,ex);return;}if(ex)ex.remove();var dots=document.createElement('div');dots.id='fp-dots';dots.__p=p;dots.style.cssText='display:flex;justify-content:center;align-items:center;gap:7px;padding:9px 0 3px';for(var i=0;i<p.children.length;i++){(function(i){var dot=document.createElement('div');dot.style.cssText='width:8px;height:8px;border-radius:50%;background:#c3ccd8;transition:all .2s ease;cursor:pointer';dot.addEventListener('click',function(){p.scrollTo({left:i*(p.children[0].offsetWidth+12),behavior:'smooth'});});dots.appendChild(dot);})(i);}p.parentNode.insertBefore(dots,p.nextSibling);p.addEventListener('scroll',function(){sync(p,dots);},{passive:true});sync(p,dots);}" +
-  "setInterval(tick,900);if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',tick);else tick();" +
-  "}catch(e){}})();";
-
 export async function onRequest(context) {
   const response = await context.next();
   try {
@@ -99,8 +75,6 @@ export async function onRequest(context) {
       .on('head', {
         element(el) {
           el.append('<style id="fpEdgeDark">' + HEAD_CSS + '</style>', { html: true });
-          el.append('<script id="fpEdgeLang">' + LANG_JS + '</script>', { html: true });
-          el.append('<script id="fpEdgeDots">' + DOTS_JS + '</script>', { html: true });
         }
       })
       .transform(response);
