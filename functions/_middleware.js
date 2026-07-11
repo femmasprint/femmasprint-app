@@ -49,15 +49,13 @@ var HEAD_CSS =
   ' html:not(.fp-dark) main div[style*="minmax(330px"] > div > div:first-child{background:#e9f3fe !important}' +
   ' html:not(.fp-dark) main div[style*="minmax(330px"] > div > div:first-child span{color:#00578d !important}' +
   // ===== Quick Sale NEW ORDER: toolbar -> tiles -> Sales -> Expenses -> chips -> Note =====
-  // The QS content wrapper is the div that has the Note block as a DIRECT child. Make it a
-  // flex column and reorder its children so tiles sit up top and chips + note fall to the bottom.
   ' main div:has(>div[data-qsorder="note"]){display:flex !important;flex-direction:column !important}' +
   ' main div:has(>div[data-qsorder="note"])>div[style*="minmax(280px"]{order:1 !important}' +
   ' main div:has(>div[data-qsorder="note"])>div[style*="minmax(330px"]{order:2 !important}' +
   ' main div:has(>div[data-qsorder="note"])>div[data-qsorder="chips"]{order:3 !important}' +
   ' main div:has(>div[data-qsorder="note"])>div[data-qsorder="note"]{order:4 !important}' +
-  // Give the toolbar a top gap so it clears the sticky header (the removed banner used to do this)
-  ' main div:has(>div[data-qsorder="note"])>div:first-child{margin-top:32px !important}' +
+  // The removed top banner used to push content below the sticky header; restore that gap globally.
+  ' main header{margin-bottom:34px !important}' +
   // Remove the top location / WhatsApp-support banner (user request)
   ' div[data-topbanner="1"]{display:none !important}' +
   // ===== RESPONSIVE: phone & tablet (<=1024px) =====
