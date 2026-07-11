@@ -38,17 +38,14 @@ var HEAD_CSS =
   '  main header{flex-wrap:wrap !important;height:auto !important;row-gap:8px !important;' +
   'padding-left:56px !important;align-items:center}' +
   '  #fp-dots{display:flex !important}' +
-  // Quick Sale Sales/Expenses swipe pager (peek + capped height), dots below.
   '  main div[style*="minmax(330px"]{display:flex !important;overflow-x:auto !important;' +
   'scroll-snap-type:x mandatory;gap:12px !important;scrollbar-width:none}' +
   '  main div[style*="minmax(330px"]::-webkit-scrollbar{display:none}' +
   '  main div[style*="minmax(330px"]>div{flex:0 0 88% !important;scroll-snap-align:start;' +
   'min-width:0 !important;max-height:64vh !important;overflow:auto !important;-webkit-overflow-scrolling:touch}' +
-  // 5 payment tiles -> one compact flex row.
   '  main div[style*="repeat(5"]{display:flex !important;gap:4px !important;flex-wrap:nowrap !important}' +
   '  main div[style*="repeat(5"]>div{flex:1 1 0 !important;min-width:0 !important;padding:5px 4px !important;overflow:hidden}' +
   '  main div[style*="repeat(5"]>div *{font-size:9px !important;line-height:1.2 !important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
-  // Bottom summary: 3 tiles on one row, Note full-width below.
   '  main div[style*="minmax(280px"]{display:flex !important;flex-wrap:wrap !important;gap:6px !important}' +
   '  main div[style*="minmax(280px"]>div{flex:1 1 0 !important;min-width:0 !important;padding:8px 7px !important;overflow:hidden}' +
   '  main div[style*="minmax(280px"]>div:last-child{flex:1 1 100% !important;order:9 !important}' +
@@ -62,17 +59,16 @@ var HEAD_CSS =
   '  body.fp-nav-open .fp-nav-backdrop{display:block}' +
   ' }';
 
-/* Self-healing SW/EN language toggle. Anchored to the theme button by a language-independent
- * match (survives i18n title translation). IMPORTANT: uses a TRANSPARENT background (not a
- * light fill) — a light fill made the app's dark-mode engine re-darken it ~20x/second in a
- * loop, which flickered the whole header. It also only CREATES the toggle when missing and
- * repaints on click, never on a timer, so it can't fight the app's own repaint. */
+/* Self-healing SW/EN language toggle. The app's own code both creates AND paints this
+ * toggle, but its create step anchors to the theme button's ENGLISH title, so once i18n
+ * translates that title the app can't re-create the toggle after a re-render drops it.
+ * We ONLY re-create the element when it is missing (language-independent anchor) and then
+ * leave ALL styling to the app's own painter. Painting it ourselves too made two painters
+ * alternate ~20x/second, which flickered the whole header — so we never paint it. */
 var LANG_JS =
   "(function(){try{" +
-  "function cur(){try{return localStorage.getItem('fp_lang')||'sw';}catch(e){return 'sw';}}" +
   "function findTheme(){var b=document.querySelectorAll('header button');for(var i=0;i<b.length;i++){var t=b[i].getAttribute('title')||'';if(/giza|mwanga|dark|light/i.test(t))return b[i];}return null;}" +
-  "function paint(box){var l=cur();var k=box.children;for(var i=0;i<k.length;i++){var on=k[i].getAttribute('data-l')===l;k[i].style.cssText='padding:4px 10px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;line-height:1;transition:none;'+(on?'background:#2e90f0;color:#fff;':'background:transparent;color:#8aa0c0;');}}" +
-  "function ensure(){if(!window.FPSetLang)return;if(document.getElementById('fpLangTop'))return;var tb=findTheme();if(!tb||!tb.parentNode)return;var box=document.createElement('div');box.id='fpLangTop';box.setAttribute('data-fp-skin','1');box.style.cssText='display:flex;gap:2px;padding:2px;background:transparent;border:1px solid rgba(130,150,180,.4);border-radius:11px;height:36px;box-sizing:border-box;align-items:center;flex:none;margin:0 2px';['sw','en'].forEach(function(l){var d=document.createElement('div');d.setAttribute('data-l',l);d.textContent=l.toUpperCase();d.addEventListener('click',function(){try{window.FPSetLang(l);}catch(e){}paint(box);});box.appendChild(d);});tb.parentNode.insertBefore(box,tb);paint(box);}" +
+  "function ensure(){if(!window.FPSetLang)return;if(document.getElementById('fpLangTop'))return;var tb=findTheme();if(!tb||!tb.parentNode)return;var box=document.createElement('div');box.id='fpLangTop';box.style.cssText='display:flex;gap:2px;padding:2px;border-radius:11px;box-sizing:border-box;align-items:center;flex:none;margin:0 2px';['sw','en'].forEach(function(l){var d=document.createElement('div');d.setAttribute('data-l',l);d.textContent=l.toUpperCase();d.style.cssText='padding:4px 10px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit';d.addEventListener('click',function(){try{window.FPSetLang(l);}catch(e){}});box.appendChild(d);});tb.parentNode.insertBefore(box,tb);}" +
   "setInterval(ensure,1800);if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',ensure);else ensure();" +
   "}catch(e){}})();";
 
