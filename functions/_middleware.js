@@ -41,6 +41,12 @@ var HEAD_CSS =
   '{background:rgba(255,255,255,.16) !important;border:1.5px solid rgba(255,255,255,.5) !important;box-shadow:none !important}' +
   ' body main div[style*="linear-gradient"] button svg,body main div[style*="linear-gradient"] label svg{stroke:#fff !important;opacity:1 !important}' +
   ' body main div[style*="linear-gradient"] button,body main div[style*="linear-gradient"] label{color:#fff !important}' +
+  // ===== LIGHT-MODE variant for the premium metric tiles =====
+  // In dark mode the tiles keep their dark gradient. In LIGHT mode they would clash with the light
+  // page, so recolour them to a white premium card with a dark number. Applies at every width.
+  ' html:not(.fp-dark) main div[style*="minmax(280px"]>div[data-fpmetric]{background:linear-gradient(165deg,#ffffff,#eef4ff) !important;border-color:#e4ebf5 !important;box-shadow:0 1px 2px rgba(19,49,90,.05),0 16px 30px -22px rgba(19,49,90,.28) !important}' +
+  ' html:not(.fp-dark) main div[style*="minmax(280px"]>div[data-fpmetric] div[style*="font-size:24px"],html:not(.fp-dark) main div[style*="minmax(280px"]>div[data-fpmetric] div[style*="font-size: 24px"]{color:#0f172a !important}' +
+  ' html:not(.fp-dark) main div[style*="minmax(280px"]>div[data-fpmetric] span[style*="uppercase"]{color:#5b6b85 !important}' +
   // ===== RESPONSIVE: phone & tablet (<=1024px) =====
   ' .fp-burger{display:none;position:fixed;top:10px;left:10px;z-index:2147483000;width:40px;height:40px;' +
   'border-radius:11px;background:#13315a;color:#fff;align-items:center;justify-content:center;' +
