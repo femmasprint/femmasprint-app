@@ -4849,6 +4849,10 @@ class Component extends DCLogic {
       const r = await this.backendGet_('getQuickSale', { date: iso });
       if (r && r.ok && Array.isArray(r.sales)) {
         const num = (v) => { const n = parseFloat(String(v).replace(/,/g, '')); return isNaN(n) ? 0 : n; };
+        // DEDUP: the cloud sheet can hold several rows for the same SaleID (the backend appends
+        // a new row on every save/edit). Keep only the LAST row per SaleID so the count/total is
+        // not inflated (e.g. showing a sale as #11 when it's really #1) on any device that reloads.
+        (function(){ var last={}; r.sales.forEach(function(s,k){ if(s&&s.SaleID) last[s.SaleID]=k; }); r.sales = r.sales.filter(function(s,k){ return !s || !s.SaleID || last[s.SaleID]===k; }); })();
         const loaded = r.sales.map(s => ({ client: s.Client || '', goods: s.Goods || '', qty: String(s.Qty || ''), price: String(s.UnitPrice || ''), paid: (function(){ var p=String(s.Paid||''); var c=p.replace(/,/g,'').trim(); return (c!=='' && !/^[\d.]+$/.test(c)) ? String(num(s.Qty)*num(s.UnitPrice)) : p; })(), payMode: s.PayMode || 'Cash', _sid: s.SaleID || '' }));
         // mark loaded rows as already-synced so auto-save won't re-post them
         const done = { ...(this.state.qsSyncedIds || {}) };
@@ -4857,6 +4861,8 @@ class Component extends DCLogic {
         // expenses for today
         let expRows = this.state.qsExpenses, expDone = { ...(this.state.qsExpSyncedIds || {}) };
         if (Array.isArray(r.expenses)) {
+          // DEDUP expenses the same way (keep last row per ExpenseID).
+          (function(){ var last={}; r.expenses.forEach(function(x,k){ if(x&&x.ExpenseID) last[x.ExpenseID]=k; }); r.expenses = r.expenses.filter(function(x,k){ return !x || !x.ExpenseID || last[x.ExpenseID]===k; }); })();
           const le = r.expenses.map(x => ({ client: x.Name || '', goods: x.Reason || '', qty: String(x.Qty || ''), price: String(x.UnitPrice || ''), payMode: x.PayMode || 'Cash', _eid: x.ExpenseID || '' }));
           le.forEach(rw => { if (rw._eid) expDone[rw._eid] = rw.client + '|' + rw.goods + '|' + rw.qty + '|' + rw.price; });
           if (le.length) { var _tpl = []; try { _tpl = (this.fpDailyExpTpl_() || []).map(function(x){ return { client: x.name, goods: 'Nauli', qty: '1', price: String(x.price==null?'':x.price) }; }); } catch(e){} var _have = {}; le.forEach(function(rw){ _have[String(rw.client||'').trim().toLowerCase()] = 1; }); var _miss = _tpl.filter(function(rw){ return rw.client && !_have[String(rw.client||'').trim().toLowerCase()]; }); expRows = [...le, ..._miss, { client: '', goods: '', qty: '', price: '' }]; }
