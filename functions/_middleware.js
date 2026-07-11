@@ -36,9 +36,10 @@ var HEAD_CSS =
   ' @media(max-width:820px){' +
   '  html,body{overflow-x:hidden !important;max-width:100vw}' +
   '  aside{position:fixed !important;left:0 !important;top:0 !important;bottom:0 !important;height:100vh !important;' +
-  'z-index:2147482000 !important;width:274px !important;max-width:84vw;transform:translateX(-100%) !important;' +
+  'z-index:1002 !important;width:274px !important;max-width:84vw;transform:translateX(-100%) !important;' +
   'transition:transform .26s ease !important;box-shadow:2px 0 26px rgba(0,0,0,.55);overflow-y:auto;overflow-x:hidden}' +
-  '  body.fp-nav-open aside{transform:translateX(0) !important}' +
+  // drawer open: slide in AND sit above the backdrop so its links are tappable
+  '  body.fp-nav-open aside{transform:translateX(0) !important;z-index:1005 !important}' +
   '  main{width:100% !important;min-width:0 !important;overflow-x:hidden !important}' +
   '  main header{flex-wrap:wrap !important;height:auto !important;row-gap:8px !important;' +
   'padding-left:56px !important;align-items:center}' +
@@ -62,7 +63,7 @@ var HEAD_CSS =
   '  main div[style*="flex"]{flex-wrap:wrap !important}' +
   '  main table{max-width:100% !important}' +
   '  .fp-burger{display:flex !important}' +
-  '  .fp-nav-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:2147481000}' +
+  '  .fp-nav-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000}' +
   '  body.fp-nav-open .fp-nav-backdrop{display:block}' +
   ' }';
 
