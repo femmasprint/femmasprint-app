@@ -46,6 +46,10 @@ var HEAD_CSS =
   ' html:not(.fp-dark) main div[style*="minmax(280px"]>div[data-fpmetric]{background:linear-gradient(165deg,#ffffff,#eef4ff) !important;border-color:#e4ebf5 !important;box-shadow:0 1px 2px rgba(19,49,90,.05),0 16px 30px -22px rgba(19,49,90,.28) !important}' +
   ' html:not(.fp-dark) main div[style*="minmax(280px"]>div[data-fpmetric] div[style*="font-size:24px"],html:not(.fp-dark) main div[style*="minmax(280px"]>div[data-fpmetric] div[style*="font-size: 24px"]{color:#0f172a !important}' +
   ' html:not(.fp-dark) main div[style*="minmax(280px"]>div[data-fpmetric] span[style*="uppercase"]{color:#5b6b85 !important}' +
+  // ===== Dark mode: Quick Sale toolbar + section header bars (match rest of app) =====
+  ' html.fp-dark main div:has(>div[data-qsorder="note"]) > div:first-child[style*="linear-gradient(120deg"]{background:linear-gradient(120deg,#16385f,#102845) !important}' +
+  ' html.fp-dark main div[style*="minmax(330px"] > div > div:first-child{background:#15263f !important}' +
+  ' html.fp-dark main div[style*="minmax(330px"] > div > div:first-child span{color:#8fc0ec !important}' +
   // ===== Design 2 (light mode): brighter-blue Quick Sale toolbar + light table header bars =====
   ' html:not(.fp-dark) main div:has(>div[data-qsorder="note"]) > div:first-child[style*="linear-gradient(120deg"]{background:linear-gradient(120deg,#3bb0ea,#1c8ed4) !important}' +
   ' html:not(.fp-dark) main div[style*="minmax(330px"] > div > div:first-child{background:#e9f3fe !important}' +
