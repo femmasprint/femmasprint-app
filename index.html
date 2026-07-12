@@ -1522,7 +1522,7 @@ window.addEventListener('load', function () {
           <!-- report body -->
           <div style="background:#fff;border:1px solid #ebedf1;border-radius:16px;overflow:hidden;box-shadow:0 1px 2px rgba(15,23,42,.04)">
             <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid #f1f2f5;flex-wrap:wrap;gap:12px">
-              <div><h3 style="font-size:15px;font-weight:700">{{ reportTitle }}</h3><div style="font-size:12px;color:#94a3b8;margin-top:2px">01/06/2026 — 30/06/2026 · Femmas Print</div></div>
+              <div><h3 style="font-size:15px;font-weight:700">{{ reportTitle }}</h3><div style="font-size:12px;color:#94a3b8;margin-top:2px">{{ repRangeLabel }} · Femmas Print</div></div>
               <div style="display:flex;gap:8px">
                 <button onClick="{{ showExcel }}" style="display:flex;align-items:center;gap:6px;padding:8px 14px;border:1px solid #e3e6eb;border-radius:9px;background:#fff;font-size:12.5px;font-weight:700;color:#16a34a;font-family:inherit;cursor:pointer" style-hover="background:rgba(46,144,240,.1)"><svg width="15" height="15" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3.5" fill="#1D6F42"></rect><path d="M8.5 8l7 8M15.5 8l-7 8" stroke="#fff" stroke-width="2" stroke-linecap="round"></path></svg>Excel</button>
                 <button onClick="{{ doPrint }}" style="display:flex;align-items:center;gap:6px;padding:8px 14px;border:1px solid #e3e6eb;border-radius:9px;background:#fff;font-size:12.5px;font-weight:700;color:#475569;font-family:inherit;cursor:pointer" style-hover="background:rgba(46,144,240,.1)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2"><path d="M6 9V4h12v5M6 18H4v-5h16v5h-2M8 14h8v6H8z"></path></svg>Chapa</button>
@@ -1540,13 +1540,13 @@ window.addEventListener('load', function () {
                   <th style="padding:11px 22px;font-size:10.5px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.04em;text-align:right">Profit</th>
                 </tr></thead>
                 <tbody>
-                  <sc-for list="{{ invoices }}" as="r" hint-placeholder-count="8">
+                  <sc-for list="{{ repSaleRows }}" as="r" hint-placeholder-count="8">
                     <tr style="border-top:1px solid #f1f2f5" style-hover="background:#fafbff">
                       <td style="padding:13px 22px;font-size:13px;color:#64748b;font-weight:500">{{ r.date }}</td>
                       <td style="padding:13px 14px;font-size:13px;color:#0f172a;font-weight:700">{{ r.no }}</td>
                       <td style="padding:13px 14px;font-size:13px;color:#0f172a;font-weight:600">{{ r.customer }}</td>
                       <td style="padding:13px 14px;font-size:13px;color:#0f172a;font-weight:700;text-align:right">{{ r.amount }}</td>
-                      <td style="padding:13px 22px;font-size:13px;color:#16a34a;font-weight:700;text-align:right">{{ r.amount }}</td>
+                      <td style="padding:13px 22px;font-size:13px;color:{{ r.profitColor }};font-weight:700;text-align:right">{{ r.profit }}</td>
                     </tr>
                   </sc-for>
                 </tbody>
@@ -4490,6 +4490,7 @@ class Component extends DCLogic {
     custForm: { name: '', phone: '', email: '', bal: '', vrn: '', addr: '', consent: false }, custErr: '', custStatus: '', savedCustomers: [], purchaseSyncedIds: {},
     billingAddrManual: null, shipAddrManual: null, saleImage: null, delivOpen: false,
     deliv: { driver: '', cargo: '', driverPhone: '', receiver: '', receiverPhone: '', location: '' },
+    qsAllRows: [],
     qsDate: '', qsDateISO: '', qsStore: {}, qsReportOpen: false, qsNotes: {}, printPreviewOpen: false, printPreviewHtml: '', qsDD: null, qsSaving: false, qsSyncedIds: {}, qsStatus: '', qsExpSyncedIds: {}, qsExpStatus: '',
     notifFeatured: 0, notifRead: [], userPhoto: null,
     newCustOpen: false, newCustRow: null, newCustName: '', newCustPhone: '', newCustEmail: '', newCustLocation: '', newCustForSale: false, qsCustDetails: {},
@@ -5014,7 +5015,7 @@ class Component extends DCLogic {
         return { savedCustomers: [...(s.savedCustomers || []), ...add] };
       });
     }).catch(() => {});
-    try { if (/\/exec$/.test((localStorage.getItem('fp_backend_url') || '').trim())) { var _self=this; var _loaders=[function(){_self.loadItems();},function(){_self.loadPayments();},function(){_self.loadDebtors();},function(){_self.loadPurchases();},function(){_self.loadExpenses();},function(){_self.loadOrders();},function(){_self.loadInvoices();},function(){_self.loadReceipts();},function(){_self.loadProduction();},function(){_self.loadDelivery();},function(){_self.loadBotConfig();},function(){_self.loadBotLeads();}]; var _ric=window.requestIdleCallback||function(fn){return setTimeout(fn,300);}; var _run=function(i){ if(i>=_loaders.length)return; _ric(function(){ try{_loaders[i]();}catch(e){} _run(i+1); }); }; _ric(function(){ _run(0); }); } } catch (e) {}
+    try { if (/\/exec$/.test((localStorage.getItem('fp_backend_url') || '').trim())) { var _self=this; var _loaders=[function(){_self.loadItems();},function(){_self.loadPayments();},function(){_self.loadDebtors();},function(){_self.loadPurchases();},function(){_self.loadExpenses();},function(){_self.loadQuickSaleAll();},function(){_self.loadOrders();},function(){_self.loadInvoices();},function(){_self.loadReceipts();},function(){_self.loadProduction();},function(){_self.loadDelivery();},function(){_self.loadBotConfig();},function(){_self.loadBotLeads();}]; var _ric=window.requestIdleCallback||function(fn){return setTimeout(fn,300);}; var _run=function(i){ if(i>=_loaders.length)return; _ric(function(){ try{_loaders[i]();}catch(e){} _run(i+1); }); }; _ric(function(){ _run(0); }); } } catch (e) {}
     this._notifT = setInterval(() => {
       if (this.state.screen !== 'home') return;
       this.setState(s => {
@@ -5786,6 +5787,14 @@ class Component extends DCLogic {
       if (r && r.ok && Array.isArray(r.rows)) this.setState({ savedExpenses: r.rows });
     } catch (e) { console.error('Load expenses failed', e); }
   };
+  // REAL DATA: vuta QuickSale nzima (mauzo yote) kutoka kwenye Sheet
+  loadQuickSaleAll = async () => {
+    if (!/\/exec$/.test((this.state.backendUrl || '').trim())) return;
+    try {
+      const r = await this.backendGet_('getTable', { tab: 'QuickSale' });
+      if (r && r.ok && Array.isArray(r.rows)) { try { window.__fpQsAll = r.rows; } catch (e) {} this.setState({ qsAllRows: r.rows }); }
+    } catch (e) { console.error('Load QuickSale failed', e); }
+  };
   importContacts = () => {
     const sel = this.state.selectedContacts || [];
     if (!sel.length) { this.showToast('Select at least one contact to import'); return; }
@@ -6077,12 +6086,63 @@ class Component extends DCLogic {
   });
 
   datasets() {
+    const real = this.fpRealSeries_();
+    if (real) return real;
     return {
       'This Month': [450,560,810,770,150,40,70,380,640,860,720,700,130,260,780,220,900,1750,350,90,70,60,150,90,50,40,30,30,20,20],
       'This Week':  [380,640,860,720,700,130,260],
       'This Year':  [620,540,710,1180,1620,1340,980,1450,1720,1280,1010,880],
       'Today':      [20,40,90,160,240,320,280,210,180,140,110,80]
     };
+  }
+
+  // REAL DATA: jenga series za chart kutoka QuickSale halisi (window.__fpQsAll)
+  fpRealSeries_() {
+    try {
+      const rows = window.__fpQsAll || [];
+      if (!rows.length) return null;
+      const now = new Date();
+      const pad = (n) => String(n).padStart(2, '0');
+      const iso = (d) => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+      const money = (r) => { const v = parseFloat(String(r.Amount != null ? r.Amount : '').replace(/[^0-9.\-]/g, '')); if (!isNaN(v) && v) return v; return (parseFloat(r.Qty) || 0) * (parseFloat(r.UnitPrice) || 0); };
+      const y = now.getFullYear(), mo = now.getMonth();
+      const dim = new Date(y, mo + 1, 0).getDate();
+      const month = new Array(dim).fill(0), year = new Array(12).fill(0), week = new Array(7).fill(0), today = new Array(12).fill(0);
+      const wkStart = new Date(y, mo, now.getDate() - ((now.getDay() + 6) % 7));
+      const todayIso = iso(now);
+      let prevMonth = 0, prevWeek = 0, yesterday = 0, prevYear = 0;
+      const pmLo = iso(new Date(y, mo - 1, 1)), pmHi = iso(new Date(y, mo, 0));
+      const pwLo = iso(new Date(wkStart.getFullYear(), wkStart.getMonth(), wkStart.getDate() - 7)), pwHi = iso(new Date(wkStart.getFullYear(), wkStart.getMonth(), wkStart.getDate() - 1));
+      const ydIso = iso(new Date(y, mo, now.getDate() - 1));
+      rows.forEach((r) => {
+        const ds = String(r.Date || r.CreatedAt || '').slice(0, 10);
+        if (!/^\d{4}-\d{2}-\d{2}/.test(ds)) return;
+        const a = money(r); if (!a) return;
+        const yy = +ds.slice(0, 4), mm = +ds.slice(5, 7) - 1, dd = +ds.slice(8, 10);
+        if (yy === y) { year[mm] += a; if (mm === mo && dd >= 1 && dd <= dim) month[dd - 1] += a; }
+        if (yy === y - 1) prevYear += a;
+        const d0 = new Date(yy, mm, dd);
+        const wi = Math.round((d0 - wkStart) / 86400000);
+        if (wi >= 0 && wi < 7) week[wi] += a;
+        if (ds >= pmLo && ds <= pmHi) prevMonth += a;
+        if (ds >= pwLo && ds <= pwHi) prevWeek += a;
+        if (ds === ydIso) yesterday += a;
+        if (ds === todayIso) { const hh = parseInt(String(r.CreatedAt || '').slice(11, 13), 10); if (!isNaN(hh)) { const slot = hh - 8; if (slot >= 0 && slot < 12) today[slot] += a; } }
+      });
+      const sum = (arr) => arr.reduce((a, b) => a + b, 0);
+      const pct = (cur, prev) => prev > 0 ? Math.round((cur - prev) / prev * 100) : (cur > 0 ? 100 : 0);
+      const mk = (cur, prev, vs) => ({ v: cur, d: pct(cur, prev), up: pct(cur, prev) >= 0, vs: vs });
+      const k = (arr) => arr.map((v) => v / 1000);
+      return {
+        'This Month': k(month), 'This Week': k(week), 'This Year': k(year), 'Today': k(today),
+        __tot: {
+          'Today': mk(sum(today), yesterday, 'vs yesterday'),
+          'This Week': mk(sum(week), prevWeek, 'vs last week'),
+          'This Month': mk(sum(month), prevMonth, 'vs last month'),
+          'This Year': mk(sum(year), prevYear, 'vs last year')
+        }
+      };
+    } catch (e) { return null; }
   }
 
   smoothPath(pts) {
@@ -6101,7 +6161,7 @@ class Component extends DCLogic {
     const vals = this.datasets()[this.state.period] || this.datasets()['This Month'];
     const n = vals.length;
     const W = 920, padL = 44, padR = 8, top = 24, bottom = 288;
-    const maxV = 2000;
+    const maxV = (() => { const mx = Math.max.apply(null, vals.concat([0])); if (!mx) return 2000; const step = Math.pow(10, Math.max(1, Math.floor(Math.log10(mx)))); return Math.max(10, Math.ceil(mx / step) * step); })();
     const X = i => padL + i * (W - padL - padR) / (n - 1);
     const Y = v => bottom - (v / maxV) * (bottom - top);
 
@@ -6109,11 +6169,11 @@ class Component extends DCLogic {
     const line = this.smoothPath(pts);
     const area = line + ` L ${X(n-1).toFixed(1)} ${bottom} L ${X(0).toFixed(1)} ${bottom} Z`;
 
-    const grid = [2000, 1500, 1000, 500, 0].map(v => ({ y: Y(v).toFixed(1), label: v === 0 ? '0' : (v/1000) + 'M' }));
+    const grid = [maxV, maxV * 0.75, maxV * 0.5, maxV * 0.25, 0].map(v => ({ y: Y(v).toFixed(1), label: v === 0 ? '0' : (v >= 1000 ? (Math.round(v / 100) / 10) + 'M' : Math.round(v) + 'K') }));
 
     const isMonth = this.state.period === 'This Month';
-    const tickIdx = isMonth ? [0,3,6,9,12,15,18,21,24,27] : vals.map((_,i)=>i);
-    const monthLabels = i => (i+1) + ' Jun';
+    const tickIdx = isMonth ? [0,3,6,9,12,15,18,21,24,27].filter(i => i < n) : vals.map((_,i)=>i);
+    const monthLabels = i => (i+1) + ' ' + ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][new Date().getMonth()];
     const weekLabels = i => ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'][i] || '';
     const yearLabels = i => ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][i] || '';
     const labeller = this.state.period === 'This Month' ? monthLabels : this.state.period === 'This Week' ? weekLabels : this.state.period === 'Today' ? (i => [ '8AM','9AM','10AM','11AM','12PM','1PM','2PM','3PM','4PM','5PM','6PM','7PM'][i] || '') : yearLabels;
@@ -6145,12 +6205,13 @@ class Component extends DCLogic {
       label,
       pick: () => this.setState({ period: label, periodOpen: false })
     }));
-    const chartTotMap = {
+    const chartTotMapDemo = {
       'Today': { v: 422800, d: 12, up: true, vs: 'vs yesterday' },
       'This Week': { v: 2840500, d: 8, up: true, vs: 'vs last week' },
       'This Month': { v: 8816300, d: -69, up: false, vs: 'vs last month' },
       'This Year': { v: 96420000, d: 23, up: true, vs: 'vs last year' }
     };
+    const chartTotMap = (this.datasets().__tot) || chartTotMapDemo;
     const ctm = chartTotMap[this.state.period] || chartTotMap['This Month'];
     const chartTotal = {
       value: Math.round(ctm.v).toLocaleString('en-US'),
@@ -6463,6 +6524,18 @@ class Component extends DCLogic {
       isRepOther: !['sale','balancesheet','stocksummary','stockdetail','lowstock','alltxns','pnl'].includes(report)
     };
 
+    // ===== REAL DATA helpers (QuickSale / Expenses / Purchases kutoka Sheet) =====
+    const fpQsAll = this.state.qsAllRows || window.__fpQsAll || [];
+    const fpMoney = (r) => { const v = parseFloat(String(r.Amount != null ? r.Amount : (r.Total != null ? r.Total : '')).replace(/[^0-9.\-]/g, '')); if (!isNaN(v) && v) return v; return (parseFloat(r.Qty) || 0) * (parseFloat(r.UnitPrice) || 0); };
+    const fpDStr = (r) => String(r.Date || r.CreatedAt || '').slice(0, 10);
+    const fpPad2 = (n) => String(n).padStart(2, '0');
+    const fpIsoD = (d) => d.getFullYear() + '-' + fpPad2(d.getMonth() + 1) + '-' + fpPad2(d.getDate());
+    const fpNow2 = new Date();
+    const fpTodayIso = fpIsoD(fpNow2);
+    const fpMonthLo = fpTodayIso.slice(0, 8) + '01';
+    const fpYearLo = fpTodayIso.slice(0, 4) + '-01-01';
+    const fpWeekLo = (() => { const d = new Date(fpNow2); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return fpIsoD(d); })();
+    const fpSumRows = (rows, lo, hi) => (rows || []).reduce((a, r) => { const dd = fpDStr(r); return (dd >= lo && dd <= hi) ? a + fpMoney(r) : a; }, 0);
     // ===== invoice numbering (systematic, no repeats) =====
     const invNo = (n) => (this.props.invoicePrefix ?? 'FP/INV/') + String(n).padStart(4, '0');
 
@@ -6557,6 +6630,24 @@ class Component extends DCLogic {
       pay: r[4] === 0 ? 'Cash' : 'FP BANK',
       actions: mkRowActions('inv-' + r[1], { no: invNo(r[1]), customer: r[2], date: r[0], amount: fmt(r[3]), balance: fmt(r[4]), received: fmt(r[3] - r[4]), pay: r[4] === 0 ? 'Cash' : 'FP BANK', docLabel: 'INVOICE' })
     })));
+
+    // ===== Ripoti ya Mauzo: data HALISI kutoka QuickSale + Faida (Mauzo - Gharama ya Items) =====
+    const repCostMap = {};
+    (this.state.savedItems || []).forEach(it => { const nm = String(it.ItemName || it.Name || '').trim().toLowerCase(); const c = parseFloat(it.UnitCost != null ? it.UnitCost : it.Cost); if (nm && !isNaN(c) && c > 0) repCostMap[nm] = c; });
+    const fpDMY = (iso) => iso.slice(8, 10) + '/' + iso.slice(5, 7) + '/' + iso.slice(0, 4);
+    const repRangeLabel = fpDMY(fpMonthLo) + ' \u2014 ' + fpDMY(fpTodayIso);
+    const repQsSaleRows = fpQsAll
+      .filter(r => { const dd = fpDStr(r); return dd >= fpMonthLo && dd <= fpTodayIso && fpMoney(r) > 0; })
+      .map(r => {
+        const amount = fpMoney(r);
+        const qty = parseFloat(r.Qty) || 1;
+        const cost = repCostMap[String(r.Goods || '').trim().toLowerCase()];
+        const profit = (cost != null) ? (amount - cost * qty) : null;
+        const dd = fpDStr(r);
+        return { d: dd + '|' + String(r.CreatedAt || ''), date: fpDMY(dd), no: String(r.SaleID || '\u2014'), customer: String(r.Client || '\u2014'), amount: 'Sh ' + fmt(Math.round(amount)), profit: profit == null ? '\u2014' : 'Sh ' + fmt(Math.round(profit)), profitColor: profit == null ? '#94a3b8' : (profit >= 0 ? '#16a34a' : '#e11d48') };
+      })
+      .sort((a, b) => b.d.localeCompare(a.d));
+    const repSaleRows = repQsSaleRows.length ? repQsSaleRows : invoices.map(r => ({ date: r.date, no: r.no, customer: r.customer, amount: r.amount, profit: '\u2014', profitColor: '#94a3b8' }));
 
     if (txnConfig) {
       txnConfig.rows = txnConfig.rows
@@ -7287,10 +7378,10 @@ class Component extends DCLogic {
     const intFmt = (n) => Math.round(n).toLocaleString('en-US');
     // period-driven KPI (follows the Total Sale period selector)
     const periodKpi = {
-      'Today': { sLabel: dashHasToday ? "Today's Sales" : "Yesterday's Sales", s: dashHasToday ? qsTotalSales : ySalesNum, eLabel: dashExpHasToday ? "Today's Expenses" : "Yesterday's Expenses", e: dashExpHasToday ? qsTotalExpenses : yExpNum, tag: dashHasToday ? 'Live today' : 'Yesterday', card: 'Today', pur: 8000, exp: dashExpHasToday ? qsTotalExpenses : 0 },
-      'This Week': { sLabel: "This Week's Sales", s: 2840500, eLabel: "This Week's Expenses", e: 412000, tag: 'This week', card: 'This Week', pur: 64000, exp: 412000 },
-      'This Month': { sLabel: "This Month's Sales", s: 8816300, eLabel: "This Month's Expenses", e: 1240000, tag: 'This month', card: 'This Month', pur: 192000, exp: 0 },
-      'This Year': { sLabel: "This Year's Sales", s: 96420000, eLabel: "This Year's Expenses", e: 14820000, tag: 'This year', card: 'This Year', pur: 2310000, exp: 1480000 }
+      'Today': { sLabel: dashHasToday ? "Today's Sales" : "Yesterday's Sales", s: dashHasToday ? qsTotalSales : ySalesNum, eLabel: dashExpHasToday ? "Today's Expenses" : "Yesterday's Expenses", e: dashExpHasToday ? qsTotalExpenses : yExpNum, tag: dashHasToday ? 'Live today' : 'Yesterday', card: 'Today', pur: fpSumRows(this.state.savedPurchases, fpTodayIso, fpTodayIso), exp: dashExpHasToday ? qsTotalExpenses : 0 },
+      'This Week': (() => { const s = fpSumRows(fpQsAll, fpWeekLo, fpTodayIso), e = fpSumRows(this.state.savedExpenses, fpWeekLo, fpTodayIso), p = fpSumRows(this.state.savedPurchases, fpWeekLo, fpTodayIso); return { sLabel: "This Week's Sales", s: s, eLabel: "This Week's Expenses", e: e, tag: 'This week', card: 'This Week', pur: p, exp: e }; })(),
+      'This Month': (() => { const s = fpSumRows(fpQsAll, fpMonthLo, fpTodayIso), e = fpSumRows(this.state.savedExpenses, fpMonthLo, fpTodayIso), p = fpSumRows(this.state.savedPurchases, fpMonthLo, fpTodayIso); return { sLabel: "This Month's Sales", s: s, eLabel: "This Month's Expenses", e: e, tag: 'This month', card: 'This Month', pur: p, exp: e }; })(),
+      'This Year': (() => { const s = fpSumRows(fpQsAll, fpYearLo, fpTodayIso), e = fpSumRows(this.state.savedExpenses, fpYearLo, fpTodayIso), p = fpSumRows(this.state.savedPurchases, fpYearLo, fpTodayIso); return { sLabel: "This Year's Sales", s: s, eLabel: "This Year's Expenses", e: e, tag: 'This year', card: 'This Year', pur: p, exp: e }; })()
     };
     const pk = periodKpi[this.state.period] || periodKpi['This Month'];
     const home = {
@@ -7761,7 +7852,7 @@ class Component extends DCLogic {
       viewAllReports: () => this.setState({ screen: 'reports', report: 'sale', openMenu: '' }),
       ...reportVals,
       ...settingsVals,
-      invoices, customers, customer, items, item, custNoMatch, alwaysOpen: true,
+      invoices, repSaleRows, repRangeLabel, customers, customer, items, item, custNoMatch, alwaysOpen: true,
       noCustomerTxns: !customer.hasTxns,
       custStmtOpen: this.state.custStmtOpen,
       stmtDate: invoiceDate,
