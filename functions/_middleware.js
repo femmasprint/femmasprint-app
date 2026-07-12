@@ -151,15 +151,17 @@ var FIX_JS = `
       }, true);
       mkBurger();
       setInterval(mkBurger, 2500);
-      /* --- Hide the mock Google Profile widget on the dashboard --- */
-      var SIB = /Low Stock|This Month|Add a widget|Bidhaa|Mwezi|Ongeza/i;
+      /* --- Hide the mock Google Profile widget on the dashboard ---
+       * Matched on 'Google Profile' (same string in EN and SW). */
+      var SIB = /Low Stock|This Month|Add a widget|Bidhaa|Mwezi|Ongeza|Zinazoisha/i;
       var tmr = null;
       function hideG() {
         try {
           var divs = document.querySelectorAll('main div');
           var hit = null;
           for (var i = 0; i < divs.length; i++) {
-            if (divs[i].textContent.indexOf('Reputation manager') !== -1) { hit = divs[i]; }
+            var t = divs[i].textContent;
+            if (t.indexOf('Google Profile') !== -1 && t.length < 300) { hit = divs[i]; }
           }
           if (!hit) return;
           var n = hit;
@@ -167,7 +169,7 @@ var FIX_JS = `
             var p = n.parentElement, others = false;
             for (var j = 0; j < p.children.length; j++) {
               var c = p.children[j];
-              if (c !== n && c.textContent.indexOf('Reputation manager') === -1 && SIB.test(c.textContent)) { others = true; break; }
+              if (c !== n && c.textContent.indexOf('Google Profile') === -1 && SIB.test(c.textContent)) { others = true; break; }
             }
             if (others) { if (n.style.display !== 'none') { n.style.display = 'none'; } return; }
             n = p;
