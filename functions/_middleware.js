@@ -127,8 +127,12 @@ var FIX_JS = `
   }
   ready(function () {
     try {
-      /* --- Menu burger for phones & tablets (<=1024px, shown by CSS) --- */
-      if (!document.querySelector('.fp-burger') && document.body) {
+      /* --- Menu burger for phones & tablets (<=1024px, shown by CSS) ---
+       * NOTE: appended to <html>, NOT <body> — the app actively removes foreign
+       * nodes from <body>. A watchdog re-creates the burger if it is ever removed.
+       * position:fixed works the same from <html>. */
+      function mkBurger() {
+        if (document.querySelector('.fp-burger')) return;
         var b = document.createElement('button');
         b.className = 'fp-burger';
         b.setAttribute('aria-label', 'Fungua menyu');
@@ -137,14 +141,16 @@ var FIX_JS = `
         bd.className = 'fp-nav-backdrop';
         b.addEventListener('click', function (e) { e.stopPropagation(); document.body.classList.toggle('fp-nav-open'); });
         bd.addEventListener('click', function () { document.body.classList.remove('fp-nav-open'); });
-        document.addEventListener('click', function (e) {
-          if (e.target && e.target.closest && e.target.closest('aside nav a')) {
-            document.body.classList.remove('fp-nav-open');
-          }
-        }, true);
-        document.body.appendChild(b);
-        document.body.appendChild(bd);
+        document.documentElement.appendChild(b);
+        document.documentElement.appendChild(bd);
       }
+      document.addEventListener('click', function (e) {
+        if (e.target && e.target.closest && e.target.closest('aside nav a')) {
+          document.body.classList.remove('fp-nav-open');
+        }
+      }, true);
+      mkBurger();
+      setInterval(mkBurger, 2500);
       /* --- Hide the mock Google Profile widget on the dashboard --- */
       var SIB = /Low Stock|This Month|Add a widget|Bidhaa|Mwezi|Ongeza/i;
       var tmr = null;
