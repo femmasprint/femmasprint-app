@@ -1,7 +1,9 @@
 /* Cloudflare Pages Function middleware — dark theme, sidebar polish, and RESPONSIVE
- * (phone + tablet) layout. CSS ONLY: injected into the page <head> at the EDGE so it applies
- * before first paint. It never inserts, moves, or edits an app DOM node, so it cannot crash
- * the React app. Fully defensive: only HTML responses are touched; any error falls through.
+ * (phone + tablet) layout. Injected into the page <head> at the EDGE so it applies
+ * before first paint. CSS never edits app DOM nodes. The small fpEdgeFix script only ADDS
+ * its own nodes (menu burger + backdrop) and hides the mock Google widget; it never moves
+ * or edits React-managed content. Fully defensive: only HTML responses are touched; any
+ * error falls through.
  *
  * Breakpoint: <=1024px = phones AND tablets get the mobile-friendly layout; desktops keep
  * the full layout. */
@@ -113,6 +115,66 @@ var HEAD_CSS =
   '  body.fp-nav-open .fp-nav-backdrop{display:block}' +
   ' }';
 
+/* fpEdgeFix: adds ONLY our own nodes (burger + backdrop), sets Swahili as the default
+ * language on first visit, and hides the mock "Google Profile / Reputation manager"
+ * dashboard widget. Never edits or moves React-managed nodes (hide = display:none only). */
+var FIX_JS = `
+(function () {
+  try { if (!localStorage.getItem('fp_lang')) localStorage.setItem('fp_lang', 'sw'); } catch (e) {}
+  function ready(fn) {
+    if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', fn); }
+    else { fn(); }
+  }
+  ready(function () {
+    try {
+      /* --- Menu burger for phones & tablets (<=1024px, shown by CSS) --- */
+      if (!document.querySelector('.fp-burger') && document.body) {
+        var b = document.createElement('button');
+        b.className = 'fp-burger';
+        b.setAttribute('aria-label', 'Fungua menyu');
+        b.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"></path></svg>';
+        var bd = document.createElement('div');
+        bd.className = 'fp-nav-backdrop';
+        b.addEventListener('click', function (e) { e.stopPropagation(); document.body.classList.toggle('fp-nav-open'); });
+        bd.addEventListener('click', function () { document.body.classList.remove('fp-nav-open'); });
+        document.addEventListener('click', function (e) {
+          if (e.target && e.target.closest && e.target.closest('aside nav a')) {
+            document.body.classList.remove('fp-nav-open');
+          }
+        }, true);
+        document.body.appendChild(b);
+        document.body.appendChild(bd);
+      }
+      /* --- Hide the mock Google Profile widget on the dashboard --- */
+      var SIB = /Low Stock|This Month|Add a widget|Bidhaa|Mwezi|Ongeza/i;
+      var tmr = null;
+      function hideG() {
+        try {
+          var divs = document.querySelectorAll('main div');
+          var hit = null;
+          for (var i = 0; i < divs.length; i++) {
+            if (divs[i].textContent.indexOf('Reputation manager') !== -1) { hit = divs[i]; }
+          }
+          if (!hit) return;
+          var n = hit;
+          while (n && n.parentElement && n.parentElement.tagName !== 'MAIN' && n.parentElement.tagName !== 'BODY') {
+            var p = n.parentElement, others = false;
+            for (var j = 0; j < p.children.length; j++) {
+              var c = p.children[j];
+              if (c !== n && c.textContent.indexOf('Reputation manager') === -1 && SIB.test(c.textContent)) { others = true; break; }
+            }
+            if (others) { if (n.style.display !== 'none') { n.style.display = 'none'; } return; }
+            n = p;
+          }
+        } catch (e) {}
+      }
+      hideG();
+      new MutationObserver(function () { clearTimeout(tmr); tmr = setTimeout(hideG, 180); })
+        .observe(document.body, { childList: true, subtree: true });
+    } catch (e) {}
+  });
+})();`;
+
 export async function onRequest(context) {
   const response = await context.next();
   try {
@@ -122,6 +184,7 @@ export async function onRequest(context) {
       .on('head', {
         element(el) {
           el.append('<style id="fpEdgeDark">' + HEAD_CSS + '</style>', { html: true });
+          el.append('<script id="fpEdgeFix">' + FIX_JS + '</scr' + 'ipt>', { html: true });
         }
       })
       .transform(response);
