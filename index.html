@@ -5016,6 +5016,11 @@ class Component extends DCLogic {
       });
     }).catch(() => {});
     try { if (/\/exec$/.test((localStorage.getItem('fp_backend_url') || '').trim())) { var _self=this; var _loaders=[function(){_self.loadItems();},function(){_self.loadPayments();},function(){_self.loadDebtors();},function(){_self.loadPurchases();},function(){_self.loadExpenses();},function(){_self.loadQuickSaleAll();},function(){_self.loadOrders();},function(){_self.loadInvoices();},function(){_self.loadReceipts();},function(){_self.loadProduction();},function(){_self.loadDelivery();},function(){_self.loadBotConfig();},function(){_self.loadBotLeads();}]; var _ric=window.requestIdleCallback||function(fn){return setTimeout(fn,300);}; var _run=function(i){ if(i>=_loaders.length)return; _ric(function(){ try{_loaders[i]();}catch(e){} _run(i+1); }); }; _ric(function(){ _run(0); }); } } catch (e) {}
+    /* SEED: majina ya wafanyakazi (Nauli) yaje moja kwa moja hata kwenye kompyuta mpya (Mac/Pixel) au siku mpya */
+    try {
+      const anyExp = (this.state.qsExpenses || []).some(function (r) { return r && String(r.client == null ? '' : r.client).trim(); });
+      if (!anyExp) { this.setState({ qsExpenses: this.fpFreshExpenses_(), qsDateISO: this.state.qsDateISO || this.qsTodayISO() }); }
+    } catch (e) {}
     this._notifT = setInterval(() => {
       if (this.state.screen !== 'home') return;
       this.setState(s => {
@@ -5078,7 +5083,11 @@ class Component extends DCLogic {
     } catch (e) {}
   };
   fpDailyExpTpl_ = () => {
-    try { const t = JSON.parse(localStorage.getItem('fp_daily_exp_tpl') || 'null'); if (Array.isArray(t) && t.length) return t; } catch (e) {}
+    try { const t = JSON.parse(localStorage.getItem('fp_daily_exp_tpl') || 'null'); if (Array.isArray(t) && t.length) {
+      const seen = {}, out = [];
+      t.forEach(function (x) { if (!x || !x.name) return; const k = String(x.name).trim().toLowerCase(); if (!k || seen[k]) return; seen[k] = 1; out.push({ name: String(x.name).trim(), price: x.price }); });
+      if (out.length) return out;
+    } } catch (e) {}
     return [{ name: 'Stive', price: '5000' }, { name: 'Kwedy', price: '7000' }, { name: 'Sedekia', price: '7000' }, { name: 'Imma', price: '7000' }, { name: 'Hasan', price: '7000' }, { name: 'Ismo', price: '7000' }, { name: 'Suma', price: '7000' }, { name: 'Fadhil', price: '7000' }];
   };
   fpSaveDailyExpTpl_ = () => {
