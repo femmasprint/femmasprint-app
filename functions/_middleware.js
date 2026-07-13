@@ -54,6 +54,11 @@ var HEAD_CSS =
   ' html:not(.fp-dark) main div:has(>div[data-qsorder="note"]) > div:first-child[style*="linear-gradient(120deg"]{background:linear-gradient(120deg,#3bb0ea,#1c8ed4) !important}' +
   ' html:not(.fp-dark) main div[style*="minmax(330px"] > div > div:first-child{background:#e9f3fe !important}' +
   ' html:not(.fp-dark) main div[style*="minmax(330px"] > div > div:first-child span{color:#00578d !important}' +
+  // ===== INVOICE/SALE/PURCHASE FORMS FLAT: fomu ifunguke imejaa upande wa main, menu ibaki pembeni (si popup) =====
+  ' div[style*="z-index: 70"][style*="17, 33"]{background:#f4f7fb !important;backdrop-filter:none !important;-webkit-backdrop-filter:none !important;align-items:stretch !important;justify-content:stretch !important;padding:0 !important;left:248px !important}' +
+  ' html.fp-dark div[style*="z-index: 70"][style*="17, 33"]{background:#0a0e1a !important}' +
+  ' div[style*="z-index: 70"][style*="17, 33"] > div{max-width:100% !important;width:100% !important;max-height:100% !important;height:100% !important;border-radius:0 !important;border:none !important;box-shadow:none !important;overflow-y:auto !important}' +
+  ' @media(max-width:1024px){ div[style*="z-index: 70"][style*="17, 33"]{left:0 !important} }' +
   // ===== Quick Sale NEW ORDER: toolbar -> tiles -> Sales -> Expenses -> chips -> Note =====
   ' main div:has(>div[data-qsorder="note"]){display:flex !important;flex-direction:column !important}' +
   ' main div:has(>div[data-qsorder="note"])>div[style*="minmax(280px"]{order:1 !important}' +
@@ -120,8 +125,8 @@ var HEAD_CSS =
   ' }';
 
 /* fpEdgeFix: adds ONLY our own nodes (burger + backdrop), sets Swahili as the default
- * language on first visit, keeps the sidebar menu locked-open (labels visible), and
- * hides the mock "Google Profile / Reputation manager" dashboard widget. */
+ * language on first visit, keeps the sidebar menu locked-open (labels visible),
+ * enables double-click-to-edit on invoice rows, and hides the mock Google widget. */
 var FIX_JS = `
 (function () {
   try { if (!localStorage.getItem('fp_lang')) localStorage.setItem('fp_lang', 'sw'); } catch (e) {}
@@ -161,6 +166,18 @@ var FIX_JS = `
       function unRail() { try { if (document.body && document.body.classList.contains('fp-rail')) document.body.classList.remove('fp-rail'); } catch (e) {} }
       unRail();
       setTimeout(unRail, 800); setTimeout(unRail, 2000); setTimeout(unRail, 4000);
+      /* --- Double-click kwenye row ya invoice -> fungua ku-edit (kama Vyapar) --- */
+      if (!window.__fpDblEdit) {
+        window.__fpDblEdit = true;
+        document.addEventListener('dblclick', function (e) {
+          try {
+            var row = e.target && e.target.closest ? e.target.closest('tr') : null;
+            if (!row || !/FP\\/INV|TAX INVOICE/.test(row.textContent)) return;
+            var btn = row.querySelector('button[title="Hariri invoice"]');
+            if (btn) { e.preventDefault(); btn.click(); }
+          } catch (er) {}
+        }, true);
+      }
       /* --- Hide the mock Google Profile widget on the dashboard ---
        * Matched on 'Google Profile' (same string in EN and SW). */
       var SIB = /Low Stock|This Month|Add a widget|Bidhaa|Mwezi|Ongeza|Zinazoisha/i;
