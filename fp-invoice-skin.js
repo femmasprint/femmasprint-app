@@ -205,3 +205,75 @@
   function ready(fn) { if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fn); else fn(); }
   ready(function () { tick(); setInterval(tick, 800); });
 })();
+
+/* FEMMAS PRINT — Quick Sale daily-expense "removed today" fix.
+ * The Nauli expense template (fp_daily_exp_tpl) auto-seeds names (Stive, Kwedy, ...)
+ * into today's expenses every day and re-adds them after deletion. This makes a
+ * deleted name stay gone for TODAY only, while the master template is preserved so
+ * the name returns tomorrow. Touches only localStorage + window.confirm; fully defensive. */
+(function () {
+  if (window.__fpQsExpFix) return; window.__fpQsExpFix = true;
+  try {
+    var LS = window.localStorage;
+    var origGet = LS.getItem.bind(LS);
+    var origSet = LS.setItem.bind(LS);
+    var TPL = 'fp_daily_exp_tpl';
+    function todayISO() { var d = new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
+    function remKey() { return 'fp_exp_removed_' + todayISO(); }
+    function removedList() { try { var a = JSON.parse(origGet(remKey()) || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } }
+    function removedLower() { return removedList().map(function (s) { return String(s).trim().toLowerCase(); }); }
+    function addRemoved(name) { try { var n = String(name || '').trim(); if (!n) return; var a = removedList(); if (a.map(function (s) { return String(s).trim().toLowerCase(); }).indexOf(n.toLowerCase()) < 0) { a.push(n); origSet(remKey(), JSON.stringify(a)); } } catch (e) {} }
+    function tplNamesLower() { try { return (JSON.parse(origGet(TPL) || '[]') || []).map(function (x) { return String(x && x.name || '').trim().toLowerCase(); }).filter(Boolean); } catch (e) { return []; } }
+
+    // 1) Seeding read: hide today's removed names from the template the app seeds from.
+    LS.getItem = function (k) {
+      var v = origGet(k);
+      if (k === TPL && v) {
+        try {
+          var rem = removedLower();
+          if (rem.length) {
+            var arr = JSON.parse(v);
+            if (Array.isArray(arr)) return JSON.stringify(arr.filter(function (x) { return !(x && x.name && rem.indexOf(String(x.name).trim().toLowerCase()) > -1); }));
+          }
+        } catch (e) {}
+      }
+      return v;
+    };
+
+    // 2) Persist guard: whenever the template is re-saved, keep any name that is
+    // "removed today" but still in the stored master template (so it returns tomorrow).
+    LS.setItem = function (k, val) {
+      if (k === TPL) {
+        try {
+          var rem = removedLower();
+          if (rem.length) {
+            var oldArr = JSON.parse(origGet(TPL) || '[]') || [];
+            var newArr = JSON.parse(val) || [];
+            var have = {}; newArr.forEach(function (x) { if (x && x.name) have[String(x.name).trim().toLowerCase()] = 1; });
+            oldArr.forEach(function (x) { if (x && x.name) { var low = String(x.name).trim().toLowerCase(); if (rem.indexOf(low) > -1 && !have[low]) { newArr.push(x); have[low] = 1; } } });
+            val = JSON.stringify(newArr);
+          }
+        } catch (e) {}
+      }
+      return origSet(k, val);
+    };
+
+    // 3) Record a deletion: when a Nauli/template row is deleted (confirmed), mark it
+    // removed for today so the seeder won't bring it back until tomorrow.
+    var pendingEl = null;
+    document.addEventListener('click', function (e) { pendingEl = e.target; }, true);
+    function nameFromEl(el) { var scan = el; for (var d = 0; d < 8 && scan; d++) { if (scan.querySelectorAll) { var ins = scan.querySelectorAll('input'); for (var i = 0; i < ins.length; i++) { var val = (ins[i].value || '').trim(); if (val) return val; } } scan = scan.parentElement; } return ''; }
+    var origConfirm = window.confirm;
+    window.confirm = function (msg) {
+      var r = origConfirm.apply(window, arguments);
+      try {
+        if (r && pendingEl && /kufuta safu/i.test(String(msg || ''))) {
+          var nm = nameFromEl(pendingEl);
+          if (nm && tplNamesLower().indexOf(nm.toLowerCase()) > -1) addRemoved(nm);
+        }
+      } catch (e) {}
+      pendingEl = null;
+      return r;
+    };
+  } catch (e) {}
+})();
