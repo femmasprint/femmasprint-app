@@ -55,9 +55,13 @@
     var pc = document.getElementById('fpPeriodChip'); if (pc) pc.innerHTML = periodLabel + ' &#9662;';
   }
   function setPeriod(label, f, t) { periodLabel = label; fromISO = f || ''; toISO = t || ''; var a = document.getElementById('fpFrom'), b = document.getElementById('fpTo'); if (a) a.value = fromISO; if (b) b.value = toISO; refresh(); }
+  function ymd(d) { return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
   function monthStart() { var d = new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-01'; }
-  function todayStr() { return toISODate(new Date().toISOString()); }
-  function weekStart() { var d = new Date(); var day = (d.getDay() + 6) % 7; d.setDate(d.getDate() - day); return toISODate(d.toISOString()); }
+  function monthEnd() { var d = new Date(); return ymd(new Date(d.getFullYear(), d.getMonth() + 1, 0)); }
+  function lastMonthRange() { var d = new Date(); return [ymd(new Date(d.getFullYear(), d.getMonth() - 1, 1)), ymd(new Date(d.getFullYear(), d.getMonth(), 0))]; }
+  function quarterStart() { var d = new Date(); return ymd(new Date(d.getFullYear(), Math.floor(d.getMonth() / 3) * 3, 1)); }
+  function yearStart() { return new Date().getFullYear() + '-01-01'; }
+  function todayStr() { return ymd(new Date()); }
 
   var FN = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="opacity:.5;margin-left:5px;vertical-align:middle"><path d="M3 5h18l-7 8v5l-4 2v-7z"/></svg>';
   var IC_PR = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7"/><rect x="6" y="14" width="12" height="8"/><path d="M6 18H4a2 2 0 01-2-2v-4a2 2 0 012-2h16a2 2 0 012 2v4a2 2 0 01-2 2h-2"/></svg>';
@@ -78,11 +82,12 @@
   var ACT = [['eye', 'View / Edit', 'edit', 0], ['ret', 'Convert To Return', 'return', 0], ['truck', 'Preview Delivery Challan', 'challan', 0], ['clock', 'Payment History', 'payhist', 0], ['ban', 'Cancel Invoice', 'cancel', 1], ['trash', 'Delete', 'delete', 1], ['copy', 'Duplicate', 'dup', 0], ['pdf', 'Open PDF', 'openpdf', 0], ['eye', 'Preview', 'preview', 0], ['printer', 'Print', 'print', 0], ['list', 'View History', 'hist', 0]];
 
   function rowsHTML() {
-    var cols = ['Invoice no', 'Party Name', 'Transaction', 'Payment Type', 'Amount', 'Balance', 'Status'];
-    var head = '<tr style="text-align:left;color:#64748b;border-top:1px solid #eef2f7;border-bottom:1px solid #eef2f7;background:#fafbfc">' + cols.map(function (c, i) { return '<th style="padding:11px 12px;font-weight:600;font-size:12px;white-space:nowrap;' + ((i === 4 || i === 5) ? 'text-align:right' : '') + '">' + c + FN + '</th>'; }).join('') + '<th style="padding:11px 12px;font-weight:600;font-size:12px;text-align:center">Actions</th></tr>';
+    var cols = ['Date', 'Invoice no', 'Party Name', 'Transaction', 'Payment Type', 'Amount', 'Balance', 'Status'];
+    var head = '<tr style="text-align:left;color:#64748b;border-top:1px solid #eef2f7;border-bottom:1px solid #eef2f7;background:#fafbfc">' + cols.map(function (c, i) { return '<th style="padding:11px 12px;font-weight:600;font-size:12px;white-space:nowrap;' + ((i === 5 || i === 6) ? 'text-align:right' : '') + '">' + c + FN + '</th>'; }).join('') + '<th style="padding:11px 12px;font-weight:600;font-size:12px;text-align:center">Actions</th></tr>';
     var body = view.slice(0, 100).map(function (r, i) {
       var st = String(r.Status || ''); var sc = /paid|imelipwa/i.test(st) && !/unpaid|haija/i.test(st) ? '#0f6e56' : '#e2483d'; var b = num(r.Balance);
       return '<tr class="fpr" data-no="' + esc(r.InvoiceNo || '') + '" style="border-bottom:1px solid #eef2f7;cursor:pointer' + (i === 0 ? ';background:#dcecfb' : '') + '">'
+        + '<td style="padding:12px;font-size:12.5px;white-space:nowrap">' + esc(fmtDate(r.Date)) + '</td>'
         + '<td style="padding:12px;font-size:12.5px;font-weight:600;white-space:nowrap">' + esc(r.InvoiceNo || '') + '</td>'
         + '<td style="padding:12px;font-size:12.5px">' + esc(r.CustomerName || '—') + '</td>'
         + '<td style="padding:12px;font-size:12.5px">Sale</td>'
@@ -96,7 +101,7 @@
         + '<span class="fpa" data-a="menu" title="More Actions">' + IC_DOTS + '</span>'
         + '</div></td></tr>';
     }).join('');
-    return '<table style="width:100%;border-collapse:collapse;min-width:720px"><thead>' + head + '</thead><tbody>' + body + '</tbody></table><div style="text-align:center;color:#94a3b8;font-size:12px;padding:14px">Zinaonyeshwa ' + Math.min(100, view.length) + ' kati ya ' + view.length + '</div>';
+    return '<table style="width:100%;border-collapse:collapse;min-width:760px"><thead>' + head + '</thead><tbody>' + body + '</tbody></table><div style="text-align:center;color:#94a3b8;font-size:12px;padding:14px">Zinaonyeshwa ' + Math.min(100, view.length) + ' kati ya ' + view.length + '</div>';
   }
 
   function chip(t) { return '<span style="background:#eef2f7;padding:6px 12px;border-radius:16px;color:#334155;font-size:12px;cursor:pointer">' + t + '</span>'; }
@@ -117,12 +122,15 @@
       + '<span class="fpTopMenu" title="Zaidi" style="position:relative;cursor:pointer"><svg width="17" height="17" viewBox="0 0 24 24" fill="#64748b"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg><span style="position:absolute;top:-1px;right:-1px;width:7px;height:7px;background:#e2483d;border-radius:50%"></span></span>'
       + '</div>'
       + '<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px 6px"><div style="font-size:20px;font-weight:600;display:flex;align-items:center;gap:6px">Sale Invoices <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></div><div style="display:flex;align-items:center;gap:10px"><span class="fpAdd" style="background:#e2483d;color:#fff;font-size:13px;font-weight:600;padding:8px 16px;border-radius:8px;cursor:pointer">+ Add Sale</span><span class="fpTopMenu" title="Zaidi" style="width:32px;height:32px;border-radius:50%;background:#f1f5f9;display:inline-flex;align-items:center;justify-content:center;color:#64748b;cursor:pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg></span></div></div>'
-      + '<div style="display:flex;align-items:center;gap:8px;padding:4px 16px 12px;color:#64748b;font-size:12px;flex-wrap:wrap"><span style="color:#334155">Filter by :</span>'
-      +   '<span class="fpPeriod" id="fpPeriodChip" title="Chagua kipindi" style="background:#eef2f7;padding:6px 12px;border-radius:16px;color:#334155;font-size:12px;cursor:pointer">' + periodLabel + ' &#9662;</span>'
-      +   '<span style="background:#eef2f7;padding:5px 10px;border-radius:16px;color:#334155;font-size:12px;display:inline-flex;align-items:center;gap:5px">&#128197; <input type="date" id="fpFrom" value="' + fromISO + '" style="border:none;background:transparent;font:inherit;color:#334155;cursor:pointer;width:120px"> To <input type="date" id="fpTo" value="' + toISO + '" style="border:none;background:transparent;font:inherit;color:#334155;cursor:pointer;width:120px"></span>'
-      +   '<span class="fpFirms" title="Chuja kwa duka" style="background:#eef2f7;padding:6px 12px;border-radius:16px;color:#334155;font-size:12px;cursor:pointer">All Firms &#9662;</span>'
-      +   '<span class="fpUsers" title="Chuja kwa mtumiaji" style="background:#eef2f7;padding:6px 12px;border-radius:16px;color:#334155;font-size:12px;cursor:pointer">All Users &#9662;</span>'
-      +   (fromISO || toISO || q ? '<span class="fpClear" title="Ondoa vichujio" style="color:#e2483d;font-size:12px;cursor:pointer;padding:6px 4px">&#10005; Futa vichujio</span>' : '')
+      + '<div style="display:flex;align-items:center;gap:10px;padding:4px 16px 12px;font-size:12px;flex-wrap:wrap"><span style="color:#64748b">Filter by :</span>'
+      +   '<span style="display:inline-flex;align-items:center;background:#e9eefc;border-radius:22px;overflow:hidden;color:#39476a">'
+      +     '<span class="fpPeriod" id="fpPeriodChip" title="Chagua kipindi" style="padding:7px 15px;cursor:pointer;font-weight:500">' + periodLabel + ' &#9662;</span>'
+      +     '<span style="width:1px;align-self:stretch;background:#c6d2ef"></span>'
+      +     '<span style="padding:6px 15px;display:inline-flex;align-items:center;gap:6px">&#128197; <input type="date" id="fpFrom" value="' + fromISO + '" style="border:none;background:transparent;font:inherit;color:#39476a;cursor:pointer;width:118px"> To <input type="date" id="fpTo" value="' + toISO + '" style="border:none;background:transparent;font:inherit;color:#39476a;cursor:pointer;width:118px"></span>'
+      +   '</span>'
+      +   '<span class="fpFirms" title="Chuja kwa duka" style="background:#e9eefc;padding:7px 16px;border-radius:22px;color:#39476a;cursor:pointer;font-weight:500">All Firms &#9662;</span>'
+      +   '<span class="fpUsers" title="Chuja kwa mtumiaji" style="background:#e9eefc;padding:7px 16px;border-radius:22px;color:#39476a;cursor:pointer;font-weight:500">All Users &#9662;</span>'
+      +   (fromISO || toISO || q ? '<span class="fpClear" title="Ondoa vichujio" style="color:#e2483d;cursor:pointer;padding:7px 4px">&#10005; Futa</span>' : '')
       + '</div>'
       + '<div style="padding:0 16px 14px"><div style="border:1px solid #dbe3ec;border-radius:10px;padding:14px 18px;background:#fbfcfe;max-width:410px" id="fpTotInner">' + totCardInner() + '</div></div>'
       + '<div style="display:flex;align-items:center;justify-content:space-between;padding:2px 16px 8px"><div style="font-size:15px;font-weight:600">Transactions</div><div style="display:flex;align-items:center;gap:14px;color:#64748b"><svg class="fpFocusSearch" title="Tafuta" style="cursor:pointer" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><svg class="fpChart" title="Muhtasari" style="cursor:pointer" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18M8 16V9M13 16V6M18 16v-4"/></svg><span class="fpXls" title="Pakua Excel (CSV)" style="background:#1d9e75;color:#fff;font-size:10px;font-weight:600;padding:2px 5px;border-radius:4px;cursor:pointer">xls</span><span class="fpPrintList" title="Chapa orodha" style="cursor:pointer">' + IC_PR + '</span></div></div>'
@@ -141,11 +149,11 @@
     el.querySelectorAll('.fpChart').forEach(function (b) { b.onclick = function (e) { e.stopPropagation(); summaryModal(); }; });
     el.querySelectorAll('.fpFocusSearch').forEach(function (b) { b.onclick = function () { var i = document.getElementById('fpSearch'); if (i) i.focus(); }; });
     el.querySelectorAll('.fpTopMenu').forEach(function (b) { b.onclick = function (e) { e.stopPropagation(); miniMenu(b, [['Onyesha upya', function () { DATA = null; load().then(function () { applyFilter(); build(); }); }], ['Pakua Excel (CSV)', exportCSV], ['Chapa orodha', printList], ['Muhtasari', summaryModal]]); }; });
-    var pc = el.querySelector('.fpPeriod'); if (pc) pc.onclick = function (e) { e.stopPropagation(); miniMenu(pc, [['Leo', function () { setPeriod('Leo', todayStr(), todayStr()); }], ['Wiki hii', function () { setPeriod('Wiki hii', weekStart(), todayStr()); }], ['Mwezi huu', function () { setPeriod('Mwezi huu', monthStart(), todayStr()); }], ['Zote', function () { setPeriod('Custom', '', ''); }]]); };
+    var pc = el.querySelector('.fpPeriod'); if (pc) pc.onclick = function (e) { e.stopPropagation(); miniMenu(pc, [['All Sale Invoices', function () { setPeriod('All Sale Invoices', '', ''); }], ['This Month', function () { setPeriod('This Month', monthStart(), monthEnd()); }], ['Last Month', function () { var r = lastMonthRange(); setPeriod('Last Month', r[0], r[1]); }], ['This Quarter', function () { setPeriod('This Quarter', quarterStart(), todayStr()); }], ['This Year', function () { setPeriod('This Year', yearStart(), todayStr()); }], ['Custom', function () { setPeriod('Custom', fromISO, toISO); }]]); };
     var ff = el.querySelector('#fpFrom'); if (ff) ff.onchange = function () { fromISO = this.value || ''; periodLabel = 'Custom'; refresh(); };
     var ft = el.querySelector('#fpTo'); if (ft) ft.onchange = function () { toISO = this.value || ''; periodLabel = 'Custom'; refresh(); };
-    var fm = el.querySelector('.fpFirms'); if (fm) fm.onclick = function (e) { e.stopPropagation(); miniMenu(fm, [['Femmas Print', function () {}]]); };
-    var fu = el.querySelector('.fpUsers'); if (fu) fu.onclick = function (e) { e.stopPropagation(); miniMenu(fu, [['Watumiaji wote', function () {}]]); };
+    var fm = el.querySelector('.fpFirms'); if (fm) fm.onclick = function (e) { e.stopPropagation(); miniMenu(fm, [['All Firms', function () {}], ['FEMMAS PRINT', function () {}]]); };
+    var fu = el.querySelector('.fpUsers'); if (fu) fu.onclick = function (e) { e.stopPropagation(); miniMenu(fu, [['All Users', function () {}]]); };
     var fcl = el.querySelector('.fpClear'); if (fcl) fcl.onclick = function () { q = ''; fromISO = ''; toISO = ''; periodLabel = 'Custom'; var si = document.getElementById('fpSearch'); if (si) si.value = ''; build(); };
     attachRows(el);
   }
@@ -191,7 +199,7 @@
   function doAction(k, rec) {
     if (k === 'preview' || k === 'openpdf' || k === 'print' || k === 'edit') openPreview(rec);
     else if (k === 'challan') openPreview(rec, true);
-    else if (k === 'payhist') modal('Payment History', '<div style="padding:18px 20px;font-size:14px;line-height:1.9">Imelipwa (Received): <b>' + money(rec.PaidAmount) + '</b><br>Salio (Balance): ' + money(rec.Balance) + '<br>Hali: ' + esc(rec.Status || '') + '</div>', '<span class="fpx" style="border:1px solid #185fa5;color:#185fa5;border-radius:20px;padding:7px 15px;font-size:13px;font-weight:600;cursor:pointer">CLOSE</span>');
+    else if (k === 'payhist') modal('Payment History', '<div style="padding:18px 20px;font-size:14px;line-height:2">Received during Sale : <b>' + Math.round(num(rec.PaidAmount)).toLocaleString('en-US') + '</b>' + (num(rec.Balance) > 0 ? '<br>Balance : <b style="color:#993c1d">' + Math.round(num(rec.Balance)).toLocaleString('en-US') + '</b>' : '') + '</div>', '<span class="fpx" style="border:1px solid #185fa5;color:#185fa5;border-radius:20px;padding:7px 15px;font-size:13px;font-weight:600;cursor:pointer">CLOSE</span>');
     else modal(({ 'return': 'Convert To Return', 'cancel': 'Cancel Invoice', 'delete': 'Delete', 'dup': 'Duplicate', 'hist': 'View History' })[k] || 'Kitendo', '<div style="padding:20px;font-size:14px;line-height:1.6">Kitendo hiki kinaunganishwa na backend salama — kinakuja hatua inayofuata.</div>', '<span class="fpx" style="border:1px solid #cbd5e1;color:#334155;border-radius:20px;padding:7px 15px;font-size:13px;font-weight:600;cursor:pointer">Sawa</span>');
   }
 
@@ -240,8 +248,8 @@
 
   /* ---- List-level actions (top toolbar + Transactions header icons) ---- */
   function printList() {
-    var body = view.map(function (r, i) { return '<tr><td style="padding:6px 8px;border-bottom:1px solid #eee">' + (i + 1) + '</td><td style="padding:6px 8px;border-bottom:1px solid #eee">' + esc(r.InvoiceNo || '') + '</td><td style="padding:6px 8px;border-bottom:1px solid #eee">' + esc(r.CustomerName || '') + '</td><td style="padding:6px 8px;border-bottom:1px solid #eee;text-align:right">' + money(r.TotalAmount) + '</td><td style="padding:6px 8px;border-bottom:1px solid #eee;text-align:right">' + money(r.Balance) + '</td><td style="padding:6px 8px;border-bottom:1px solid #eee">' + esc(r.Status || '') + '</td></tr>'; }).join('');
-    var html = '<div id="fpSheet" style="font-family:Asap,sans-serif;color:#1f2733;padding:24px"><div style="display:flex;justify-content:space-between;align-items:flex-end;border-bottom:3px solid #13315a;padding-bottom:10px;margin-bottom:12px"><div style="font-size:18px;font-weight:800;color:#13315a">FEMMAS PRINT — Sale Invoices</div><div style="font-size:11.5px;color:#5b6675">Total: ' + money(tot) + ' &middot; Received: ' + money(paid) + ' &middot; Balance: ' + money(bal) + '</div></div><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#13315a;color:#fff;text-align:left"><th style="padding:7px 8px">#</th><th style="padding:7px 8px">Invoice no</th><th style="padding:7px 8px">Party Name</th><th style="padding:7px 8px;text-align:right">Amount</th><th style="padding:7px 8px;text-align:right">Balance</th><th style="padding:7px 8px">Status</th></tr></thead><tbody>' + body + '</tbody></table></div>';
+    var body = view.map(function (r, i) { return '<tr><td style="padding:6px 8px;border-bottom:1px solid #eee">' + (i + 1) + '</td><td style="padding:6px 8px;border-bottom:1px solid #eee">' + esc(fmtDate(r.Date)) + '</td><td style="padding:6px 8px;border-bottom:1px solid #eee">' + esc(r.InvoiceNo || '') + '</td><td style="padding:6px 8px;border-bottom:1px solid #eee">' + esc(r.CustomerName || '') + '</td><td style="padding:6px 8px;border-bottom:1px solid #eee;text-align:right">' + money(r.TotalAmount) + '</td><td style="padding:6px 8px;border-bottom:1px solid #eee;text-align:right">' + money(r.Balance) + '</td><td style="padding:6px 8px;border-bottom:1px solid #eee">' + esc(r.Status || '') + '</td></tr>'; }).join('');
+    var html = '<div id="fpSheet" style="font-family:Asap,sans-serif;color:#1f2733;padding:24px"><div style="display:flex;justify-content:space-between;align-items:flex-end;border-bottom:3px solid #13315a;padding-bottom:10px;margin-bottom:12px"><div style="font-size:18px;font-weight:800;color:#13315a">FEMMAS PRINT — Sale Invoices</div><div style="font-size:11.5px;color:#5b6675">Total: ' + money(tot) + ' &middot; Received: ' + money(paid) + ' &middot; Balance: ' + money(bal) + '</div></div><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#13315a;color:#fff;text-align:left"><th style="padding:7px 8px">#</th><th style="padding:7px 8px">Date</th><th style="padding:7px 8px">Invoice no</th><th style="padding:7px 8px">Party Name</th><th style="padding:7px 8px;text-align:right">Amount</th><th style="padding:7px 8px;text-align:right">Balance</th><th style="padding:7px 8px">Status</th></tr></thead><tbody>' + body + '</tbody></table></div>';
     var old = document.getElementById('fpPrintArea'); if (old) old.remove();
     var area = document.createElement('div'); area.id = 'fpPrintArea'; area.innerHTML = html;
     if (!document.getElementById('fpPrintStyle')) { var ps = document.createElement('style'); ps.id = 'fpPrintStyle'; ps.textContent = '@media print{ body{display:none !important} #fpSkin{display:none !important} #fpPrintArea{display:block !important} }'; document.head.appendChild(ps); }
@@ -249,9 +257,9 @@
     setTimeout(function () { try { window.print(); } catch (e) {} setTimeout(function () { var a = document.getElementById('fpPrintArea'); if (a) a.remove(); }, 900); }, 120);
   }
   function exportCSV() {
-    var head = ['Invoice no', 'Party Name', 'Transaction', 'Payment Type', 'Amount', 'Balance', 'Status'];
+    var head = ['Date', 'Invoice no', 'Party Name', 'Transaction', 'Payment Type', 'Amount', 'Balance', 'Status'];
     var lines = [head.join(',')];
-    view.forEach(function (r) { var b = num(r.Balance); var cells = [r.InvoiceNo || '', r.CustomerName || '', 'Sale', (b <= 0 ? 'Cash' : 'FP BANK'), num(r.TotalAmount), num(r.Balance), r.Status || '']; lines.push(cells.map(function (c) { c = String(c); return /[",\n]/.test(c) ? '"' + c.replace(/"/g, '""') + '"' : c; }).join(',')); });
+    view.forEach(function (r) { var b = num(r.Balance); var cells = [fmtDate(r.Date), r.InvoiceNo || '', r.CustomerName || '', 'Sale', (b <= 0 ? 'Cash' : 'FP BANK'), num(r.TotalAmount), num(r.Balance), r.Status || '']; lines.push(cells.map(function (c) { c = String(c); return /[",\n]/.test(c) ? '"' + c.replace(/"/g, '""') + '"' : c; }).join(',')); });
     var blob = new Blob(['﻿' + lines.join('\n')], { type: 'text/csv;charset=utf-8' }); var url = URL.createObjectURL(blob);
     var a = document.createElement('a'); a.href = url; a.download = 'Sale_Invoices.csv'; document.body.appendChild(a); a.click(); a.remove();
     setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
