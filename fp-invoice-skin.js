@@ -8,7 +8,7 @@
   if (window.__fpSkin) return; window.__fpSkin = true;
 
   function backend() { try { return (localStorage.getItem('fp_backend_url') || '').trim(); } catch (e) { return ''; } }
-  var DATA = null, view = [], q = '', tot = 0, paid = 0, bal = 0, curDoc = null;
+  var DATA = null, view = [], q = '', tot = 0, paid = 0, bal = 0, curDoc = null, fromISO = '', toISO = '', periodLabel = 'Custom';
 
   function num(n) { return +String(n == null ? '' : n).replace(/[^0-9.-]/g, '') || 0; }
   function money(n) { return 'Sh ' + Math.round(num(n)).toLocaleString('en-US'); }
@@ -38,18 +38,44 @@
     } catch (e) { return false; }
   }
 
+  function toISODate(s) { if (!s) return ''; var d = new Date(s); if (isNaN(d.getTime())) return ''; return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
   function applyFilter() {
     view = (DATA || []).filter(function (r) {
       if (q) { var s = ((r.InvoiceNo || '') + ' ' + (r.CustomerName || '')).toLowerCase(); if (s.indexOf(q) < 0) return false; }
+      if (fromISO || toISO) { var dd = toISODate(r.Date); if (!dd) return false; if (fromISO && dd < fromISO) return false; if (toISO && dd > toISO) return false; }
       return true;
     });
+    tot = 0; paid = 0; bal = 0;
+    view.forEach(function (r) { tot += num(r.TotalAmount); paid += num(r.PaidAmount); bal += num(r.Balance); });
   }
+  function refresh() {
+    applyFilter();
+    var c = document.getElementById('fpTotInner'); if (c) c.innerHTML = totCardInner();
+    var w = document.getElementById('fpTableWrap'); if (w) { var el = document.getElementById('fpSkin'); w.innerHTML = rowsHTML(); if (el) attachRows(el); }
+    var pc = document.getElementById('fpPeriodChip'); if (pc) pc.innerHTML = periodLabel + ' &#9662;';
+  }
+  function setPeriod(label, f, t) { periodLabel = label; fromISO = f || ''; toISO = t || ''; var a = document.getElementById('fpFrom'), b = document.getElementById('fpTo'); if (a) a.value = fromISO; if (b) b.value = toISO; refresh(); }
+  function monthStart() { var d = new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-01'; }
+  function todayStr() { return toISODate(new Date().toISOString()); }
+  function weekStart() { var d = new Date(); var day = (d.getDay() + 6) % 7; d.setDate(d.getDate() - day); return toISODate(d.toISOString()); }
 
   var FN = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="opacity:.5;margin-left:5px;vertical-align:middle"><path d="M3 5h18l-7 8v5l-4 2v-7z"/></svg>';
   var IC_PR = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7"/><rect x="6" y="14" width="12" height="8"/><path d="M6 18H4a2 2 0 01-2-2v-4a2 2 0 012-2h16a2 2 0 012 2v4a2 2 0 01-2 2h-2"/></svg>';
   var IC_SH = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg>';
   var IC_DOTS = '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>';
-  var ACT = [['View / Edit', 'edit', 0], ['Convert To Return', 'return', 0], ['Preview Delivery Challan', 'challan', 0], ['Payment History', 'payhist', 0], ['Cancel Invoice', 'cancel', 1], ['Delete', 'delete', 1], ['Duplicate', 'dup', 0], ['Open PDF', 'openpdf', 0], ['Preview', 'preview', 0], ['Print', 'print', 0], ['View History', 'hist', 0]];
+  var MIC = {
+    eye: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>',
+    ret: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-1"/></svg>',
+    truck: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><path d="M16 8h4l3 3v5h-7z"/><circle cx="5.5" cy="18.5" r="2"/><circle cx="18.5" cy="18.5" r="2"/></svg>',
+    clock: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+    ban: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M5 5l14 14"/></svg>',
+    trash: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>',
+    copy: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>',
+    pdf: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>',
+    printer: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>',
+    list: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>'
+  };
+  var ACT = [['eye', 'View / Edit', 'edit', 0], ['ret', 'Convert To Return', 'return', 0], ['truck', 'Preview Delivery Challan', 'challan', 0], ['clock', 'Payment History', 'payhist', 0], ['ban', 'Cancel Invoice', 'cancel', 1], ['trash', 'Delete', 'delete', 1], ['copy', 'Duplicate', 'dup', 0], ['pdf', 'Open PDF', 'openpdf', 0], ['eye', 'Preview', 'preview', 0], ['printer', 'Print', 'print', 0], ['list', 'View History', 'hist', 0]];
 
   function rowsHTML() {
     var cols = ['Invoice no', 'Party Name', 'Transaction', 'Payment Type', 'Amount', 'Balance', 'Status'];
@@ -74,6 +100,7 @@
   }
 
   function chip(t) { return '<span style="background:#eef2f7;padding:6px 12px;border-radius:16px;color:#334155;font-size:12px;cursor:pointer">' + t + '</span>'; }
+  function totCardInner() { return '<div style="font-size:12px;color:#64748b">Total Sales Amount</div><div style="font-size:24px;font-weight:600;margin:3px 0">' + money(tot) + '</div><div style="font-size:12px;color:#64748b">Received: <span style="color:#0f6e56">' + money(paid) + '</span> &nbsp;|&nbsp; Balance: <span style="color:#993c1d">' + money(bal) + '</span></div>'; }
 
   function build() {
     var el = document.getElementById('fpSkin'); if (!el) { el = document.createElement('div'); el.id = 'fpSkin'; document.documentElement.appendChild(el); }
@@ -82,25 +109,44 @@
     el.innerHTML = ''
       + '<div style="display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid #eef2f7">'
       + '<div style="flex:1;display:flex;align-items:center;gap:8px;background:#f4f6f9;border-radius:18px;padding:7px 13px;max-width:340px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><input id="fpSearch" placeholder="Search Transactions" style="border:none;background:transparent;outline:none;font-size:13px;width:100%;color:#1f2733"></div>'
+      + '<div style="flex:1"></div>'
       + '<span class="fpAdd" style="border:1px solid #f0997b;color:#d85a30;font-size:12px;font-weight:600;padding:6px 13px;border-radius:18px;cursor:pointer">+ Add Sale</span>'
       + '<span class="fpAddP" style="border:1px solid #85b7eb;color:#185fa5;font-size:12px;font-weight:600;padding:6px 13px;border-radius:18px;cursor:pointer">+ Add Purchase</span>'
-      + '<span style="width:28px;height:28px;border-radius:8px;background:#e6f1fb;display:inline-flex;align-items:center;justify-content:center;color:#378add;font-size:18px">+</span>'
-      + '<span style="color:#64748b">' + IC_PR + '</span>'
-      + '<span style="position:relative"><svg width="17" height="17" viewBox="0 0 24 24" fill="#64748b"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg><span style="position:absolute;top:-1px;right:-1px;width:7px;height:7px;background:#e2483d;border-radius:50%"></span></span>'
+      + '<span class="fpAddPlus" title="Ongeza mauzo" style="width:28px;height:28px;border-radius:8px;background:#e6f1fb;display:inline-flex;align-items:center;justify-content:center;color:#378add;font-size:18px;cursor:pointer">+</span>'
+      + '<span class="fpPrintList" title="Chapa orodha" style="color:#64748b;cursor:pointer">' + IC_PR + '</span>'
+      + '<span class="fpTopMenu" title="Zaidi" style="position:relative;cursor:pointer"><svg width="17" height="17" viewBox="0 0 24 24" fill="#64748b"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg><span style="position:absolute;top:-1px;right:-1px;width:7px;height:7px;background:#e2483d;border-radius:50%"></span></span>'
       + '</div>'
-      + '<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px 6px"><div style="font-size:20px;font-weight:600;display:flex;align-items:center;gap:6px">Sale Invoices <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></div><div style="display:flex;align-items:center;gap:10px"><span class="fpAdd" style="background:#e2483d;color:#fff;font-size:13px;font-weight:600;padding:8px 16px;border-radius:8px;cursor:pointer">+ Add Sale</span><span style="width:32px;height:32px;border-radius:50%;background:#f1f5f9;display:inline-flex;align-items:center;justify-content:center;color:#64748b"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/></svg></span></div></div>'
-      + '<div style="display:flex;align-items:center;gap:8px;padding:4px 16px 12px;color:#64748b;font-size:12px;flex-wrap:wrap"><span style="color:#334155">Filter by :</span>' + chip('Custom &#9662;') + chip('&#128197; 01/06/2026&nbsp; To&nbsp; 17/06/2026') + chip('All Firms &#9662;') + chip('All Users &#9662;') + '</div>'
-      + '<div style="padding:0 16px 14px"><div style="border:1px solid #dbe3ec;border-radius:10px;padding:14px 18px;background:#fbfcfe;max-width:410px"><div style="font-size:12px;color:#64748b">Total Sales Amount</div><div style="font-size:24px;font-weight:600;margin:3px 0">' + money(tot) + '</div><div style="font-size:12px;color:#64748b">Received: <span style="color:#0f6e56">' + money(paid) + '</span> &nbsp;|&nbsp; Balance: <span style="color:#993c1d">' + money(bal) + '</span></div></div></div>'
-      + '<div style="display:flex;align-items:center;justify-content:space-between;padding:2px 16px 8px"><div style="font-size:15px;font-weight:600">Transactions</div><div style="display:flex;align-items:center;gap:14px;color:#64748b"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18M8 16V9M13 16V6M18 16v-4"/></svg><span style="background:#1d9e75;color:#fff;font-size:10px;font-weight:600;padding:2px 5px;border-radius:4px">xls</span><span>' + IC_PR + '</span></div></div>'
+      + '<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px 6px"><div style="font-size:20px;font-weight:600;display:flex;align-items:center;gap:6px">Sale Invoices <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></div><div style="display:flex;align-items:center;gap:10px"><span class="fpAdd" style="background:#e2483d;color:#fff;font-size:13px;font-weight:600;padding:8px 16px;border-radius:8px;cursor:pointer">+ Add Sale</span><span class="fpTopMenu" title="Zaidi" style="width:32px;height:32px;border-radius:50%;background:#f1f5f9;display:inline-flex;align-items:center;justify-content:center;color:#64748b;cursor:pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg></span></div></div>'
+      + '<div style="display:flex;align-items:center;gap:8px;padding:4px 16px 12px;color:#64748b;font-size:12px;flex-wrap:wrap"><span style="color:#334155">Filter by :</span>'
+      +   '<span class="fpPeriod" id="fpPeriodChip" title="Chagua kipindi" style="background:#eef2f7;padding:6px 12px;border-radius:16px;color:#334155;font-size:12px;cursor:pointer">' + periodLabel + ' &#9662;</span>'
+      +   '<span style="background:#eef2f7;padding:5px 10px;border-radius:16px;color:#334155;font-size:12px;display:inline-flex;align-items:center;gap:5px">&#128197; <input type="date" id="fpFrom" value="' + fromISO + '" style="border:none;background:transparent;font:inherit;color:#334155;cursor:pointer;width:120px"> To <input type="date" id="fpTo" value="' + toISO + '" style="border:none;background:transparent;font:inherit;color:#334155;cursor:pointer;width:120px"></span>'
+      +   '<span class="fpFirms" title="Chuja kwa duka" style="background:#eef2f7;padding:6px 12px;border-radius:16px;color:#334155;font-size:12px;cursor:pointer">All Firms &#9662;</span>'
+      +   '<span class="fpUsers" title="Chuja kwa mtumiaji" style="background:#eef2f7;padding:6px 12px;border-radius:16px;color:#334155;font-size:12px;cursor:pointer">All Users &#9662;</span>'
+      +   (fromISO || toISO || q ? '<span class="fpClear" title="Ondoa vichujio" style="color:#e2483d;font-size:12px;cursor:pointer;padding:6px 4px">&#10005; Futa vichujio</span>' : '')
+      + '</div>'
+      + '<div style="padding:0 16px 14px"><div style="border:1px solid #dbe3ec;border-radius:10px;padding:14px 18px;background:#fbfcfe;max-width:410px" id="fpTotInner">' + totCardInner() + '</div></div>'
+      + '<div style="display:flex;align-items:center;justify-content:space-between;padding:2px 16px 8px"><div style="font-size:15px;font-weight:600">Transactions</div><div style="display:flex;align-items:center;gap:14px;color:#64748b"><svg class="fpFocusSearch" title="Tafuta" style="cursor:pointer" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><svg class="fpChart" title="Muhtasari" style="cursor:pointer" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18M8 16V9M13 16V6M18 16v-4"/></svg><span class="fpXls" title="Pakua Excel (CSV)" style="background:#1d9e75;color:#fff;font-size:10px;font-weight:600;padding:2px 5px;border-radius:4px;cursor:pointer">xls</span><span class="fpPrintList" title="Chapa orodha" style="cursor:pointer">' + IC_PR + '</span></div></div>'
       + '<div id="fpTableWrap" style="padding:0 16px 40px;overflow-x:auto">' + rowsHTML() + '</div>';
+    el.setAttribute('data-built', '1');
     wire(el);
   }
 
   function wire(el) {
     var s = el.querySelector('#fpSearch');
-    if (s) s.oninput = function () { q = this.value.trim().toLowerCase(); applyFilter(); var w = document.getElementById('fpTableWrap'); if (w) { w.innerHTML = rowsHTML(); attachRows(el); } };
-    el.querySelectorAll('.fpAdd').forEach(function (b) { b.onclick = function () { clickApp(/^\+?\s*Sale$/i); }; });
+    if (s) s.oninput = function () { q = this.value.trim().toLowerCase(); refresh(); };
+    el.querySelectorAll('.fpAdd, .fpAddPlus').forEach(function (b) { b.onclick = function () { clickApp(/^\+?\s*Sale$/i); }; });
     el.querySelectorAll('.fpAddP').forEach(function (b) { b.onclick = function () { clickApp(/^\+?\s*Purchase$/i); }; });
+    el.querySelectorAll('.fpPrintList').forEach(function (b) { b.onclick = function (e) { e.stopPropagation(); printList(); }; });
+    el.querySelectorAll('.fpXls').forEach(function (b) { b.onclick = function (e) { e.stopPropagation(); exportCSV(); }; });
+    el.querySelectorAll('.fpChart').forEach(function (b) { b.onclick = function (e) { e.stopPropagation(); summaryModal(); }; });
+    el.querySelectorAll('.fpFocusSearch').forEach(function (b) { b.onclick = function () { var i = document.getElementById('fpSearch'); if (i) i.focus(); }; });
+    el.querySelectorAll('.fpTopMenu').forEach(function (b) { b.onclick = function (e) { e.stopPropagation(); miniMenu(b, [['Onyesha upya', function () { DATA = null; load().then(function () { applyFilter(); build(); }); }], ['Pakua Excel (CSV)', exportCSV], ['Chapa orodha', printList], ['Muhtasari', summaryModal]]); }; });
+    var pc = el.querySelector('.fpPeriod'); if (pc) pc.onclick = function (e) { e.stopPropagation(); miniMenu(pc, [['Leo', function () { setPeriod('Leo', todayStr(), todayStr()); }], ['Wiki hii', function () { setPeriod('Wiki hii', weekStart(), todayStr()); }], ['Mwezi huu', function () { setPeriod('Mwezi huu', monthStart(), todayStr()); }], ['Zote', function () { setPeriod('Custom', '', ''); }]]); };
+    var ff = el.querySelector('#fpFrom'); if (ff) ff.onchange = function () { fromISO = this.value || ''; periodLabel = 'Custom'; refresh(); };
+    var ft = el.querySelector('#fpTo'); if (ft) ft.onchange = function () { toISO = this.value || ''; periodLabel = 'Custom'; refresh(); };
+    var fm = el.querySelector('.fpFirms'); if (fm) fm.onclick = function (e) { e.stopPropagation(); miniMenu(fm, [['Femmas Print', function () {}]]); };
+    var fu = el.querySelector('.fpUsers'); if (fu) fu.onclick = function (e) { e.stopPropagation(); miniMenu(fu, [['Watumiaji wote', function () {}]]); };
+    var fcl = el.querySelector('.fpClear'); if (fcl) fcl.onclick = function () { q = ''; fromISO = ''; toISO = ''; periodLabel = 'Custom'; var si = document.getElementById('fpSearch'); if (si) si.value = ''; build(); };
     attachRows(el);
   }
   function clickApp(re) { var b = Array.prototype.slice.call(document.querySelectorAll('main button, header button')).find(function (x) { return re.test((x.textContent || '').trim()); }); if (b) b.click(); }
@@ -131,7 +177,7 @@
     closeMenu();
     menuEl = document.createElement('div');
     menuEl.style.cssText = 'position:fixed;z-index:2147483600;width:226px;background:#fff;border:1px solid #d7dee8;border-radius:10px;box-shadow:0 12px 34px rgba(0,0,0,.2);padding:6px;font-size:13px;color:#1f2733';
-    menuEl.innerHTML = ACT.map(function (a) { return '<div class="fpmi" data-k="' + a[1] + '" style="padding:8px 10px;border-radius:7px;cursor:pointer;white-space:nowrap;' + (a[2] ? 'color:#e2483d;' : '') + '">' + a[0] + '</div>'; }).join('');
+    menuEl.innerHTML = ACT.map(function (a) { return '<div class="fpmi" data-k="' + a[2] + '" style="display:flex;align-items:center;gap:11px;padding:8px 10px;border-radius:7px;cursor:pointer;white-space:nowrap;' + (a[3] ? 'color:#e2483d;' : '') + '">' + MIC[a[0]] + '<span>' + a[1] + '</span></div>'; }).join('');
     document.documentElement.appendChild(menuEl);
     var rc = anchor.getBoundingClientRect(); var w = 226, h = menuEl.offsetHeight || 360;
     var left = Math.min(rc.right - w, window.innerWidth - w - 8); if (left < 8) left = 8;
@@ -192,18 +238,67 @@
   function shareText(d) { var L = ['FEMMAS PRINT', 'Invoice ' + (d.InvoiceNo || '') + '  |  ' + fmtDate(d.Date), '']; if (d.CustomerName) L.push('Bill To: ' + d.CustomerName); L.push('Total: ' + money(d.TotalAmount)); if (num(d.PaidAmount)) L.push('Received: ' + money(d.PaidAmount)); if (num(d.Balance)) L.push('Balance: ' + money(d.Balance)); L.push(''); L.push('Malipo: CRDB 0150322619500 (Femmas Print)'); L.push('Lipa: 5521084 (Tigo) / 5767888 (Voda)'); L.push('Asante kwa biashara!'); L.push(''); L.push('Umefurahia huduma? Tuandikie review Google: https://www.google.com/maps?cid=9015672156949326110'); return L.join('\n'); }
   function shareInvoice(d) { var phone = normPhone(d.Phone || ''); window.open('https://wa.me/' + phone + '?text=' + encodeURIComponent(shareText(d)), '_blank'); }
 
+  /* ---- List-level actions (top toolbar + Transactions header icons) ---- */
+  function printList() {
+    var body = view.map(function (r, i) { return '<tr><td style="padding:6px 8px;border-bottom:1px solid #eee">' + (i + 1) + '</td><td style="padding:6px 8px;border-bottom:1px solid #eee">' + esc(r.InvoiceNo || '') + '</td><td style="padding:6px 8px;border-bottom:1px solid #eee">' + esc(r.CustomerName || '') + '</td><td style="padding:6px 8px;border-bottom:1px solid #eee;text-align:right">' + money(r.TotalAmount) + '</td><td style="padding:6px 8px;border-bottom:1px solid #eee;text-align:right">' + money(r.Balance) + '</td><td style="padding:6px 8px;border-bottom:1px solid #eee">' + esc(r.Status || '') + '</td></tr>'; }).join('');
+    var html = '<div id="fpSheet" style="font-family:Asap,sans-serif;color:#1f2733;padding:24px"><div style="display:flex;justify-content:space-between;align-items:flex-end;border-bottom:3px solid #13315a;padding-bottom:10px;margin-bottom:12px"><div style="font-size:18px;font-weight:800;color:#13315a">FEMMAS PRINT — Sale Invoices</div><div style="font-size:11.5px;color:#5b6675">Total: ' + money(tot) + ' &middot; Received: ' + money(paid) + ' &middot; Balance: ' + money(bal) + '</div></div><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#13315a;color:#fff;text-align:left"><th style="padding:7px 8px">#</th><th style="padding:7px 8px">Invoice no</th><th style="padding:7px 8px">Party Name</th><th style="padding:7px 8px;text-align:right">Amount</th><th style="padding:7px 8px;text-align:right">Balance</th><th style="padding:7px 8px">Status</th></tr></thead><tbody>' + body + '</tbody></table></div>';
+    var old = document.getElementById('fpPrintArea'); if (old) old.remove();
+    var area = document.createElement('div'); area.id = 'fpPrintArea'; area.innerHTML = html;
+    if (!document.getElementById('fpPrintStyle')) { var ps = document.createElement('style'); ps.id = 'fpPrintStyle'; ps.textContent = '@media print{ body{display:none !important} #fpSkin{display:none !important} #fpPrintArea{display:block !important} }'; document.head.appendChild(ps); }
+    document.documentElement.appendChild(area);
+    setTimeout(function () { try { window.print(); } catch (e) {} setTimeout(function () { var a = document.getElementById('fpPrintArea'); if (a) a.remove(); }, 900); }, 120);
+  }
+  function exportCSV() {
+    var head = ['Invoice no', 'Party Name', 'Transaction', 'Payment Type', 'Amount', 'Balance', 'Status'];
+    var lines = [head.join(',')];
+    view.forEach(function (r) { var b = num(r.Balance); var cells = [r.InvoiceNo || '', r.CustomerName || '', 'Sale', (b <= 0 ? 'Cash' : 'FP BANK'), num(r.TotalAmount), num(r.Balance), r.Status || '']; lines.push(cells.map(function (c) { c = String(c); return /[",\n]/.test(c) ? '"' + c.replace(/"/g, '""') + '"' : c; }).join(',')); });
+    var blob = new Blob(['﻿' + lines.join('\n')], { type: 'text/csv;charset=utf-8' }); var url = URL.createObjectURL(blob);
+    var a = document.createElement('a'); a.href = url; a.download = 'Sale_Invoices.csv'; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+  }
+  function summaryModal() {
+    modal('Muhtasari — Sale Invoices', '<div style="padding:20px 22px;font-size:14px;line-height:2"><div>Jumla ya invoice: <b>' + view.length + '</b></div><div>Total Sales: <b>' + money(tot) + '</b></div><div>Imelipwa (Received): <b style="color:#0f6e56">' + money(paid) + '</b></div><div>Salio (Balance): <b style="color:#993c1d">' + money(bal) + '</b></div></div>', '<span class="fpx" style="border:1px solid #185fa5;color:#185fa5;border-radius:20px;padding:7px 15px;font-size:13px;font-weight:600;cursor:pointer">Sawa</span>');
+  }
+  function miniMenu(anchor, items) {
+    closeMenu();
+    menuEl = document.createElement('div');
+    menuEl.style.cssText = 'position:fixed;z-index:2147483600;min-width:190px;background:#fff;border:1px solid #d7dee8;border-radius:10px;box-shadow:0 12px 34px rgba(0,0,0,.2);padding:6px;font-size:13px;color:#1f2733';
+    menuEl.innerHTML = items.map(function (it, i) { return '<div class="fpmm" data-i="' + i + '" style="padding:8px 10px;border-radius:7px;cursor:pointer;white-space:nowrap">' + it[0] + '</div>'; }).join('');
+    document.documentElement.appendChild(menuEl);
+    var rc = anchor.getBoundingClientRect(); var w = 190;
+    var left = Math.min(rc.right - w, window.innerWidth - w - 8); if (left < 8) left = 8;
+    menuEl.style.left = left + 'px'; menuEl.style.top = (rc.bottom + 4) + 'px';
+    menuEl.querySelectorAll('.fpmm').forEach(function (mi) {
+      mi.onmouseenter = function () { mi.style.background = '#f1f5f9'; }; mi.onmouseleave = function () { mi.style.background = ''; };
+      mi.onclick = function (e) { e.stopPropagation(); var fn = items[+mi.getAttribute('data-i')][1]; closeMenu(); try { fn(); } catch (er) {} };
+    });
+  }
+
   document.addEventListener('click', function (e) { if (menuEl && !e.target.closest('.fpa') && !menuEl.contains(e.target)) closeMenu(); }, true);
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { closeMenu(); closeOv(); } });
   window.addEventListener('scroll', closeMenu, true);
 
   var busy = false, t = null;
+  function shell() {
+    var el = document.getElementById('fpSkin');
+    if (!el) {
+      el = document.createElement('div'); el.id = 'fpSkin'; document.documentElement.appendChild(el);
+      var L = window.innerWidth < 1024 ? 0 : 208;
+      el.style.cssText = 'position:fixed;left:' + L + 'px;top:0;right:0;bottom:0;z-index:900000;background:#fff;overflow:auto;font-family:-apple-system,Segoe UI,Roboto,sans-serif;color:#1f2733';
+      el.innerHTML = '<div style="padding:16px"><div style="height:40px;background:#f4f6f9;border-radius:18px;max-width:340px;margin-bottom:16px"></div><div style="height:26px;width:200px;background:#eef2f7;border-radius:8px;margin:6px 0 14px"></div><div style="height:96px;max-width:410px;background:#f7f9fc;border:1px solid #eef2f7;border-radius:10px;margin-bottom:16px"></div><div style="color:#94a3b8;font-size:13px">Inapakia Sale Invoices…</div></div>';
+    }
+    return el;
+  }
   function tick() {
     var on = isInvPage(); var el = document.getElementById('fpSkin');
-    if (on) { if (!DATA && !busy) { busy = true; load().then(function () { busy = false; applyFilter(); if (isInvPage()) build(); }); } else if (DATA && !el) { applyFilter(); build(); } }
-    else { if (el) el.remove(); }
+    if (on) {
+      if (!el) { el = shell(); }                       // opaque cover instantly — hides the old page (no flash)
+      if (DATA) { if (el.getAttribute('data-built') !== '1') { applyFilter(); build(); } }
+      else if (!busy) { busy = true; load().then(function () { busy = false; applyFilter(); if (isInvPage()) build(); }); }
+    } else { if (el) el.remove(); }
   }
   function ready(fn) { if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fn); else fn(); }
-  ready(function () { tick(); setInterval(tick, 800); });
+  ready(function () { tick(); setInterval(tick, 400); });
 })();
 
 /* FEMMAS PRINT — Quick Sale daily-expense "removed today" fix.
