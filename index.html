@@ -4744,7 +4744,24 @@ class Component extends DCLogic {
       .then(() => { this.showToast('✓ Order for ' + name + ' saved'); this.loadOrders(); })
       .catch(e => { console.error('Order save failed', e); this.showToast('Could not save order — check Sync'); });
   };
-  openInvoiceForm = () => this.setState({ invoiceOpen: true, invoiceForm: { customer: '', phone: '', relatedOrder: '', invoiceNo: '', total: '', paid: '', status: 'Unpaid' }, invoiceErr: '' });
+  openInvoiceForm = (e) => {
+    var pf = { customer: '', phone: '', relatedOrder: '', invoiceNo: '', total: '', paid: '', status: 'Unpaid' };
+    try {
+      var row = e && e.target && e.target.closest ? e.target.closest('tr') : null;
+      if (row && /FP\/INV/.test(row.textContent)) {
+        var tds = row.querySelectorAll('td');
+        var num = function (s) { return String(s == null ? '' : s).replace(/[^0-9.]/g, ''); };
+        var noM = (tds[0] ? tds[0].textContent : '').match(/FP\/INV\/\d+/);
+        pf.invoiceNo = noM ? noM[0] : '';
+        pf.customer = tds[1] ? tds[1].textContent.trim() : '';
+        pf.total = tds[4] ? num(tds[4].textContent) : '';
+        pf.paid = tds[5] ? num(tds[5].textContent) : '';
+        var st = (tds[7] ? tds[7].textContent : '').toLowerCase();
+        pf.status = (st.indexOf('imelipwa') > -1 && st.indexOf('hai') < 0) || st.indexOf('paid') > -1 ? 'Paid' : ((st.indexOf('kiasi') > -1 || st.indexOf('partial') > -1) ? 'Partial' : 'Unpaid');
+      }
+    } catch (er) {}
+    this.setState({ invoiceOpen: true, invoiceForm: pf, invoiceErr: '' });
+  };
   closeInvoiceForm = () => this.setState({ invoiceOpen: false });
   onInvoiceField = (k) => (e) => { const v = e.target.value; this.setState(s => ({ invoiceForm: { ...s.invoiceForm, [k]: v } })); };
   setInvoiceStatus = (t) => () => this.setState(s => ({ invoiceForm: { ...s.invoiceForm, status: t } }));
