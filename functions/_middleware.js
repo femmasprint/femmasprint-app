@@ -247,6 +247,9 @@ var MORE_JS = `
     '.fpMoreBtn{cursor:pointer;display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:6px;color:#64748b}' +
     '.fpMoreBtn:hover{background:rgba(46,144,240,.16);color:#185fa5}' +
     '.fpMoreBtn svg{width:17px;height:17px}' +
+    ' main td button[title="Hariri invoice"]{display:none !important}' +
+    '.fpFunnel{display:inline-flex;margin-left:5px;opacity:.45;vertical-align:middle;cursor:pointer}' +
+    '.fpFunnel:hover{opacity:.8}' +
     '.fpMoreMenu{position:fixed;z-index:2147483600;width:226px;background:#fff;border:1px solid #d7dee8;border-radius:10px;box-shadow:0 12px 34px rgba(0,0,0,.2);padding:6px;font-size:13px;color:#1f2733}' +
     'html.fp-dark .fpMoreMenu{background:#141d31;border-color:#26324a;color:#e6edf7}' +
     '.fpMoreItem{display:flex;align-items:center;gap:11px;padding:8px 10px;border-radius:7px;cursor:pointer;white-space:nowrap}' +
@@ -273,6 +276,7 @@ var MORE_JS = `
       d.date = val(['tarehe','date']); d.total = val(['jumla','amount','total']);
       d.paid = val(['imelipwa','paid','received']); d.bal = val(['salio','balance']);
       d.status = val(['hali','status']);
+      var pm = (row.textContent||'').replace(/\\s/g,'').match(/(?:\\+?255|0)\\d{9}/); d.phone = pm ? pm[0] : '';
     } catch (e) {}
     return d;
   }
@@ -354,6 +358,24 @@ var MORE_JS = `
 
   function isRow(row){ return row && (row.querySelector('button[title="Hariri invoice"]') || row.querySelector('button[title="Print / PDF"]')); }
 
+  var FUNNEL = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M3 5h18l-7 8v5l-4 2v-7z"/></svg>';
+  function addFunnels(){
+    try {
+      var tables = document.querySelectorAll('main table');
+      for (var t=0;t<tables.length;t++){
+        var tb = tables[t];
+        if (!tb.querySelector('button[title="Print / PDF"]')) continue;
+        var ths = tb.querySelectorAll('thead th');
+        for (var i=0;i<ths.length-1;i++){
+          if (ths[i].querySelector('.fpFunnel')) continue;
+          var tx = (ths[i].textContent||'').trim(); if(!tx) continue;
+          var f = document.createElement('span'); f.className='fpFunnel'; f.innerHTML=FUNNEL;
+          ths[i].appendChild(f);
+        }
+      }
+    } catch (e) {}
+  }
+
   function enhance(){
     var btns = document.querySelectorAll('button[title="Print / PDF"], button[title="Hariri invoice"]');
     for (var i=0;i<btns.length;i++){
@@ -365,6 +387,7 @@ var MORE_JS = `
       mb.className='fpMoreBtn'; mb.setAttribute('title','More Actions'); mb.innerHTML=IC.dots;
       holder.appendChild(mb);
     }
+    addFunnels();
   }
 
   document.addEventListener('click', function(e){ var mb=e.target && e.target.closest ? e.target.closest('.fpMoreBtn') : null; if(mb){ e.preventDefault(); e.stopPropagation(); var row=mb.closest('tr'); if(row){ var rc=mb.getBoundingClientRect(); openMenu(row, rc.right-226, rc.bottom+4); } return; } if(!e.target.closest('.fpMoreMenu')) closeMenu(); }, true);
