@@ -319,7 +319,32 @@ var MORE_JS = `
     var a=document.createElement('a'); a.href=url; a.download='Invoice_'+String((d.no||'FP')).replace(/[^A-Za-z0-9]+/g,'-')+'.html'; document.body.appendChild(a); a.click(); a.remove();
     setTimeout(function(){ URL.revokeObjectURL(url); }, 5000);
   }
-  function pdfbar(){ return '<div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;padding:12px 18px;border-top:1px solid #e6ebf2"><span class="fpBtn fpDoPrint" style="border-color:#f0997b;color:#d85a30">Open PDF</span><span class="fpBtn fpDoPrint" style="border-color:#85b7eb;color:#185fa5">Print</span><span class="fpBtn fpDoPrint" style="border-color:#9fe1cb;color:#0f6e56">Save PDF</span><span class="fpBtn fpDoEmail" style="border-color:#cbd5e1;color:#334155">Email PDF</span><span class="fpBtn fpClose" style="border-color:#e2483d;background:#e2483d;color:#fff">Close</span></div>'; }
+  function pdfbar(){ return '<div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;padding:12px 18px;border-top:1px solid #e6ebf2"><span class="fpBtn fpDoPrint" style="border-color:#f0997b;color:#d85a30">Open PDF</span><span class="fpBtn fpDoPrint" style="border-color:#85b7eb;color:#185fa5">Print</span><span class="fpBtn fpDoPrint" style="border-color:#9fe1cb;color:#0f6e56">Save PDF</span><span class="fpBtn fpDoEmail" style="border-color:#cbd5e1;color:#334155">Email PDF</span><span class="fpBtn fpDoShare" style="border-color:#25d366;background:#25d366;color:#fff">Sambaza WhatsApp</span><span class="fpBtn fpClose" style="border-color:#e2483d;color:#e2483d">Close</span></div>'; }
+  function normPhone(s){ var x=String(s||'').replace(/[^0-9]/g,''); if(!x) return ''; if(x.charAt(0)==='0') x='255'+x.slice(1); else if(x.slice(0,3)!=='255' && x.length<=9) x='255'+x; return x; }
+  function shareText(d){ var L=['FEMMAS PRINT','Invoice '+(d.no||'')+'  |  '+(d.date||''),'']; var nm=(d.party||'').replace(/(?:\\+?255|0)\\d{9}.*/,'').trim(); if(nm) L.push('Bill To: '+nm); L.push('Total: '+(d.total||'')); if(d.paid && d.paid!=='Sh 0') L.push('Received: '+d.paid); if(d.bal && d.bal!=='Sh 0') L.push('Balance: '+d.bal); L.push(''); L.push('Malipo: CRDB 0150322619500 (Femmas Print)'); L.push('Lipa: 5521084 (Tigo) / 5767888 (Voda)'); L.push('Asante kwa biashara!'); return L.join('\\n'); }
+  function loadH2C(cb){ if(window.html2canvas) return cb(window.html2canvas); var s=document.createElement('script'); s.src='https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js'; s.onload=function(){cb(window.html2canvas);}; s.onerror=function(){cb(null);}; document.head.appendChild(s); }
+  function shareInvoice(d){
+    var text=shareText(d); var phone=normPhone(d.phone||'');
+    function waFallback(){ window.open('https://wa.me/'+phone+'?text='+encodeURIComponent(text), '_blank'); }
+    var sheet=document.getElementById('fpInvSheet');
+    if(!sheet || !navigator.share){ waFallback(); return; }
+    loadH2C(function(h2c){
+      if(!h2c){ waFallback(); return; }
+      try {
+        h2c(sheet,{scale:2,backgroundColor:'#ffffff',useCORS:true}).then(function(canvas){
+          canvas.toBlob(function(blob){
+            if(!blob){ waFallback(); return; }
+            var file=new File([blob],'Invoice_'+String(d.no||'FP').replace(/[^A-Za-z0-9]+/g,'-')+'.png',{type:'image/png'});
+            if(navigator.canShare && navigator.canShare({files:[file]})){
+              navigator.share({files:[file],title:'FEMMAS PRINT Invoice',text:text}).catch(function(){ waFallback(); });
+            } else {
+              var u=URL.createObjectURL(blob); var a=document.createElement('a'); a.href=u; a.download=file.name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(function(){URL.revokeObjectURL(u);},5000); waFallback();
+            }
+          },'image/png');
+        }).catch(function(){ waFallback(); });
+      } catch(e){ waFallback(); }
+    });
+  }
 
   var ov = null;
   function closeModal(){ if (ov){ ov.remove(); ov=null; } }
@@ -327,7 +352,7 @@ var MORE_JS = `
     closeModal();
     ov = document.createElement('div'); ov.className='fpOv';
     ov.innerHTML = '<div class="fpCard"><div class="fpCardH">'+title+'<span class="fpXi fpClose">&times;</span></div><div class="fpCardB">'+bodyHtml+'</div>'+(footHtml||'')+'</div>';
-    ov.addEventListener('click', function(e){ if (e.target===ov || e.target.closest('.fpClose')){ closeModal(); return; } if (e.target.closest('.fpDoPrint')){ printSheet(); } else if (e.target.closest('.fpDoEmail')){ downloadSheet(curDoc||{}); } });
+    ov.addEventListener('click', function(e){ if (e.target===ov || e.target.closest('.fpClose')){ closeModal(); return; } if (e.target.closest('.fpDoPrint')){ printSheet(); } else if (e.target.closest('.fpDoEmail')){ downloadSheet(curDoc||{}); } else if (e.target.closest('.fpDoShare')){ shareInvoice(curDoc||{}); } });
     document.documentElement.appendChild(ov);
   }
 
