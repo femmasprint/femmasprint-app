@@ -253,7 +253,7 @@ var MORE_JS = `
     '.fpMoreItem:hover{background:#f1f5f9}html.fp-dark .fpMoreItem:hover{background:#1c2942}' +
     '.fpMoreItem.dg{color:#e2483d}.fpMoreItem svg{width:16px;height:16px;flex:none;opacity:.85}' +
     '.fpOv{position:fixed;inset:0;z-index:2147483500;background:rgba(15,23,42,.5);display:flex;align-items:center;justify-content:center;padding:20px}' +
-    '.fpCard{background:#fff;color:#1f2733;border-radius:12px;max-width:640px;width:100%;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 26px 64px rgba(0,0,0,.4)}' +
+    '.fpCard{background:#fff;color:#1f2733;border-radius:12px;max-width:860px;width:100%;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 26px 64px rgba(0,0,0,.4)}' +
     'html.fp-dark .fpCard{background:#141d31;color:#e6edf7}' +
     '.fpCardH{display:flex;align-items:center;justify-content:space-between;padding:13px 18px;border-bottom:1px solid #e6ebf2;font-weight:600;font-size:16px}html.fp-dark .fpCardH{border-color:#26324a}' +
     '.fpCardB{overflow:auto}' +
@@ -278,19 +278,44 @@ var MORE_JS = `
   }
 
   function esc(s){ return String(s==null?'':s).replace(/[&<>]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c];}); }
-  function letterhead(){ return '<div style="display:flex;justify-content:space-between;gap:12px;padding:16px 20px 8px"><div style="width:48px;height:48px;border-radius:50%;background:#e6f1fb;color:#185fa5;display:flex;align-items:center;justify-content:center;font-weight:700">FP</div><div style="text-align:right;font-size:11px;color:#64748b"><div style="font-size:17px;font-weight:700;color:inherit">FEMMAS PRINT</div><div>AMANI &amp; CONGO Street, Jangwani, Ilala-Dar es Salaam</div><div>Phone: +255658843344 &middot; femmasprint@gmail.com</div><div>TIN: 102-075-552</div></div></div>'; }
-  function band(t){ return '<div style="text-align:center;color:#185fa5;font-weight:600;border-top:2px solid #2b6cb0;border-bottom:2px solid #2b6cb0;margin:6px 20px;padding:6px">'+t+'</div>'; }
-  function billTo(d){ return '<div style="display:flex;justify-content:space-between;gap:10px;padding:4px 20px 8px;font-size:12px"><div><div style="font-weight:600">Bill To</div><div>'+esc(d.party||'—')+'</div></div><div style="text-align:right"><div style="font-weight:600">Invoice Details</div><div>No: '+esc(d.no||'—')+'</div><div>Date: '+esc(d.date||'—')+'</div></div></div>'; }
-  function summary(d, withMoney){
-    var rows = '<tr style="border-bottom:1px solid #eef2f7"><td style="padding:8px 20px;color:#64748b">Jumla (Total)</td><td style="padding:8px 20px;text-align:right;font-weight:600">'+esc(d.total||'—')+'</td></tr>';
-    if (withMoney) {
-      rows += '<tr style="border-bottom:1px solid #eef2f7"><td style="padding:8px 20px;color:#64748b">Imelipwa (Paid)</td><td style="padding:8px 20px;text-align:right">'+esc(d.paid||'—')+'</td></tr>';
-      rows += '<tr style="border-bottom:1px solid #eef2f7"><td style="padding:8px 20px;color:#64748b">Salio (Balance)</td><td style="padding:8px 20px;text-align:right">'+esc(d.bal||'—')+'</td></tr>';
-    }
-    rows += '<tr><td style="padding:8px 20px;color:#64748b">Hali (Status)</td><td style="padding:8px 20px;text-align:right">'+esc(d.status||'—')+'</td></tr>';
-    return '<table style="width:100%;border-collapse:collapse;font-size:13px">'+rows+'</table><div style="font-size:11.5px;color:#94a3b8;padding:10px 20px">Vitu (items) vya kina vitaonekana kwa invoice zilizotengenezwa kwa builder mpya.</div>';
+  var curDoc = null;
+  function sheetHTML(d, wp){
+    var stt = (d.status||''); var paidish = /paid|imelipwa/i.test(stt) && !/haija|unpaid/i.test(stt);
+    var stampCol = paidish ? '#16a34a' : '#e11d48';
+    var itemRow = '<tr><td style="padding:9px 10px;font-size:12px;border-bottom:1px solid #eef1f5">1</td><td style="padding:9px 10px;font-size:12px;font-weight:600;border-bottom:1px solid #eef1f5">Kazi / Huduma (Goods / Services)</td><td style="padding:9px 10px;font-size:12px;text-align:right;border-bottom:1px solid #eef1f5">1</td><td style="padding:9px 10px;font-size:12px;text-align:center;border-bottom:1px solid #eef1f5">—</td>'+(wp?'<td style="padding:9px 10px;font-size:12px;text-align:right;border-bottom:1px solid #eef1f5">'+esc(d.total||'—')+'</td><td style="padding:9px 10px;font-size:12px;text-align:right;font-weight:700;border-bottom:1px solid #eef1f5">'+esc(d.total||'—')+'</td>':'')+'</tr>';
+    return '<div id="fpInvSheet" style="position:relative;overflow:hidden;background:#fff;color:#1f2733;max-width:794px;margin:0 auto;padding:36px 42px;font-family:Asap,sans-serif">'
+      + '<img src="/femmas-logo-03-mqrt99vq.png" alt="" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-16deg);width:60%;opacity:.045;pointer-events:none">'
+      + '<div style="display:flex;justify-content:space-between;gap:20px;padding-bottom:16px;border-bottom:3px solid #13315a">'
+      +   '<div style="display:flex;gap:13px;align-items:flex-start"><img src="/femmas-logo-03-mqrt99vq.png" alt="" style="width:54px;height:54px;object-fit:contain"><div><div style="font-size:20px;font-weight:800;color:#13315a">FEMMAS PRINT</div><div style="font-size:10.5px;color:#5b6675;line-height:1.7;margin-top:4px">Amani &amp; Congo Street, Jangwani, Ilala - Dar es Salaam<br>Phone: +255 658 843 344 &middot; femmasprint@gmail.com<br>TIN: 102-075-552</div></div></div>'
+      +   '<div style="text-align:right"><span style="display:inline-block;padding:4px 13px;border-radius:7px;font-size:12px;font-weight:800;letter-spacing:.06em;border:2px solid '+stampCol+';color:'+stampCol+'">'+esc(stt.toUpperCase())+'</span></div>'
+      + '</div>'
+      + '<div style="text-align:center;font-size:21px;font-weight:800;color:#008ece;letter-spacing:.04em;padding:13px 0">Invoice</div>'
+      + '<div style="display:flex;justify-content:space-between;gap:16px;font-size:12.5px">'
+      +   '<div><div style="font-size:10px;font-weight:800;color:#94a3b8;text-transform:uppercase;margin-bottom:5px">Bill To</div><div style="font-size:15px;font-weight:800;color:#0f172a">'+esc(d.party||'—')+'</div></div>'
+      +   '<div style="text-align:right"><div style="font-size:10px;font-weight:800;color:#94a3b8;text-transform:uppercase;margin-bottom:5px">Invoice Details</div><div style="line-height:1.9"><span style="color:#94a3b8">Invoice No.</span> <strong>'+esc(d.no||'—')+'</strong><br><span style="color:#94a3b8">Date</span> <strong>'+esc(d.date||'—')+'</strong></div></div>'
+      + '</div>'
+      + '<table style="width:100%;border-collapse:collapse;margin-top:15px"><thead><tr style="background:#13315a;color:#fff;font-size:11px;text-align:left"><th style="padding:9px 10px">#</th><th style="padding:9px 10px">Item name</th><th style="padding:9px 10px;text-align:right">Quantity</th><th style="padding:9px 10px;text-align:center">Unit</th>'+(wp?'<th style="padding:9px 10px;text-align:right">Price/Unit</th><th style="padding:9px 10px;text-align:right">Amount</th>':'')+'</tr></thead><tbody>'+itemRow+'<tr><td colspan="2" style="padding:10px;font-weight:800">Total</td><td style="padding:10px;text-align:right;font-weight:800">1</td><td></td>'+(wp?'<td></td><td style="padding:10px;text-align:right;font-weight:800">'+esc(d.total||'—')+'</td>':'')+'</tr></tbody></table>'
+      + (wp? '<div style="display:flex;justify-content:space-between;gap:22px;margin-top:16px"><div style="flex:1;font-size:11px;color:#1f2733;line-height:1.8"><div><strong>Payment Details:</strong><br>Account Name: Femmas Print<br>Account no: 0150322619500 (CRDB Bank)<br>Lipa: 5521084 (Tigo) / 5767888 (Voda)</div><div style="margin-top:10px"><strong>Terms:</strong> 70% advance, 30% on delivery. Valid 30 days.</div></div><div style="width:248px;font-size:12.5px"><div style="display:flex;justify-content:space-between;padding:7px 0;color:#5b6675"><span>Sub Total</span><strong style="color:#1f2733">'+esc(d.total||'—')+'</strong></div><div style="display:flex;justify-content:space-between;padding:9px 0;font-weight:800;border-top:2px solid #13315a;border-bottom:2px solid #13315a"><span>Total</span><span>'+esc(d.total||'—')+'</span></div><div style="display:flex;justify-content:space-between;padding:7px 0;color:#16a34a"><span>Received</span><strong>'+esc(d.paid||'Sh 0')+'</strong></div><div style="display:flex;justify-content:space-between;padding:7px 0;font-weight:800;color:#e11d48"><span>Balance</span><span>'+esc(d.bal||'Sh 0')+'</span></div></div></div>' : '<div style="margin-top:12px;font-size:11px;color:#5b6675">Hati ya usafirishaji — items na idadi tu (bila bei).</div>')
+      + '<div style="display:flex;justify-content:flex-end;margin-top:30px"><div style="text-align:center;width:190px"><img src="/femmas-signature.png" alt="" style="height:42px;object-fit:contain;display:block;margin:0 auto -2px;mix-blend-mode:multiply"><div style="border-top:1.5px solid #13315a;padding-top:6px;font-size:11px;color:#5b6675">For <strong style="color:#13315a">FEMMAS PRINT</strong><br>Authorized Signatory</div></div></div>'
+      + '<div style="font-size:10px;color:#94a3b8;padding-top:12px;text-align:center">Items kamili vinaonekana kwa invoice zilizotengenezwa kwa builder mpya.</div>'
+      + '</div>';
   }
-  function pdfbar(){ return '<div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;padding:12px 18px;border-top:1px solid #e6ebf2"><span class="fpBtn fpDoPrint" style="border-color:#f0997b;color:#d85a30">Open PDF</span><span class="fpBtn fpDoPrint" style="border-color:#85b7eb;color:#185fa5">Print</span><span class="fpBtn fpClose" style="border-color:#e2483d;background:#e2483d;color:#fff">Close</span></div>'; }
+  function printSheet(){
+    var sheet = document.getElementById('fpInvSheet'); if(!sheet) return;
+    var old = document.getElementById('fpPrintArea'); if(old) old.remove();
+    var area = document.createElement('div'); area.id='fpPrintArea'; area.innerHTML = sheet.outerHTML;
+    if(!document.getElementById('fpPrintStyle')){ var ps=document.createElement('style'); ps.id='fpPrintStyle'; ps.textContent='@media print{ body{display:none !important} .fpOv{display:none !important} #fpPrintArea{display:block !important} #fpPrintArea #fpInvSheet{box-shadow:none !important;max-width:100% !important} }'; document.head.appendChild(ps); }
+    document.documentElement.appendChild(area);
+    setTimeout(function(){ try{ window.print(); }catch(e){} setTimeout(function(){ var a=document.getElementById('fpPrintArea'); if(a)a.remove(); }, 900); }, 120);
+  }
+  function downloadSheet(d){
+    var sheet=document.getElementById('fpInvSheet'); if(!sheet) return;
+    var html='<!doctype html><html><head><meta charset="utf-8"><title>Invoice '+esc(d.no||'')+'</title></head><body style="margin:0;background:#fff;display:flex;justify-content:center;padding:20px">'+sheet.outerHTML+'</body></html>';
+    var blob=new Blob([html],{type:'text/html'}); var url=URL.createObjectURL(blob);
+    var a=document.createElement('a'); a.href=url; a.download='Invoice_'+String((d.no||'FP')).replace(/[^A-Za-z0-9]+/g,'-')+'.html'; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 5000);
+  }
+  function pdfbar(){ return '<div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;padding:12px 18px;border-top:1px solid #e6ebf2"><span class="fpBtn fpDoPrint" style="border-color:#f0997b;color:#d85a30">Open PDF</span><span class="fpBtn fpDoPrint" style="border-color:#85b7eb;color:#185fa5">Print</span><span class="fpBtn fpDoPrint" style="border-color:#9fe1cb;color:#0f6e56">Save PDF</span><span class="fpBtn fpDoEmail" style="border-color:#cbd5e1;color:#334155">Email PDF</span><span class="fpBtn fpClose" style="border-color:#e2483d;background:#e2483d;color:#fff">Close</span></div>'; }
 
   var ov = null;
   function closeModal(){ if (ov){ ov.remove(); ov=null; } }
@@ -298,18 +323,17 @@ var MORE_JS = `
     closeModal();
     ov = document.createElement('div'); ov.className='fpOv';
     ov.innerHTML = '<div class="fpCard"><div class="fpCardH">'+title+'<span class="fpXi fpClose">&times;</span></div><div class="fpCardB">'+bodyHtml+'</div>'+(footHtml||'')+'</div>';
-    ov.addEventListener('click', function(e){ if (e.target===ov || e.target.closest('.fpClose')){ closeModal(); } if (e.target.closest('.fpDoPrint')){ closeModal(); var pb=curRow&&curRow.querySelector('button[title="Print / PDF"]'); if(pb) pb.click(); } });
+    ov.addEventListener('click', function(e){ if (e.target===ov || e.target.closest('.fpClose')){ closeModal(); return; } if (e.target.closest('.fpDoPrint')){ printSheet(); } else if (e.target.closest('.fpDoEmail')){ downloadSheet(curDoc||{}); } });
     document.documentElement.appendChild(ov);
   }
 
   function soon(name){ openModal(name, '<div style="padding:20px;font-size:14px;line-height:1.6">Kitendo hiki (<b>'+name+'</b>) kinaunganishwa na backend kwa usalama ili kisiharibu invoice zako halisi. Kinakuja hatua inayofuata.</div>', '<div style="display:flex;justify-content:flex-end;padding:12px 18px;border-top:1px solid #e6ebf2"><span class="fpBtn fpClose">Sawa</span></div>'); }
 
   function doAction(row, kind){
-    curRow = row; var d = rowData(row);
+    curRow = row; var d = rowData(row); curDoc = d;
     if (kind==='edit'){ var eb=row.querySelector('button[title="Hariri invoice"]'); if(eb) eb.click(); }
-    else if (kind==='print' || kind==='openpdf'){ var pb=row.querySelector('button[title="Print / PDF"]'); if(pb) pb.click(); }
-    else if (kind==='preview'){ openModal('Preview', letterhead()+band('Invoice')+billTo(d)+summary(d,true), pdfbar()); }
-    else if (kind==='challan'){ openModal('Preview &mdash; Delivery Challan', letterhead()+band('Delivery Challan')+billTo(d)+summary(d,false), pdfbar()); }
+    else if (kind==='preview' || kind==='print' || kind==='openpdf'){ openModal('Invoice', sheetHTML(d,true), pdfbar()); }
+    else if (kind==='challan'){ openModal('Delivery Challan', sheetHTML(d,false), pdfbar()); }
     else if (kind==='payhist'){ openModal('Payment History', '<div style="padding:18px 20px;font-size:14px;line-height:1.9">Imelipwa (Received): <b>'+esc(d.paid||d.total||'—')+'</b><br>Salio (Balance): '+esc(d.bal||'—')+'<br>Hali: '+esc(d.status||'—')+'</div>', '<div style="display:flex;justify-content:flex-end;padding:12px 18px;border-top:1px solid #e6ebf2"><span class="fpBtn fpClose">CLOSE</span></div>'); }
     else { soon(({'return':'Convert To Return','cancel':'Cancel Invoice','delete':'Delete','dup':'Duplicate','hist':'View History'})[kind]||'Kitendo'); }
   }
