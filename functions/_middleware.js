@@ -54,11 +54,11 @@ var HEAD_CSS =
   ' html:not(.fp-dark) main div:has(>div[data-qsorder="note"]) > div:first-child[style*="linear-gradient(120deg"]{background:linear-gradient(120deg,#3bb0ea,#1c8ed4) !important}' +
   ' html:not(.fp-dark) main div[style*="minmax(330px"] > div > div:first-child{background:#e9f3fe !important}' +
   ' html:not(.fp-dark) main div[style*="minmax(330px"] > div > div:first-child span{color:#00578d !important}' +
-  // ===== INVOICE/SALE/PURCHASE FORMS FLAT: fomu ifunguke imejaa upande wa main, menu ibaki pembeni (si popup) =====
-  ' div[style*="z-index: 70"][style*="17, 33"]{background:#f4f7fb !important;backdrop-filter:none !important;-webkit-backdrop-filter:none !important;align-items:stretch !important;justify-content:stretch !important;padding:0 !important;left:248px !important}' +
-  ' html.fp-dark div[style*="z-index: 70"][style*="17, 33"]{background:#0a0e1a !important}' +
-  ' div[style*="z-index: 70"][style*="17, 33"] > div{max-width:100% !important;width:100% !important;max-height:100% !important;height:100% !important;border-radius:0 !important;border:none !important;box-shadow:none !important;overflow-y:auto !important}' +
-  ' @media(max-width:1024px){ div[style*="z-index: 70"][style*="17, 33"]{left:0 !important} }' +
+  // ===== INVOICE/SALE/PURCHASE FORMS FLAT: fomu ifunguke imejaa upande wa main, menu ibaki pembeni (si popup). z-index 60 (Mauzo/Matumizi/Purchase) + 70 (Invoice) =====
+  ' div[style*="z-index: 60"][style*="17, 33"],div[style*="z-index: 70"][style*="17, 33"]{background:#f4f7fb !important;backdrop-filter:none !important;-webkit-backdrop-filter:none !important;align-items:stretch !important;justify-content:stretch !important;padding:0 !important;left:248px !important}' +
+  ' html.fp-dark div[style*="z-index: 60"][style*="17, 33"],html.fp-dark div[style*="z-index: 70"][style*="17, 33"]{background:#0a0e1a !important}' +
+  ' div[style*="z-index: 60"][style*="17, 33"] > div,div[style*="z-index: 70"][style*="17, 33"] > div{max-width:100% !important;width:100% !important;max-height:100% !important;height:100% !important;border-radius:0 !important;border:none !important;box-shadow:none !important;overflow-y:auto !important}' +
+  ' @media(max-width:1024px){ div[style*="z-index: 60"][style*="17, 33"],div[style*="z-index: 70"][style*="17, 33"]{left:0 !important} }' +
   // ===== Quick Sale NEW ORDER: toolbar -> tiles -> Sales -> Expenses -> chips -> Note =====
   ' main div:has(>div[data-qsorder="note"]){display:flex !important;flex-direction:column !important}' +
   ' main div:has(>div[data-qsorder="note"])>div[style*="minmax(280px"]{order:1 !important}' +
