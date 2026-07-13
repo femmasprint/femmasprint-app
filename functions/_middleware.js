@@ -120,11 +120,13 @@ var HEAD_CSS =
   ' }';
 
 /* fpEdgeFix: adds ONLY our own nodes (burger + backdrop), sets Swahili as the default
- * language on first visit, and hides the mock "Google Profile / Reputation manager"
- * dashboard widget. Never edits or moves React-managed nodes (hide = display:none only). */
+ * language on first visit, keeps the sidebar menu locked-open (labels visible), and
+ * hides the mock "Google Profile / Reputation manager" dashboard widget. */
 var FIX_JS = `
 (function () {
   try { if (!localStorage.getItem('fp_lang')) localStorage.setItem('fp_lang', 'sw'); } catch (e) {}
+  /* Menu ibaki wazi (labels zionekane) kwenye kila kompyuta - zima auto-collapse ya rail */
+  try { localStorage.setItem('fp_rail2', '0'); } catch (e) {}
   function ready(fn) {
     if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', fn); }
     else { fn(); }
@@ -155,6 +157,10 @@ var FIX_JS = `
       }, true);
       mkBurger();
       setInterval(mkBurger, 2500);
+      /* --- Hakikisha menu haijakwama imekunjwa (rail) - labels zionekane --- */
+      function unRail() { try { if (document.body && document.body.classList.contains('fp-rail')) document.body.classList.remove('fp-rail'); } catch (e) {} }
+      unRail();
+      setTimeout(unRail, 800); setTimeout(unRail, 2000); setTimeout(unRail, 4000);
       /* --- Hide the mock Google Profile widget on the dashboard ---
        * Matched on 'Google Profile' (same string in EN and SW). */
       var SIB = /Low Stock|This Month|Add a widget|Bidhaa|Mwezi|Ongeza|Zinazoisha/i;
