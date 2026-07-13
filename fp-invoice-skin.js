@@ -28,7 +28,13 @@
   }
 
   function isInvPage() {
-    try { var m = document.querySelector('main'); if (!m) return false; var t = m.textContent || ''; return t.indexOf('Total Invoices') > -1 && /Sale Invoices/.test(t); } catch (e) { return false; }
+    try {
+      // If the app's Add-Sale / Add-Purchase form or any app modal is open (z-index 60/70/80),
+      // step aside so it is visible — the skin must never cover a real app form.
+      if (document.querySelector('div[style*="z-index: 60"], div[style*="z-index: 70"], div[style*="z-index: 80"], div[style*="z-index:60"], div[style*="z-index:70"], div[style*="z-index:80"]')) return false;
+      var m = document.querySelector('main'); if (!m) return false; var t = m.textContent || '';
+      return t.indexOf('Total Invoices') > -1 && /Sale Invoices/.test(t);
+    } catch (e) { return false; }
   }
 
   function applyFilter() {
