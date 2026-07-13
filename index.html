@@ -5656,7 +5656,7 @@ class Component extends DCLogic {
     return String(str || '').trim().replace(/\s+/g, ' ').split(' ').map(w => {
       const low = w.toLowerCase();
       if (ACR[low]) return ACR[low];
-      return w ? w.charAt(0).toUpperCase() + w.slice(1).toLowerCase() : w;
+      return w ? w.charAt(0).toUpperCase() + w.slice(1) : w;
     }).join(' ');
   };
   onCustField = (key) => (e) => this.setState(s => ({ custForm: { ...s.custForm, [key]: e.target.value }, custErr: '' }));
