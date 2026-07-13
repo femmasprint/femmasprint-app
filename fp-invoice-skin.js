@@ -117,11 +117,11 @@
       + '<div style="flex:1"></div>'
       + '<span class="fpAdd" style="border:1px solid #f0997b;color:#d85a30;font-size:12px;font-weight:600;padding:6px 13px;border-radius:18px;cursor:pointer">+ Add Sale</span>'
       + '<span class="fpAddP" style="border:1px solid #85b7eb;color:#185fa5;font-size:12px;font-weight:600;padding:6px 13px;border-radius:18px;cursor:pointer">+ Add Purchase</span>'
-      + '<span class="fpAddPlus" title="Ongeza mauzo" style="width:28px;height:28px;border-radius:8px;background:#e6f1fb;display:inline-flex;align-items:center;justify-content:center;color:#378add;font-size:18px;cursor:pointer">+</span>'
+      + '<span class="fpAddPlus" title="Add More" style="width:28px;height:28px;border-radius:8px;background:#e6f1fb;display:inline-flex;align-items:center;justify-content:center;color:#378add;font-size:18px;cursor:pointer">+</span>'
       + '<span class="fpPrintList" title="Chapa orodha" style="color:#64748b;cursor:pointer">' + IC_PR + '</span>'
       + '<span class="fpTopMenu" title="Zaidi" style="position:relative;cursor:pointer"><svg width="17" height="17" viewBox="0 0 24 24" fill="#64748b"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg><span style="position:absolute;top:-1px;right:-1px;width:7px;height:7px;background:#e2483d;border-radius:50%"></span></span>'
       + '</div>'
-      + '<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px 6px"><div style="font-size:20px;font-weight:600;display:flex;align-items:center;gap:6px">Sale Invoices <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></div><div style="display:flex;align-items:center;gap:10px"><span class="fpAdd" style="background:#e2483d;color:#fff;font-size:13px;font-weight:600;padding:8px 16px;border-radius:8px;cursor:pointer">+ Add Sale</span><span class="fpTopMenu" title="Zaidi" style="width:32px;height:32px;border-radius:50%;background:#f1f5f9;display:inline-flex;align-items:center;justify-content:center;color:#64748b;cursor:pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg></span></div></div>'
+      + '<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px 6px"><div class="fpTitleSwitch" title="Badilisha aina" style="font-size:20px;font-weight:600;display:flex;align-items:center;gap:6px;cursor:pointer">Sale Invoices <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></div><div style="display:flex;align-items:center;gap:10px"><span class="fpAdd" style="background:#e2483d;color:#fff;font-size:13px;font-weight:600;padding:8px 16px;border-radius:8px;cursor:pointer">+ Add Sale</span><span class="fpTopMenu" title="Zaidi" style="width:32px;height:32px;border-radius:50%;background:#f1f5f9;display:inline-flex;align-items:center;justify-content:center;color:#64748b;cursor:pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg></span></div></div>'
       + '<div style="display:flex;align-items:center;gap:10px;padding:4px 16px 12px;font-size:12px;flex-wrap:wrap"><span style="color:#64748b">Filter by :</span>'
       +   '<span style="display:inline-flex;align-items:center;background:#e9eefc;border-radius:22px;overflow:hidden;color:#39476a">'
       +     '<span class="fpPeriod" id="fpPeriodChip" title="Chagua kipindi" style="padding:7px 15px;cursor:pointer;font-weight:500">' + periodLabel + ' &#9662;</span>'
@@ -142,8 +142,10 @@
   function wire(el) {
     var s = el.querySelector('#fpSearch');
     if (s) s.oninput = function () { q = this.value.trim().toLowerCase(); refresh(); };
-    el.querySelectorAll('.fpAdd, .fpAddPlus').forEach(function (b) { b.onclick = function () { clickApp(/^\+?\s*Sale$/i); }; });
+    el.querySelectorAll('.fpAdd').forEach(function (b) { b.onclick = function () { clickApp(/^\+?\s*Sale$/i); }; });
     el.querySelectorAll('.fpAddP').forEach(function (b) { b.onclick = function () { clickApp(/^\+?\s*Purchase$/i); }; });
+    el.querySelectorAll('.fpAddPlus').forEach(function (b) { b.onclick = function (e) { e.stopPropagation(); miniMenu(b, addMoreItems()); }; });
+    var ts = el.querySelector('.fpTitleSwitch'); if (ts) ts.onclick = function (e) { e.stopPropagation(); miniMenu(ts, [['Sale Invoices', function () { clickNav(/Sale Invoices/i); }], ['Estimate / Quotation', function () { clickNav(/Estimate/i); }], ['Proforma Invoice', function () { clickNav(/Proforma/i); }], ['Payment-In', function () { clickNav(/Payment-?In/i); }], ['Sale Order', function () { clickNav(/Sale Order/i); }], ['Delivery Challan', function () { clickNav(/Delivery Challan/i); }], ['Sale Return / Credit Note', function () { clickNav(/Sale Return/i); }]]); };
     el.querySelectorAll('.fpPrintList').forEach(function (b) { b.onclick = function (e) { e.stopPropagation(); printList(); }; });
     el.querySelectorAll('.fpXls').forEach(function (b) { b.onclick = function (e) { e.stopPropagation(); exportCSV(); }; });
     el.querySelectorAll('.fpChart').forEach(function (b) { b.onclick = function (e) { e.stopPropagation(); summaryModal(); }; });
@@ -158,6 +160,8 @@
     attachRows(el);
   }
   function clickApp(re) { var b = Array.prototype.slice.call(document.querySelectorAll('main button, header button')).find(function (x) { return re.test((x.textContent || '').trim()); }); if (b) b.click(); }
+  function clickNav(re) { var a = Array.prototype.slice.call(document.querySelectorAll('aside a, aside button, nav a, main button')).find(function (x) { return re.test((x.textContent || '').trim()); }); if (a) a.click(); }
+  function addMoreItems() { return [['Sale Invoice', function () { clickApp(/^\+?\s*Sale$/i); }], ['Payment-In', function () { clickNav(/Payment-?In/i); }], ['Sale Return / Credit Note', function () { clickNav(/Sale Return/i); }], ['Sale Order', function () { clickNav(/Sale Order/i); }], ['Estimate / Quotation', function () { clickNav(/Estimate/i); }], ['Proforma Invoice', function () { clickNav(/Proforma/i); }], ['Delivery Challan', function () { clickNav(/Delivery Challan/i); }], ['Purchase Bill', function () { clickApp(/^\+?\s*Purchase$/i); }]]; }
 
   function recFor(no) { return (DATA || []).find(function (r) { return String(r.InvoiceNo) === String(no); }) || {}; }
 
@@ -166,6 +170,7 @@
       r.onmouseenter = function () { if (i !== 0) r.style.background = '#eaf3ff'; };
       r.onmouseleave = function () { if (i !== 0) r.style.background = ''; };
       r.ondblclick = function () { openPreview(recFor(r.getAttribute('data-no'))); };
+      r.oncontextmenu = function (e) { e.preventDefault(); var mb = r.querySelector('.fpa[data-a="menu"]'); openMenu(mb || r, recFor(r.getAttribute('data-no'))); };
       r.querySelectorAll('.fpa').forEach(function (a) {
         a.style.cursor = 'pointer';
         a.onclick = function (e) {
@@ -185,7 +190,8 @@
     closeMenu();
     menuEl = document.createElement('div');
     menuEl.style.cssText = 'position:fixed;z-index:2147483600;width:226px;background:#fff;border:1px solid #d7dee8;border-radius:10px;box-shadow:0 12px 34px rgba(0,0,0,.2);padding:6px;font-size:13px;color:#1f2733';
-    menuEl.innerHTML = ACT.map(function (a) { return '<div class="fpmi" data-k="' + a[2] + '" style="display:flex;align-items:center;gap:11px;padding:8px 10px;border-radius:7px;cursor:pointer;white-space:nowrap;' + (a[3] ? 'color:#e2483d;' : '') + '">' + MIC[a[0]] + '<span>' + a[1] + '</span></div>'; }).join('');
+    var acts = ACT.map(function (a) { return (a[2] === 'payhist' && num(rec.Balance) > 0) ? ['clock', 'Receive Payment', 'recvpay', 0] : a; });
+    menuEl.innerHTML = acts.map(function (a) { return '<div class="fpmi" data-k="' + a[2] + '" style="display:flex;align-items:center;gap:11px;padding:8px 10px;border-radius:7px;cursor:pointer;white-space:nowrap;' + (a[3] ? 'color:#e2483d;' : '') + '">' + MIC[a[0]] + '<span>' + a[1] + '</span></div>'; }).join('');
     document.documentElement.appendChild(menuEl);
     var rc = anchor.getBoundingClientRect(); var w = 226, h = menuEl.offsetHeight || 360;
     var left = Math.min(rc.right - w, window.innerWidth - w - 8); if (left < 8) left = 8;
@@ -200,6 +206,7 @@
     if (k === 'preview' || k === 'openpdf' || k === 'print' || k === 'edit') openPreview(rec);
     else if (k === 'challan') openPreview(rec, true);
     else if (k === 'payhist') modal('Payment History', '<div style="padding:18px 20px;font-size:14px;line-height:2">Received during Sale : <b>' + Math.round(num(rec.PaidAmount)).toLocaleString('en-US') + '</b>' + (num(rec.Balance) > 0 ? '<br>Balance : <b style="color:#993c1d">' + Math.round(num(rec.Balance)).toLocaleString('en-US') + '</b>' : '') + '</div>', '<span class="fpx" style="border:1px solid #185fa5;color:#185fa5;border-radius:20px;padding:7px 15px;font-size:13px;font-weight:600;cursor:pointer">CLOSE</span>');
+    else if (k === 'recvpay') modal('Receive Payment', '<div style="padding:20px;font-size:14px;line-height:1.9">Salio linalodaiwa (Balance due): <b style="color:#993c1d">' + money(rec.Balance) + '</b><br><br>Kupokea malipo (record payment) kunaunganishwa na backend salama — kinakuja hatua inayofuata.</div>', '<span class="fpx" style="border:1px solid #185fa5;color:#185fa5;border-radius:20px;padding:7px 15px;font-size:13px;font-weight:600;cursor:pointer">Sawa</span>');
     else modal(({ 'return': 'Convert To Return', 'cancel': 'Cancel Invoice', 'delete': 'Delete', 'dup': 'Duplicate', 'hist': 'View History' })[k] || 'Kitendo', '<div style="padding:20px;font-size:14px;line-height:1.6">Kitendo hiki kinaunganishwa na backend salama — kinakuja hatua inayofuata.</div>', '<span class="fpx" style="border:1px solid #cbd5e1;color:#334155;border-radius:20px;padding:7px 15px;font-size:13px;font-weight:600;cursor:pointer">Sawa</span>');
   }
 
