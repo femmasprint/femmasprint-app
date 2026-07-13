@@ -11,6 +11,9 @@
 var HEAD_CSS =
   ' aside nav a{display:flex !important;align-items:center;width:100% !important;box-sizing:border-box}' +
   ' aside>nav~*>div>div:nth-of-type(2){display:none !important}' +
+  // ===== ROW HOVER HIGHLIGHT app-wide (light blue) — kila table, kila fomu =====
+  ' main table tr:hover > td{background:#eaf3ff !important;transition:background .12s ease}' +
+  ' html.fp-dark main table tr:hover > td{background:#172942 !important}' +
   ' html.fp-dark,html.fp-dark body{background:#0a0e1a !important}' +
   ' html.fp-dark aside{background:#13315a !important}' +
   // ===== INSTANT dark mode =====
@@ -210,6 +213,146 @@ var FIX_JS = `
   });
 })();`;
 
+/* fpMoreActions: adds a "More Actions" (three-dot) menu + right-click menu to every
+ * transaction-list row across the app (Sale Invoices, Estimate, Proforma, Payment-In,
+ * Sale Order, Delivery Challan, Sale Return, Purchase). It ONLY adds its own nodes and
+ * reuses the row's existing app buttons (Print / PDF, Hariri invoice). Fully defensive. */
+var MORE_JS = `
+(function () {
+  if (window.__fpMoreActions) return; window.__fpMoreActions = true;
+  var curRow = null;
+
+  var IC = {
+    eye:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>',
+    ret:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-1"/></svg>',
+    truck:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><path d="M16 8h4l3 3v5h-7z"/><circle cx="5.5" cy="18.5" r="2"/><circle cx="18.5" cy="18.5" r="2"/></svg>',
+    clock:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+    ban:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M5 5l14 14"/></svg>',
+    trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>',
+    copy:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>',
+    pdf:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>',
+    list:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>',
+    printer:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>',
+    dots:'<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>'
+  };
+  var ACT = [
+    ['eye','View / Edit','edit',0],['ret','Convert To Return','return',0],['truck','Preview Delivery Challan','challan',0],
+    ['clock','Payment History','payhist',0],['ban','Cancel Invoice','cancel',1],['trash','Delete','delete',1],
+    ['copy','Duplicate','dup',0],['pdf','Open PDF','openpdf',0],['eye','Preview','preview',0],
+    ['printer','Print','print',0],['list','View History','hist',0]
+  ];
+
+  var st = document.createElement('style');
+  st.textContent =
+    '.fpMoreBtn{cursor:pointer;display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:6px;color:#64748b}' +
+    '.fpMoreBtn:hover{background:rgba(46,144,240,.16);color:#185fa5}' +
+    '.fpMoreBtn svg{width:17px;height:17px}' +
+    '.fpMoreMenu{position:fixed;z-index:2147483600;width:226px;background:#fff;border:1px solid #d7dee8;border-radius:10px;box-shadow:0 12px 34px rgba(0,0,0,.2);padding:6px;font-size:13px;color:#1f2733}' +
+    'html.fp-dark .fpMoreMenu{background:#141d31;border-color:#26324a;color:#e6edf7}' +
+    '.fpMoreItem{display:flex;align-items:center;gap:11px;padding:8px 10px;border-radius:7px;cursor:pointer;white-space:nowrap}' +
+    '.fpMoreItem:hover{background:#f1f5f9}html.fp-dark .fpMoreItem:hover{background:#1c2942}' +
+    '.fpMoreItem.dg{color:#e2483d}.fpMoreItem svg{width:16px;height:16px;flex:none;opacity:.85}' +
+    '.fpOv{position:fixed;inset:0;z-index:2147483500;background:rgba(15,23,42,.5);display:flex;align-items:center;justify-content:center;padding:20px}' +
+    '.fpCard{background:#fff;color:#1f2733;border-radius:12px;max-width:640px;width:100%;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 26px 64px rgba(0,0,0,.4)}' +
+    'html.fp-dark .fpCard{background:#141d31;color:#e6edf7}' +
+    '.fpCardH{display:flex;align-items:center;justify-content:space-between;padding:13px 18px;border-bottom:1px solid #e6ebf2;font-weight:600;font-size:16px}html.fp-dark .fpCardH{border-color:#26324a}' +
+    '.fpCardB{overflow:auto}' +
+    '.fpBtn{border:1px solid #cbd5e1;border-radius:20px;padding:7px 15px;font-size:13px;font-weight:600;cursor:pointer;background:transparent;color:inherit}' +
+    '.fpXi{cursor:pointer;font-size:22px;line-height:1;color:#94a3b8}';
+  document.documentElement.appendChild(st);
+
+  function rowData(row) {
+    var d = { no:'', party:'', date:'', total:'', paid:'', bal:'', status:'' };
+    try {
+      var table = row.closest('table'); var heads = [];
+      if (table) { var ths = table.querySelectorAll('thead th'); for (var i=0;i<ths.length;i++) heads.push((ths[i].textContent||'').toLowerCase()); }
+      var tds = row.querySelectorAll('td');
+      function val(keys) { for (var i=0;i<heads.length && i<tds.length;i++){ for (var k=0;k<keys.length;k++){ if (heads[i].indexOf(keys[k])>-1) return (tds[i].textContent||'').trim(); } } return ''; }
+      d.no = val(['namba','invoice','no.']) || (function(){ for(var i=0;i<tds.length;i++){ var m=(tds[i].textContent||'').match(/FP\\/[A-Z]+\\/\\d+/); if(m) return m[0]; } return ''; })();
+      d.party = val(['mteja','party','customer','jina','supplier','muuzaji']);
+      d.date = val(['tarehe','date']); d.total = val(['jumla','amount','total']);
+      d.paid = val(['imelipwa','paid','received']); d.bal = val(['salio','balance']);
+      d.status = val(['hali','status']);
+    } catch (e) {}
+    return d;
+  }
+
+  function esc(s){ return String(s==null?'':s).replace(/[&<>]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c];}); }
+  function letterhead(){ return '<div style="display:flex;justify-content:space-between;gap:12px;padding:16px 20px 8px"><div style="width:48px;height:48px;border-radius:50%;background:#e6f1fb;color:#185fa5;display:flex;align-items:center;justify-content:center;font-weight:700">FP</div><div style="text-align:right;font-size:11px;color:#64748b"><div style="font-size:17px;font-weight:700;color:inherit">FEMMAS PRINT</div><div>AMANI &amp; CONGO Street, Jangwani, Ilala-Dar es Salaam</div><div>Phone: +255658843344 &middot; femmasprint@gmail.com</div><div>TIN: 102-075-552</div></div></div>'; }
+  function band(t){ return '<div style="text-align:center;color:#185fa5;font-weight:600;border-top:2px solid #2b6cb0;border-bottom:2px solid #2b6cb0;margin:6px 20px;padding:6px">'+t+'</div>'; }
+  function billTo(d){ return '<div style="display:flex;justify-content:space-between;gap:10px;padding:4px 20px 8px;font-size:12px"><div><div style="font-weight:600">Bill To</div><div>'+esc(d.party||'—')+'</div></div><div style="text-align:right"><div style="font-weight:600">Invoice Details</div><div>No: '+esc(d.no||'—')+'</div><div>Date: '+esc(d.date||'—')+'</div></div></div>'; }
+  function summary(d, withMoney){
+    var rows = '<tr style="border-bottom:1px solid #eef2f7"><td style="padding:8px 20px;color:#64748b">Jumla (Total)</td><td style="padding:8px 20px;text-align:right;font-weight:600">'+esc(d.total||'—')+'</td></tr>';
+    if (withMoney) {
+      rows += '<tr style="border-bottom:1px solid #eef2f7"><td style="padding:8px 20px;color:#64748b">Imelipwa (Paid)</td><td style="padding:8px 20px;text-align:right">'+esc(d.paid||'—')+'</td></tr>';
+      rows += '<tr style="border-bottom:1px solid #eef2f7"><td style="padding:8px 20px;color:#64748b">Salio (Balance)</td><td style="padding:8px 20px;text-align:right">'+esc(d.bal||'—')+'</td></tr>';
+    }
+    rows += '<tr><td style="padding:8px 20px;color:#64748b">Hali (Status)</td><td style="padding:8px 20px;text-align:right">'+esc(d.status||'—')+'</td></tr>';
+    return '<table style="width:100%;border-collapse:collapse;font-size:13px">'+rows+'</table><div style="font-size:11.5px;color:#94a3b8;padding:10px 20px">Vitu (items) vya kina vitaonekana kwa invoice zilizotengenezwa kwa builder mpya.</div>';
+  }
+  function pdfbar(){ return '<div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;padding:12px 18px;border-top:1px solid #e6ebf2"><span class="fpBtn fpDoPrint" style="border-color:#f0997b;color:#d85a30">Open PDF</span><span class="fpBtn fpDoPrint" style="border-color:#85b7eb;color:#185fa5">Print</span><span class="fpBtn fpClose" style="border-color:#e2483d;background:#e2483d;color:#fff">Close</span></div>'; }
+
+  var ov = null;
+  function closeModal(){ if (ov){ ov.remove(); ov=null; } }
+  function openModal(title, bodyHtml, footHtml){
+    closeModal();
+    ov = document.createElement('div'); ov.className='fpOv';
+    ov.innerHTML = '<div class="fpCard"><div class="fpCardH">'+title+'<span class="fpXi fpClose">&times;</span></div><div class="fpCardB">'+bodyHtml+'</div>'+(footHtml||'')+'</div>';
+    ov.addEventListener('click', function(e){ if (e.target===ov || e.target.closest('.fpClose')){ closeModal(); } if (e.target.closest('.fpDoPrint')){ closeModal(); var pb=curRow&&curRow.querySelector('button[title="Print / PDF"]'); if(pb) pb.click(); } });
+    document.documentElement.appendChild(ov);
+  }
+
+  function soon(name){ openModal(name, '<div style="padding:20px;font-size:14px;line-height:1.6">Kitendo hiki (<b>'+name+'</b>) kinaunganishwa na backend kwa usalama ili kisiharibu invoice zako halisi. Kinakuja hatua inayofuata.</div>', '<div style="display:flex;justify-content:flex-end;padding:12px 18px;border-top:1px solid #e6ebf2"><span class="fpBtn fpClose">Sawa</span></div>'); }
+
+  function doAction(row, kind){
+    curRow = row; var d = rowData(row);
+    if (kind==='edit'){ var eb=row.querySelector('button[title="Hariri invoice"]'); if(eb) eb.click(); }
+    else if (kind==='print' || kind==='openpdf'){ var pb=row.querySelector('button[title="Print / PDF"]'); if(pb) pb.click(); }
+    else if (kind==='preview'){ openModal('Preview', letterhead()+band('Invoice')+billTo(d)+summary(d,true), pdfbar()); }
+    else if (kind==='challan'){ openModal('Preview &mdash; Delivery Challan', letterhead()+band('Delivery Challan')+billTo(d)+summary(d,false), pdfbar()); }
+    else if (kind==='payhist'){ openModal('Payment History', '<div style="padding:18px 20px;font-size:14px;line-height:1.9">Imelipwa (Received): <b>'+esc(d.paid||d.total||'—')+'</b><br>Salio (Balance): '+esc(d.bal||'—')+'<br>Hali: '+esc(d.status||'—')+'</div>', '<div style="display:flex;justify-content:flex-end;padding:12px 18px;border-top:1px solid #e6ebf2"><span class="fpBtn fpClose">CLOSE</span></div>'); }
+    else { soon(({'return':'Convert To Return','cancel':'Cancel Invoice','delete':'Delete','dup':'Duplicate','hist':'View History'})[kind]||'Kitendo'); }
+  }
+
+  var menuEl = null;
+  function closeMenu(){ if (menuEl){ menuEl.remove(); menuEl=null; } }
+  function openMenu(row, x, y){
+    closeMenu();
+    menuEl = document.createElement('div'); menuEl.className='fpMoreMenu';
+    menuEl.innerHTML = ACT.map(function(a){ return '<div class="fpMoreItem'+(a[3]?' dg':'')+'" data-k="'+a[2]+'">'+IC[a[0]]+'<span>'+a[1]+'</span></div>'; }).join('');
+    menuEl.addEventListener('click', function(e){ var it=e.target.closest('.fpMoreItem'); if(!it) return; e.stopPropagation(); closeMenu(); doAction(row, it.getAttribute('data-k')); });
+    document.documentElement.appendChild(menuEl);
+    var w=menuEl.offsetWidth||226, h=menuEl.offsetHeight||360;
+    var L = Math.min(x, window.innerWidth-w-8); if(L<8)L=8;
+    var Tp = y; if (Tp+h > window.innerHeight-8) Tp = Math.max(8, y-h);
+    menuEl.style.left = L+'px'; menuEl.style.top = Tp+'px';
+  }
+
+  function isRow(row){ return row && (row.querySelector('button[title="Hariri invoice"]') || row.querySelector('button[title="Print / PDF"]')); }
+
+  function enhance(){
+    var btns = document.querySelectorAll('button[title="Print / PDF"], button[title="Hariri invoice"]');
+    for (var i=0;i<btns.length;i++){
+      var cell = btns[i].closest('td'); if(!cell) continue;
+      if (cell.querySelector('.fpMoreBtn')) continue;
+      var row = btns[i].closest('tr'); if(!row) continue;
+      var holder = btns[i].parentElement || cell;
+      var mb = document.createElement('span');
+      mb.className='fpMoreBtn'; mb.setAttribute('title','More Actions'); mb.innerHTML=IC.dots;
+      holder.appendChild(mb);
+    }
+  }
+
+  document.addEventListener('click', function(e){ var mb=e.target && e.target.closest ? e.target.closest('.fpMoreBtn') : null; if(mb){ e.preventDefault(); e.stopPropagation(); var row=mb.closest('tr'); if(row){ var rc=mb.getBoundingClientRect(); openMenu(row, rc.right-226, rc.bottom+4); } return; } if(!e.target.closest('.fpMoreMenu')) closeMenu(); }, true);
+  document.addEventListener('contextmenu', function(e){ var row=e.target && e.target.closest ? e.target.closest('tr') : null; if(isRow(row)){ e.preventDefault(); openMenu(row, e.clientX, e.clientY); } }, true);
+  document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ closeMenu(); closeModal(); } });
+  window.addEventListener('scroll', closeMenu, true);
+
+  var t=null;
+  function ready(fn){ if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',fn); else fn(); }
+  ready(function(){ enhance(); new MutationObserver(function(){ clearTimeout(t); t=setTimeout(enhance,180); }).observe(document.body,{childList:true,subtree:true}); setInterval(enhance,3000); });
+})();`;
+
 export async function onRequest(context) {
   const response = await context.next();
   try {
@@ -220,6 +363,7 @@ export async function onRequest(context) {
         element(el) {
           el.append('<style id="fpEdgeDark">' + HEAD_CSS + '</style>', { html: true });
           el.append('<script id="fpEdgeFix">' + FIX_JS + '</scr' + 'ipt>', { html: true });
+          el.append('<script id="fpMoreActions">' + MORE_JS + '</scr' + 'ipt>', { html: true });
         }
       })
       .transform(response);
