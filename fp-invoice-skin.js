@@ -8,7 +8,7 @@
   if (window.__fpSkin) return; window.__fpSkin = true;
 
   function backend() { try { return (localStorage.getItem('fp_backend_url') || '').trim(); } catch (e) { return ''; } }
-  var DATA = null, view = [], q = '', tot = 0, paid = 0, bal = 0, curDoc = null, fromISO = '', toISO = '', periodLabel = 'Custom';
+  var DATA = null, view = [], q = '', tot = 0, paid = 0, bal = 0, curDoc = null, fromISO = '', toISO = '', periodLabel = 'Custom', sortKey = 'Date', sortDir = 'desc';
 
   function num(n) { return +String(n == null ? '' : n).replace(/[^0-9.-]/g, '') || 0; }
   function money(n) { return 'Sh ' + Math.round(num(n)).toLocaleString('en-US'); }
@@ -64,9 +64,24 @@
       if (fromISO || toISO) { var dd = toISODate(r.Date); if (!dd) return true; if (fromISO && dd < fromISO) return false; if (toISO && dd > toISO) return false; }
       return true;
     });
+    sortView();
     tot = 0; paid = 0; bal = 0;
     view.forEach(function (r) { tot += num(r.TotalAmount); paid += num(r.PaidAmount); bal += num(r.Balance); });
   }
+  // Column sort — the funnel icons in each header actually work now.
+  function sortVal(r, k) {
+    if (k === 'Date') { var d = parseD(r.Date); return d ? d.getTime() : -Infinity; }
+    if (k === 'InvoiceNo') { var m = String(r.InvoiceNo || '').match(/(\d+)\s*$/); return m ? +m[1] : num(r.InvoiceNo); }
+    if (k === 'TotalAmount' || k === 'Balance') return num(r[k]);
+    if (k === 'PayType') return (num(r.Balance) <= 0 ? 'cash' : 'fp bank');
+    if (k === 'Transaction') return 'sale';
+    return String(r[k] || '').toLowerCase();
+  }
+  function sortView() {
+    if (!sortKey) return;
+    view.sort(function (a, b) { var av = sortVal(a, sortKey), bv = sortVal(b, sortKey); if (av < bv) return sortDir === 'asc' ? -1 : 1; if (av > bv) return sortDir === 'asc' ? 1 : -1; return 0; });
+  }
+  function toast(msg) { var d = document.createElement('div'); d.textContent = msg; d.style.cssText = 'position:fixed;left:50%;bottom:42px;transform:translateX(-50%);background:#1f2733;color:#fff;padding:11px 18px;border-radius:10px;font-size:13px;z-index:2147483647;box-shadow:0 8px 26px rgba(0,0,0,.32);max-width:80%;text-align:center'; document.documentElement.appendChild(d); setTimeout(function () { try { d.remove(); } catch (e) {} }, 2800); }
   function refresh() {
     applyFilter();
     var c = document.getElementById('fpTotInner'); if (c) c.innerHTML = totCardInner();
@@ -102,7 +117,8 @@
 
   function rowsHTML() {
     var cols = ['Date', 'Invoice no', 'Party Name', 'Transaction', 'Payment Type', 'Amount', 'Balance', 'Status'];
-    var head = '<tr style="text-align:left;color:#64748b;border-top:1px solid #eef2f7;border-bottom:1px solid #eef2f7;background:#fafbfc">' + cols.map(function (c, i) { return '<th style="padding:11px 12px;font-weight:600;font-size:12px;white-space:nowrap;' + ((i === 5 || i === 6) ? 'text-align:right' : '') + '">' + c + FN + '</th>'; }).join('') + '<th style="padding:11px 12px;font-weight:600;font-size:12px;text-align:center">Actions</th></tr>';
+    var kmap = ['Date', 'InvoiceNo', 'CustomerName', 'Transaction', 'PayType', 'TotalAmount', 'Balance', 'Status'];
+    var head = '<tr style="text-align:left;color:#64748b;border-top:1px solid #eef2f7;border-bottom:1px solid #eef2f7;background:#fafbfc">' + cols.map(function (c, i) { var k = kmap[i]; var arrow = (sortKey === k) ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''; return '<th class="fpSort" data-key="' + k + '" title="Panga (sort)" style="padding:11px 12px;font-weight:600;font-size:12px;white-space:nowrap;cursor:pointer;' + ((i === 5 || i === 6) ? 'text-align:right' : '') + (sortKey === k ? 'color:#185fa5;' : '') + '">' + c + FN + '<span style="font-size:10px">' + arrow + '</span></th>'; }).join('') + '<th style="padding:11px 12px;font-weight:600;font-size:12px;text-align:center">Actions</th></tr>';
     var body = view.slice(0, 100).map(function (r, i) {
       var st = String(r.Status || ''); var sc = /paid|imelipwa/i.test(st) && !/unpaid|haija/i.test(st) ? '#0f6e56' : '#e2483d'; var b = num(r.Balance);
       return '<tr class="fpr" data-no="' + esc(r.InvoiceNo || '') + '" style="border-bottom:1px solid #eef2f7;cursor:pointer' + (i === 0 ? ';background:#dcecfb' : '') + '">'
@@ -120,7 +136,7 @@
         + '<span class="fpa" data-a="menu" title="More Actions">' + IC_DOTS + '</span>'
         + '</div></td></tr>';
     }).join('');
-    return '<table style="width:100%;border-collapse:collapse;min-width:760px"><thead>' + head + '</thead><tbody>' + body + '</tbody></table><div style="text-align:center;color:#94a3b8;font-size:12px;padding:14px">Zinaonyeshwa ' + Math.min(100, view.length) + ' kati ya ' + view.length + '</div>';
+    return '<table style="width:100%;border-collapse:collapse;min-width:760px"><thead>' + head + '</thead><tbody>' + body + '</tbody></table><div style="text-align:center;color:#94a3b8;font-size:12px;padding:14px">Zimeonyeshwa invoice ' + Math.min(100, view.length) + ' kati ya jumla ' + view.length + ' &middot; bonyeza kichwa cha safu kupanga (sort)</div>';
   }
 
   function chip(t) { return '<span style="background:#eef2f7;padding:6px 12px;border-radius:16px;color:#334155;font-size:12px;cursor:pointer">' + t + '</span>'; }
@@ -145,7 +161,7 @@
       +   '<span style="display:inline-flex;align-items:center;background:#e9eefc;border-radius:22px;overflow:hidden;color:#39476a">'
       +     '<span class="fpPeriod" id="fpPeriodChip" title="Chagua kipindi" style="padding:7px 15px;cursor:pointer;font-weight:500">' + periodLabel + ' &#9662;</span>'
       +     '<span style="width:1px;align-self:stretch;background:#c6d2ef"></span>'
-      +     '<span style="padding:6px 15px;display:inline-flex;align-items:center;gap:6px">&#128197; <input type="date" id="fpFrom" value="' + fromISO + '" style="border:none;background:transparent;font:inherit;color:#39476a;cursor:pointer;width:118px"> To <input type="date" id="fpTo" value="' + toISO + '" style="border:none;background:transparent;font:inherit;color:#39476a;cursor:pointer;width:118px"></span>'
+      +     '<span style="padding:6px 15px;display:inline-flex;align-items:center;gap:6px"><span class="fpCal" title="Fungua kalenda" style="cursor:pointer">&#128197;</span> <input type="date" id="fpFrom" value="' + fromISO + '" style="border:none;background:transparent;font:inherit;color:#39476a;cursor:pointer;width:118px"> To <input type="date" id="fpTo" value="' + toISO + '" style="border:none;background:transparent;font:inherit;color:#39476a;cursor:pointer;width:118px"></span>'
       +   '</span>'
       +   '<span class="fpFirms" title="Chuja kwa duka" style="background:#e9eefc;padding:7px 16px;border-radius:22px;color:#39476a;cursor:pointer;font-weight:500">All Firms &#9662;</span>'
       +   '<span class="fpUsers" title="Chuja kwa mtumiaji" style="background:#e9eefc;padding:7px 16px;border-radius:22px;color:#39476a;cursor:pointer;font-weight:500">All Users &#9662;</span>'
@@ -164,13 +180,14 @@
     el.querySelectorAll('.fpAdd').forEach(function (b) { b.onclick = function () { openInvoiceBuilder(); }; });
     el.querySelectorAll('.fpAddP').forEach(function (b) { b.onclick = function () { clickApp(/^\+?\s*Purchase$/i); }; });
     el.querySelectorAll('.fpAddPlus').forEach(function (b) { b.onclick = function (e) { e.stopPropagation(); miniMenu(b, addMoreItems()); }; });
-    var ts = el.querySelector('.fpTitleSwitch'); if (ts) ts.onclick = function (e) { e.stopPropagation(); miniMenu(ts, [['Sale Invoices', function () { clickNav(/Sale Invoices/i); }], ['Estimate / Quotation', function () { clickNav(/Estimate/i); }], ['Proforma Invoice', function () { clickNav(/Proforma/i); }], ['Payment-In', function () { clickNav(/Payment-?In/i); }], ['Sale Order', function () { clickNav(/Sale Order/i); }], ['Delivery Challan', function () { clickNav(/Delivery Challan/i); }], ['Sale Return / Credit Note', function () { clickNav(/Sale Return/i); }]]); };
+    var ts = el.querySelector('.fpTitleSwitch'); if (ts) ts.onclick = function (e) { e.stopPropagation(); miniMenu(ts, [['Sale Invoices (hapa)', function () {}], ['Quick Sale', function () { tryNav('Quick Sale', /Quick Sale/i); }], ['Purchase & Expense', function () { tryNav('Purchase & Expense', /Purchase\s*&?\s*Expense/i); }], ['Delivery', function () { tryNav('Delivery', /^Delivery$/i); }], ['Receipts', function () { tryNav('Receipts', /Receipts/i); }], ['Cash & Bank', function () { tryNav('Cash & Bank', /Cash\s*&?\s*Bank/i); }], ['Debtors', function () { tryNav('Debtors', /Debtors/i); }], ['Reports', function () { tryNav('Reports', /^Reports$/i); }]]); };
     el.querySelectorAll('.fpPrintList').forEach(function (b) { b.onclick = function (e) { e.stopPropagation(); printList(); }; });
     el.querySelectorAll('.fpXls').forEach(function (b) { b.onclick = function (e) { e.stopPropagation(); exportCSV(); }; });
     el.querySelectorAll('.fpChart').forEach(function (b) { b.onclick = function (e) { e.stopPropagation(); summaryModal(); }; });
     el.querySelectorAll('.fpFocusSearch').forEach(function (b) { b.onclick = function () { var i = document.getElementById('fpSearch'); if (i) i.focus(); }; });
     el.querySelectorAll('.fpTopMenu').forEach(function (b) { b.onclick = function (e) { e.stopPropagation(); miniMenu(b, [['Onyesha upya', function () { DATA = null; load().then(function () { applyFilter(); build(); }); }], ['Pakua Excel (CSV)', exportCSV], ['Chapa orodha', printList], ['Muhtasari', summaryModal]]); }; });
     var pc = el.querySelector('.fpPeriod'); if (pc) pc.onclick = function (e) { e.stopPropagation(); miniMenu(pc, [['Leo (Today)', function () { setPeriod('Leo', todayStr(), todayStr()); }], ['This Month', function () { setPeriod('This Month', monthStart(), monthEnd()); }], ['Last Month', function () { var r = lastMonthRange(); setPeriod('Last Month', r[0], r[1]); }], ['This Quarter', function () { setPeriod('This Quarter', quarterStart(), todayStr()); }], ['This Year', function () { setPeriod('This Year', yearStart(), todayStr()); }], ['All Sale Invoices', function () { setPeriod('All', '', ''); }]]); };
+    var cal = el.querySelector('.fpCal'); if (cal) cal.onclick = function () { var f = document.getElementById('fpFrom'); if (f) { try { f.showPicker(); } catch (e) { f.focus(); f.click(); } } };
     var ff = el.querySelector('#fpFrom'); if (ff) ff.onchange = function () { fromISO = this.value || ''; periodLabel = 'Custom'; refresh(); };
     var ft = el.querySelector('#fpTo'); if (ft) ft.onchange = function () { toISO = this.value || ''; periodLabel = 'Custom'; refresh(); };
     var fm = el.querySelector('.fpFirms'); if (fm) fm.onclick = function (e) { e.stopPropagation(); miniMenu(fm, [['All Firms', function () {}], ['FEMMAS PRINT', function () {}]]); };
@@ -178,13 +195,15 @@
     var fcl = el.querySelector('.fpClear'); if (fcl) fcl.onclick = function () { q = ''; setPeriod('This Month', monthStart(), monthEnd()); var si = document.getElementById('fpSearch'); if (si) si.value = ''; build(); };
     attachRows(el);
   }
-  function clickApp(re) { var b = Array.prototype.slice.call(document.querySelectorAll('main button, header button')).find(function (x) { return re.test((x.textContent || '').trim()); }); if (b) b.click(); }
-  function clickNav(re) { var a = Array.prototype.slice.call(document.querySelectorAll('aside a, aside button, nav a, main button')).find(function (x) { return re.test((x.textContent || '').trim()); }); if (a) a.click(); }
-  function addMoreItems() { return [['Sale Invoice', function () { openInvoiceBuilder(); }], ['Payment-In', function () { clickNav(/Payment-?In/i); }], ['Sale Return / Credit Note', function () { clickNav(/Sale Return/i); }], ['Sale Order', function () { clickNav(/Sale Order/i); }], ['Estimate / Quotation', function () { clickNav(/Estimate/i); }], ['Proforma Invoice', function () { clickNav(/Proforma/i); }], ['Delivery Challan', function () { clickNav(/Delivery Challan/i); }], ['Purchase Bill', function () { clickApp(/^\+?\s*Purchase$/i); }]]; }
+  function clickApp(re) { var b = Array.prototype.slice.call(document.querySelectorAll('main button, header button')).find(function (x) { return re.test((x.textContent || '').trim()); }); if (b) { b.click(); return true; } return false; }
+  function clickNav(re) { var a = Array.prototype.slice.call(document.querySelectorAll('aside a, aside button, nav a, nav button, main button')).find(function (x) { return re.test((x.textContent || '').trim()); }); if (a) { a.click(); return true; } return false; }
+  function tryNav(label, re) { if (!clickNav(re)) toast('“' + label + '” haipatikani kwenye menyu ya app.'); }
+  function addMoreItems() { return [['Sale Invoice (mpya)', function () { openInvoiceBuilder(); }], ['Quick Sale', function () { tryNav('Quick Sale', /Quick Sale/i); }], ['Purchase & Expense', function () { tryNav('Purchase & Expense', /Purchase\s*&?\s*Expense/i); }], ['Delivery', function () { tryNav('Delivery', /^Delivery$/i); }], ['Receipts', function () { tryNav('Receipts', /Receipts/i); }], ['Customers', function () { tryNav('Customers', /Customers/i); }], ['Items', function () { tryNav('Items', /^Items$/i); }]]; }
 
   function recFor(no) { return (DATA || []).find(function (r) { return String(r.InvoiceNo) === String(no); }) || {}; }
 
   function attachRows(el) {
+    el.querySelectorAll('.fpSort').forEach(function (th) { th.onclick = function () { var k = th.getAttribute('data-key'); if (sortKey === k) sortDir = (sortDir === 'asc' ? 'desc' : 'asc'); else { sortKey = k; sortDir = 'asc'; } refresh(); }; });
     el.querySelectorAll('.fpr').forEach(function (r, i) {
       r.onmouseenter = function () { if (i !== 0) r.style.background = '#eaf3ff'; };
       r.onmouseleave = function () { if (i !== 0) r.style.background = ''; };
