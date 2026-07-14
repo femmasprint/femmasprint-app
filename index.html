@@ -532,14 +532,14 @@ window.addEventListener('load', function () {
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#6f86a8" stroke-width="2.4" style="{{ saleParent.chevron }}"><path d="M6 9l6 6 6-6"></path></svg></a>
       <sc-if value="{{ saleParent.expanded }}" hint-placeholder-val="{{ false }}">
         <div style="display:flex;flex-direction:column;gap:1px;padding:2px 0 4px">
-          <a onClick="{{ subSaleInvoices.click }}" style="{{ subSaleInvoices.style }}" style-hover="background:rgba(255,255,255,.08)">Sale Invoices</a>
-          <a onClick="{{ subEstimate.click }}" style="{{ subEstimate.style }}" style-hover="background:rgba(255,255,255,.08)">Estimate / Quotation</a>
-          <a onClick="{{ subProforma.click }}" style="{{ subProforma.style }}" style-hover="background:rgba(255,255,255,.08)">Proforma Invoice</a>
-          <a onClick="{{ subPaymentIn.click }}" style="{{ subPaymentIn.style }}" style-hover="background:rgba(255,255,255,.08)">Payment-In</a>
-          <a onClick="{{ subSaleOrder.click }}" style="{{ subSaleOrder.style }}" style-hover="background:rgba(255,255,255,.08)">Sale Order</a>
-          <a onClick="{{ subChallan.click }}" style="{{ subChallan.style }}" style-hover="background:rgba(255,255,255,.08)">Delivery Challan</a>
-          <a onClick="{{ subSaleReturn.click }}" style="{{ subSaleReturn.style }}" style-hover="background:rgba(255,255,255,.08)">Sale Return / Credit Note</a>
-          <a onClick="{{ subPos.click }}" style="{{ subPos.style }}" style-hover="background:rgba(255,255,255,.08)">Femmas POS</a>
+          <a onClick="{{ subSaleInvoices.click }}" style="{{ subSaleInvoices.style }}" style-hover="background:rgba(255,255,255,.08)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8aa0c0" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;flex:none"><path d="M6 2h12v20l-3-2-3 2-3-2-3 2z"></path><path d="M9 7h6M9 11h6M9 15h4"></path></svg>Sale Invoices</a>
+          <a onClick="{{ subEstimate.click }}" style="{{ subEstimate.style }}" style-hover="background:rgba(255,255,255,.08)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8aa0c0" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;flex:none"><rect x="5" y="3" width="14" height="18" rx="2"></rect><path d="M8 7h8"></path><path d="M8.5 11.5h.01M12 11.5h.01M15.5 11.5h.01M8.5 15h.01M12 15h.01M15.5 15h.01"></path></svg>Estimate / Quotation</a>
+          <a onClick="{{ subProforma.click }}" style="{{ subProforma.style }}" style-hover="background:rgba(255,255,255,.08)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8aa0c0" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;flex:none"><path d="M14 2H6v20h12V8z"></path><path d="M14 2v6h6"></path><circle cx="12" cy="14" r="3.5"></circle><path d="M12 12.5V14l1.2 1"></path></svg>Proforma Invoice</a>
+          <a onClick="{{ subPaymentIn.click }}" style="{{ subPaymentIn.style }}" style-hover="background:rgba(255,255,255,.08)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8aa0c0" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;flex:none"><path d="M12 3v10"></path><path d="M8 9l4 4 4-4"></path><path d="M4 17h16v4H4z"></path></svg>Payment-In</a>
+          <a onClick="{{ subSaleOrder.click }}" style="{{ subSaleOrder.style }}" style-hover="background:rgba(255,255,255,.08)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8aa0c0" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;flex:none"><rect x="6" y="4" width="12" height="18" rx="2"></rect><path d="M9 2h6v4H9z"></path><path d="M9 13l2 2 4-4"></path></svg>Sale Order</a>
+          <a onClick="{{ subChallan.click }}" style="{{ subChallan.style }}" style-hover="background:rgba(255,255,255,.08)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8aa0c0" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;flex:none"><path d="M1 7h11v9H1z"></path><path d="M12 10h5l3 3v3h-8"></path><circle cx="6" cy="18" r="2"></circle><circle cx="16" cy="18" r="2"></circle></svg>Delivery Challan</a>
+          <a onClick="{{ subSaleReturn.click }}" style="{{ subSaleReturn.style }}" style-hover="background:rgba(255,255,255,.08)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8aa0c0" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;flex:none"><path d="M9 14l-4-4 4-4"></path><path d="M5 10h9a5 5 0 1 1 0 10h-3"></path></svg>Sale Return / Credit Note</a>
+          <a onClick="{{ subPos.click }}" style="{{ subPos.style }}" style-hover="background:rgba(255,255,255,.08)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8aa0c0" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;flex:none"><rect x="6" y="3" width="12" height="8" rx="1.5"></rect><path d="M9 6.5h6"></path><path d="M8 11l-2 7h12l-2-7"></path><path d="M4 21h16"></path></svg>Femmas POS</a>
         </div>
       </sc-if>
 
@@ -549,11 +549,11 @@ window.addEventListener('load', function () {
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#6f86a8" stroke-width="2.4" style="{{ purchaseParent.chevron }}"><path d="M6 9l6 6 6-6"></path></svg></a>
       <sc-if value="{{ purchaseParent.expanded }}" hint-placeholder-val="{{ false }}">
         <div style="display:flex;flex-direction:column;gap:1px;padding:2px 0 4px">
-          <a onClick="{{ subPurchaseBills.click }}" style="{{ subPurchaseBills.style }}" style-hover="background:rgba(255,255,255,.08)">Purchase Bills</a>
-          <a onClick="{{ subPaymentOut.click }}" style="{{ subPaymentOut.style }}" style-hover="background:rgba(255,255,255,.08)">Payment-Out</a>
-          <a onClick="{{ subExpenses.click }}" style="{{ subExpenses.style }}" style-hover="background:rgba(255,255,255,.08)">Expenses</a>
-          <a onClick="{{ subPurchaseOrder.click }}" style="{{ subPurchaseOrder.style }}" style-hover="background:rgba(255,255,255,.08)">Purchase Order</a>
-          <a onClick="{{ subPurchaseReturn.click }}" style="{{ subPurchaseReturn.style }}" style-hover="background:rgba(255,255,255,.08)">Purchase Return / Dr. Note</a>
+          <a onClick="{{ subPurchaseBills.click }}" style="{{ subPurchaseBills.style }}" style-hover="background:rgba(255,255,255,.08)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8aa0c0" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;flex:none"><rect x="5" y="4" width="14" height="16" rx="2"></rect><circle cx="12" cy="12" r="3"></circle><path d="M12 10.6v2.8M10.6 12h2.8"></path></svg>Purchase Bills</a>
+          <a onClick="{{ subPaymentOut.click }}" style="{{ subPaymentOut.style }}" style-hover="background:rgba(255,255,255,.08)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8aa0c0" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;flex:none"><path d="M12 13V3"></path><path d="M8 7l4-4 4 4"></path><path d="M4 17h16v4H4z"></path></svg>Payment-Out</a>
+          <a onClick="{{ subExpenses.click }}" style="{{ subExpenses.style }}" style-hover="background:rgba(255,255,255,.08)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8aa0c0" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;flex:none"><rect x="3" y="6" width="18" height="13" rx="2"></rect><path d="M3 10h18"></path><path d="M16 14.5h.01"></path></svg>Expenses</a>
+          <a onClick="{{ subPurchaseOrder.click }}" style="{{ subPurchaseOrder.style }}" style-hover="background:rgba(255,255,255,.08)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8aa0c0" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;flex:none"><rect x="6" y="4" width="12" height="18" rx="2"></rect><path d="M9 2h6v4H9z"></path><path d="M12 11v6M9 14h6"></path></svg>Purchase Order</a>
+          <a onClick="{{ subPurchaseReturn.click }}" style="{{ subPurchaseReturn.style }}" style-hover="background:rgba(255,255,255,.08)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8aa0c0" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;flex:none"><path d="M15 14l4-4-4-4"></path><path d="M19 10h-9a5 5 0 1 0 0 10h3"></path></svg>Purchase Return / Dr. Note</a>
         </div>
       </sc-if>
 
@@ -563,9 +563,9 @@ window.addEventListener('load', function () {
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#6f86a8" stroke-width="2.4" style="{{ growParent.chevron }}"><path d="M6 9l6 6 6-6"></path></svg></a>
       <sc-if value="{{ growParent.expanded }}" hint-placeholder-val="{{ false }}">
         <div style="display:flex;flex-direction:column;gap:1px;padding:2px 0 4px">
-          <a onClick="{{ subGoogleProfile.click }}" style="{{ subGoogleProfile.style }}" style-hover="background:rgba(255,255,255,.08)">Google Profile Manager</a>
-          <a onClick="{{ subMarketing.click }}" style="{{ subMarketing.style }}" style-hover="background:rgba(255,255,255,.08)">Marketing Tools</a>
-          <a onClick="{{ subOnlineStore.click }}" style="{{ subOnlineStore.style }}" style-hover="background:rgba(255,255,255,.08)">Online Store</a>
+          <a onClick="{{ subGoogleProfile.click }}" style="{{ subGoogleProfile.style }}" style-hover="background:rgba(255,255,255,.08)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8aa0c0" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;flex:none"><circle cx="10" cy="8" r="3.5"></circle><path d="M4 20c0-3.3 2.7-6 6-6"></path><circle cx="17" cy="16" r="3"></circle><path d="M17 12.6v1M17 18.4v1M13.6 16h1M19.4 16h1"></path></svg>Google Profile Manager</a>
+          <a onClick="{{ subMarketing.click }}" style="{{ subMarketing.style }}" style-hover="background:rgba(255,255,255,.08)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8aa0c0" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;flex:none"><path d="M3 10v4h3l6 4V6l-6 4H3z"></path><path d="M15 8a5 5 0 0 1 0 8"></path></svg>Marketing Tools</a>
+          <a onClick="{{ subOnlineStore.click }}" style="{{ subOnlineStore.style }}" style-hover="background:rgba(255,255,255,.08)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8aa0c0" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;flex:none"><path d="M4 4h16l1 5H3z"></path><path d="M5 9v12h14V9"></path><path d="M10 21v-6h4v6"></path></svg>Online Store</a>
         </div>
       </sc-if>
 
@@ -607,11 +607,11 @@ window.addEventListener('load', function () {
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#6f86a8" stroke-width="2.4" style="{{ utilParent.chevron }}"><path d="M6 9l6 6 6-6"></path></svg></a>
       <sc-if value="{{ utilParent.expanded }}" hint-placeholder-val="{{ false }}">
         <div style="display:flex;flex-direction:column;gap:1px;padding:2px 0 4px">
-          <a onClick="{{ subImportItems.click }}" style="{{ subImportItems.style }}" style-hover="background:rgba(255,255,255,.08)">Import Items</a>
-          <a onClick="{{ subBarcode.click }}" style="{{ subBarcode.style }}" style-hover="background:rgba(255,255,255,.08)">Barcode Generator</a>
-          <a onClick="{{ subBulkUpdate.click }}" style="{{ subBulkUpdate.style }}" style-hover="background:rgba(255,255,255,.08)">Update Items In Bulk</a>
-          <a onClick="{{ subImportCustomers.click }}" style="{{ subImportCustomers.style }}" style-hover="background:rgba(255,255,255,.08)">Import Customers</a>
-          <a onClick="{{ subRecycleBin.click }}" style="{{ subRecycleBin.style }}" style-hover="background:rgba(255,255,255,.08)">Recycle Bin</a>
+          <a onClick="{{ subImportItems.click }}" style="{{ subImportItems.style }}" style-hover="background:rgba(255,255,255,.08)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8aa0c0" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;flex:none"><path d="M12 2v9M8.5 7.5 12 11l3.5-3.5"></path><rect x="4" y="13" width="16" height="8" rx="1"></rect></svg>Import Items</a>
+          <a onClick="{{ subBarcode.click }}" style="{{ subBarcode.style }}" style-hover="background:rgba(255,255,255,.08)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8aa0c0" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;flex:none"><path d="M4 5v14M8 5v14M11 5v10M14 5v14M17 5v10M20 5v14"></path></svg>Barcode Generator</a>
+          <a onClick="{{ subBulkUpdate.click }}" style="{{ subBulkUpdate.style }}" style-hover="background:rgba(255,255,255,.08)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8aa0c0" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;flex:none"><path d="M21 12a9 9 0 1 1-2.6-6.4"></path><path d="M21 3v5h-5"></path></svg>Update Items In Bulk</a>
+          <a onClick="{{ subImportCustomers.click }}" style="{{ subImportCustomers.style }}" style-hover="background:rgba(255,255,255,.08)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8aa0c0" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;flex:none"><circle cx="10" cy="8" r="3.5"></circle><path d="M4 20c0-3.3 2.7-6 6-6s6 2.7 6 6"></path><path d="M18 8h4M20 6v4"></path></svg>Import Customers</a>
+          <a onClick="{{ subRecycleBin.click }}" style="{{ subRecycleBin.style }}" style-hover="background:rgba(255,255,255,.08)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8aa0c0" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;flex:none"><path d="M4 7h16"></path><path d="M9 7V4h6v3"></path><path d="M6 7l1 14h10l1-14"></path><path d="M10 11v6M14 11v6"></path></svg>Recycle Bin</a>
           <a onClick="{{ repairDatabase }}" style="display:block;padding:7px 12px 7px 41px;border-radius:8px;font-size:12.5px;text-decoration:none;cursor:pointer;font-weight:500;color:#9fb1cb" style-hover="background:rgba(255,255,255,.08)">Repair Database</a>
           <a onClick="{{ cleanDuplicates }}" style="display:block;padding:7px 12px 7px 41px;border-radius:8px;font-size:12.5px;text-decoration:none;cursor:pointer;font-weight:500;color:#9fb1cb" style-hover="background:rgba(255,255,255,.08)">Clean Customer Duplicates</a>
         </div>
@@ -4782,20 +4782,22 @@ class Component extends DCLogic {
     if (status !== 'Draft' && status !== 'Cancelled') { status = balance <= 0 ? 'Paid' : (paid > 0 ? 'Partial' : 'Unpaid'); }
     const td = new Date();
     const iso = td.getFullYear() + '-' + String(td.getMonth() + 1).padStart(2, '0') + '-' + String(td.getDate()).padStart(2, '0');
-    const iid = 'INV-' + iso.replace(/-/g, '') + '-' + Date.now();
+    const _invNoEdit = (fm.invoiceNo || '').trim().toLowerCase();
+    const _prev = _invNoEdit ? ((this.state.savedInvoices || []).find(r0 => String(r0.InvoiceNo || '').trim().toLowerCase() === _invNoEdit)) : null;
+    const iid = (_prev && _prev.InvoiceID) ? _prev.InvoiceID : ('INV-' + iso.replace(/-/g, '') + '-' + Date.now());
     let invNo = (fm.invoiceNo || '').trim();
     if (!invNo) { const seq = (this.state.savedInvoices || []).length + 1; invNo = 'FP/INV/' + String(seq).padStart(4, '0'); }
     const m = (this.state.savedCustomers || []).find(c => (c.name || '').trim().toLowerCase() === name.trim().toLowerCase());
-    const rec = { InvoiceID: iid, InvoiceNo: invNo, Date: iso, CustomerID: m ? (m.CustomerID || '') : '', CustomerName: name, Phone: (fm.phone || (m ? m.phone : '') || '').trim(), TotalAmount: total, PaidAmount: paid, Balance: balance, Status: status };
+    const rec = { InvoiceID: iid, InvoiceNo: invNo, Date: (_prev && _prev.Date) ? _prev.Date : iso, CustomerID: m ? (m.CustomerID || '') : '', CustomerName: name, Phone: (fm.phone || (m ? m.phone : '') || '').trim(), TotalAmount: total, PaidAmount: paid, Balance: balance, Status: status };
     const sig = invNo + '|' + name + '|' + total + '|' + iso;
     const done = { ...(this.state.invoiceSyncedIds || {}) };
-    if (Object.values(done).indexOf(sig) > -1) { this.setState({ invoiceOpen: false }); this.showToast('Invoice already recorded'); return; }
+    if (!_prev && Object.values(done).indexOf(sig) > -1) { this.setState({ invoiceOpen: false }); this.showToast('Invoice already recorded'); return; }
     done[iid] = sig;
-    this.setState(s => ({ invoiceOpen: false, invoiceSyncedIds: done, savedInvoices: [rec, ...(s.savedInvoices || [])] }));
+    this.setState(s => ({ invoiceOpen: false, invoiceSyncedIds: done, savedInvoices: _prev ? (s.savedInvoices || []).map(r0 => ((r0.InvoiceID === iid || (String(r0.InvoiceNo || "").trim().toLowerCase() === _invNoEdit)) ? rec : r0)) : [rec, ...(s.savedInvoices || [])] }));
     if (!/\/exec$/.test((this.state.backendUrl || '').trim())) { this.showToast('✓ Invoice saved (locally) — connect Sync to send to Google Sheet'); return; }
     this.showToast('⏳ Saving invoice…');
     this.backendPost_({ action: 'saveRow', tab: 'Invoices', record: rec })
-      .then(() => { this.showToast('✓ Invoice ' + invNo + ' saved'); this.loadInvoices(); })
+      .then(() => { this.showToast('✓ Invoice ' + invNo + (_prev ? ' updated' : ' saved')); this.loadInvoices(); })
       .catch(e => { console.error('Invoice save failed', e); this.showToast('Could not save invoice — check Sync'); });
   };
   onItemField = (key) => (e) => this.setState(s => ({ itemForm: { ...(s.itemForm || {}), [key]: e.target.value }, itemErr: '' }));
@@ -5873,7 +5875,7 @@ class Component extends DCLogic {
   cycleUnit = (i) => this.setState(s => ({ unitOpenRow: s.unitOpenRow === i ? null : i }));
   addRow = () => this.setState(s => ({ saleRows: [...s.saleRows, { item: '', desc: '', count: '', qty: '', unit: 'NONE', price: '' }] }));
   removeRow = (i) => window.confirm('Una uhakika unataka kufuta safu hii?') && this.setState(s => ({ saleRows: s.saleRows.filter((_, j) => j !== i) }));
-  updateQsSale = (i, key, val) => this.setState(s => ({ qsSales: s.qsSales.map((r, j) => j === i ? { ...r, [key]: val } : r) }));
+  updateQsSale = (i, key, val) => { this.setState(s => ({ qsSales: s.qsSales.map((r, j) => j === i ? { ...r, [key]: val } : r) })); if (key === 'price' || key === 'qty') { try { const r0 = (this.state.qsSales || [])[i] || {}; const q1 = parseFloat(String(key === 'qty' ? val : r0.qty).replace(/,/g, '')) || 0; const p1 = parseFloat(String(key === 'price' ? val : r0.price).replace(/,/g, '')) || 0; if (q1 === 1 && p1 >= 100000 && !this._qsPisiWarned) { this._qsPisiWarned = true; setTimeout(() => { this._qsPisiWarned = false; }, 8000); this.showToast('\u26a0\ufe0f Umeandika 1 @ Sh ' + p1.toLocaleString() + ' \u2014 kumbuka BEI ni ya PISI MOJA, si jumla! (mfano: Bahasha 600 @ 800)'); } } catch (e) {} } };
   updateQsExpense = (i, key, val) => this.setState(s => ({ qsExpenses: s.qsExpenses.map((r, j) => j === i ? { ...r, [key]: val } : r) }));
   qsNameHist_ = () => { try { return JSON.parse(localStorage.getItem('fp_name_hist') || '[]'); } catch (e) { return []; } };
   qsAddNameHist_ = (nm) => { nm = String(nm == null ? '' : nm).trim(); if (nm.length < 2) return; try { var h = this.qsNameHist_(); var low = h.map(function (x) { return String(x).toLowerCase(); }); if (low.indexOf(nm.toLowerCase()) === -1) { h.unshift(nm); localStorage.setItem('fp_name_hist', JSON.stringify(h.slice(0, 400))); this.forceUpdate && this.forceUpdate(); } } catch (e) {} };
@@ -8900,7 +8902,7 @@ class Component extends DCLogic {
     ['Bill To:','Kwa:'],
     ['Description','Maelezo'],
     ['Unit','Kipimo'],
-    ['Unit Price','Bei ya Kipimo'],
+    ['Unit Price','Bei ya PISI MOJA'],
     ['Sub Total','Jumla Ndogo'],
     ['Discount','Punguzo'],
     ['VAT','VAT'],
