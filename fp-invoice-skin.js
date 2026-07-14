@@ -41,7 +41,8 @@
     var url = backend(); if (!/\/exec$/.test(url)) return Promise.resolve([]);
     return fetch(url + '?action=getTable&tab=Invoices').then(function (r) { return r.json(); }).then(function (j) {
       DATA = (j.rows || []).filter(function (r) { return String(r.InvoiceNo || '').trim(); });
-      DATA.reverse();
+      // Newest first, robust to whatever order the backend returns. Undated rows last.
+      DATA.sort(function (a, b) { var da = parseD(a.Date), db = parseD(b.Date); var ta = da ? da.getTime() : -Infinity, tb = db ? db.getTime() : -Infinity; return tb - ta; });
       return DATA;
     }).catch(function () { return []; });
   }
