@@ -433,24 +433,18 @@
     }
     return el;
   }
-  // Completely REMOVE the app's old Sale Invoices page from render (not just cover it).
-  // We hide <main>'s own children so the old theme stops painting underneath — no
-  // "double page", no wasted weight. Restored automatically when leaving the page.
-  function hideApp() {
-    var m = document.querySelector('main'); if (!m) return;
-    for (var i = 0; i < m.children.length; i++) {
-      var c = m.children[i];
-      if (c.id === 'fpSkin') continue;
-      if (c.getAttribute('data-fphid') === '1') continue;
-      c.setAttribute('data-fphid', '1');
-      c.setAttribute('data-fpdisp', c.style.display || '');
-      c.style.display = 'none';
-    }
+  // Hide the app's own Sale Invoices page with a SINGLE CSS rule (not per-node JS every
+  // tick). Toggling one class on <html> is idempotent and doesn't fight React's
+  // re-renders — no layout thrash, no freeze, much lighter. #fpSkin lives on <html>
+  // (a sibling of <main>), so hiding <main> never hides our skin.
+  function ensureHideCss() {
+    if (document.getElementById('fpHideCss')) return;
+    var st = document.createElement('style'); st.id = 'fpHideCss';
+    st.textContent = 'html.fpInvActive main{display:none !important}';
+    (document.head || document.documentElement).appendChild(st);
   }
-  function showApp() {
-    var hid = document.querySelectorAll('[data-fphid="1"]');
-    for (var i = 0; i < hid.length; i++) { var c = hid[i]; c.style.display = c.getAttribute('data-fpdisp') || ''; c.removeAttribute('data-fphid'); c.removeAttribute('data-fpdisp'); }
-  }
+  function hideApp() { ensureHideCss(); document.documentElement.classList.add('fpInvActive'); }
+  function showApp() { document.documentElement.classList.remove('fpInvActive'); }
   // If we auto-defaulted to This Month but this month has no invoices yet,
   // fall back to showing ALL (most-recent-first, capped at 100) so the page is
   // never blank. Only fires for the auto default — a manual pick is respected.
@@ -465,7 +459,7 @@
     var on = isInvPage(); var el = document.getElementById('fpSkin');
     if (on) {
       if (!el) { el = shell(); }                       // opaque cover instantly — hides the old page (no flash)
-      hideApp();                                        // and REMOVE the old page from render entirely
+      hideApp();                                        // and REMOVE the old page from render entirely (CSS)
       if (DATA) { if (el.getAttribute('data-built') !== '1') { applyFilter(); autoExpandIfEmpty(); build(); } }
       else if (!busy) { busy = true; load().then(function () { busy = false; applyFilter(); autoExpandIfEmpty(); if (isInvPage()) build(); }); }
     } else { if (el) el.remove(); showApp(); }
