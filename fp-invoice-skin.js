@@ -33,8 +33,6 @@
     return fetch(url + '?action=getTable&tab=Invoices').then(function (r) { return r.json(); }).then(function (j) {
       DATA = (j.rows || []).filter(function (r) { return String(r.InvoiceNo || '').trim(); });
       DATA.reverse();
-      tot = 0; paid = 0; bal = 0;
-      DATA.forEach(function (r) { tot += num(r.TotalAmount); paid += num(r.PaidAmount); bal += num(r.Balance); });
       return DATA;
     }).catch(function () { return []; });
   }
@@ -162,12 +160,12 @@
     el.querySelectorAll('.fpChart').forEach(function (b) { b.onclick = function (e) { e.stopPropagation(); summaryModal(); }; });
     el.querySelectorAll('.fpFocusSearch').forEach(function (b) { b.onclick = function () { var i = document.getElementById('fpSearch'); if (i) i.focus(); }; });
     el.querySelectorAll('.fpTopMenu').forEach(function (b) { b.onclick = function (e) { e.stopPropagation(); miniMenu(b, [['Onyesha upya', function () { DATA = null; load().then(function () { applyFilter(); build(); }); }], ['Pakua Excel (CSV)', exportCSV], ['Chapa orodha', printList], ['Muhtasari', summaryModal]]); }; });
-    var pc = el.querySelector('.fpPeriod'); if (pc) pc.onclick = function (e) { e.stopPropagation(); miniMenu(pc, [['All Sale Invoices', function () { setPeriod('All Sale Invoices', '', ''); }], ['This Month', function () { setPeriod('This Month', monthStart(), monthEnd()); }], ['Last Month', function () { var r = lastMonthRange(); setPeriod('Last Month', r[0], r[1]); }], ['This Quarter', function () { setPeriod('This Quarter', quarterStart(), todayStr()); }], ['This Year', function () { setPeriod('This Year', yearStart(), todayStr()); }], ['Custom', function () { setPeriod('Custom', fromISO, toISO); }]]); };
+    var pc = el.querySelector('.fpPeriod'); if (pc) pc.onclick = function (e) { e.stopPropagation(); miniMenu(pc, [['Leo (Today)', function () { setPeriod('Leo', todayStr(), todayStr()); }], ['This Month', function () { setPeriod('This Month', monthStart(), monthEnd()); }], ['Last Month', function () { var r = lastMonthRange(); setPeriod('Last Month', r[0], r[1]); }], ['This Quarter', function () { setPeriod('This Quarter', quarterStart(), todayStr()); }], ['This Year', function () { setPeriod('This Year', yearStart(), todayStr()); }], ['All Sale Invoices', function () { setPeriod('All', '', ''); }]]); };
     var ff = el.querySelector('#fpFrom'); if (ff) ff.onchange = function () { fromISO = this.value || ''; periodLabel = 'Custom'; refresh(); };
     var ft = el.querySelector('#fpTo'); if (ft) ft.onchange = function () { toISO = this.value || ''; periodLabel = 'Custom'; refresh(); };
     var fm = el.querySelector('.fpFirms'); if (fm) fm.onclick = function (e) { e.stopPropagation(); miniMenu(fm, [['All Firms', function () {}], ['FEMMAS PRINT', function () {}]]); };
     var fu = el.querySelector('.fpUsers'); if (fu) fu.onclick = function (e) { e.stopPropagation(); miniMenu(fu, [['All Users', function () {}]]); };
-    var fcl = el.querySelector('.fpClear'); if (fcl) fcl.onclick = function () { q = ''; fromISO = ''; toISO = ''; periodLabel = 'Custom'; var si = document.getElementById('fpSearch'); if (si) si.value = ''; build(); };
+    var fcl = el.querySelector('.fpClear'); if (fcl) fcl.onclick = function () { q = ''; setPeriod('This Month', monthStart(), monthEnd()); var si = document.getElementById('fpSearch'); if (si) si.value = ''; build(); };
     attachRows(el);
   }
   function clickApp(re) { var b = Array.prototype.slice.call(document.querySelectorAll('main button, header button')).find(function (x) { return re.test((x.textContent || '').trim()); }); if (b) b.click(); }
@@ -217,9 +215,9 @@
     if (k === 'edit') openInvoiceBuilder(rec);
     else if (k === 'preview' || k === 'openpdf' || k === 'print') openPreview(rec);
     else if (k === 'challan') openPreview(rec, true);
-    else if (k === 'payhist') modal('Payment History', '<div style="padding:18px 20px;font-size:14px;line-height:2">Received during Sale : <b>' + Math.round(num(rec.PaidAmount)).toLocaleString('en-US') + '</b>' + (num(rec.Balance) > 0 ? '<br>Balance : <b style="color:#993c1d">' + Math.round(num(rec.Balance)).toLocaleString('en-US') + '</b>' : '') + '</div>', '<span class="fpx" style="border:1px solid #185fa5;color:#185fa5;border-radius:20px;padding:7px 15px;font-size:13px;font-weight:600;cursor:pointer">CLOSE</span>');
-    else if (k === 'recvpay') modal('Receive Payment', '<div style="padding:20px;font-size:14px;line-height:1.9">Salio linalodaiwa (Balance due): <b style="color:#993c1d">' + money(rec.Balance) + '</b><br><br>Kupokea malipo (record payment) kunaunganishwa na backend salama — kinakuja hatua inayofuata.</div>', '<span class="fpx" style="border:1px solid #185fa5;color:#185fa5;border-radius:20px;padding:7px 15px;font-size:13px;font-weight:600;cursor:pointer">Sawa</span>');
-    else modal(({ 'return': 'Convert To Return', 'cancel': 'Cancel Invoice', 'delete': 'Delete', 'dup': 'Duplicate', 'hist': 'View History' })[k] || 'Kitendo', '<div style="padding:20px;font-size:14px;line-height:1.6">Kitendo hiki kinaunganishwa na backend salama — kinakuja hatua inayofuata.</div>', '<span class="fpx" style="border:1px solid #cbd5e1;color:#334155;border-radius:20px;padding:7px 15px;font-size:13px;font-weight:600;cursor:pointer">Sawa</span>');
+    else if (k === 'payhist') modal('Payment History', '<div style="background:#fff;border:1px solid #e6ebf2;border-radius:14px;padding:18px 20px;font-size:14px;line-height:2">Received during Sale : <b>' + Math.round(num(rec.PaidAmount)).toLocaleString('en-US') + '</b>' + (num(rec.Balance) > 0 ? '<br>Balance : <b style="color:#993c1d">' + Math.round(num(rec.Balance)).toLocaleString('en-US') + '</b>' : '') + '</div>', '<span class="fpx" style="border:1px solid #185fa5;color:#185fa5;border-radius:20px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer">CLOSE</span>');
+    else if (k === 'recvpay') modal('Receive Payment', '<div style="background:#fff;border:1px solid #e6ebf2;border-radius:14px;padding:20px;font-size:14px;line-height:1.9">Salio linalodaiwa (Balance due): <b style="color:#993c1d">' + money(rec.Balance) + '</b><br><br>Kupokea malipo (record payment) kunaunganishwa na backend salama — kinakuja hatua inayofuata.</div>', '<span class="fpx" style="border:1px solid #185fa5;color:#185fa5;border-radius:20px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer">Sawa</span>');
+    else modal(({ 'return': 'Convert To Return', 'cancel': 'Cancel Invoice', 'delete': 'Delete', 'dup': 'Duplicate', 'hist': 'View History' })[k] || 'Kitendo', '<div style="background:#fff;border:1px solid #e6ebf2;border-radius:14px;padding:20px;font-size:14px;line-height:1.6">Kitendo hiki kinaunganishwa na backend salama — kinakuja hatua inayofuata.</div>', '<span class="fpx" style="border:1px solid #cbd5e1;color:#334155;border-radius:20px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer">Sawa</span>');
   }
 
   /* ---- New / Edit Invoice builder (skin-side, real line items) ---- */
@@ -404,7 +402,7 @@
     } else { if (el) el.remove(); }
   }
   function ready(fn) { if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fn); else fn(); }
-  ready(function () { tick(); setInterval(tick, 400); });
+  ready(function () { if (!fromISO && !toISO && periodLabel === 'Custom') { fromISO = monthStart(); toISO = monthEnd(); periodLabel = 'This Month'; } tick(); setInterval(tick, 400); });
 })();
 
 /* FEMMAS PRINT — Quick Sale daily-expense "removed today" fix.
@@ -426,7 +424,6 @@
     function addRemoved(name) { try { var n = String(name || '').trim(); if (!n) return; var a = removedList(); if (a.map(function (s) { return String(s).trim().toLowerCase(); }).indexOf(n.toLowerCase()) < 0) { a.push(n); origSet(remKey(), JSON.stringify(a)); } } catch (e) {} }
     function tplNamesLower() { try { return (JSON.parse(origGet(TPL) || '[]') || []).map(function (x) { return String(x && x.name || '').trim().toLowerCase(); }).filter(Boolean); } catch (e) { return []; } }
 
-    // 1) Seeding read: hide today's removed names from the template the app seeds from.
     LS.getItem = function (k) {
       var v = origGet(k);
       if (k === TPL && v) {
@@ -441,8 +438,6 @@
       return v;
     };
 
-    // 2) Persist guard: whenever the template is re-saved, keep any name that is
-    // "removed today" but still in the stored master template (so it returns tomorrow).
     LS.setItem = function (k, val) {
       if (k === TPL) {
         try {
@@ -459,8 +454,6 @@
       return origSet(k, val);
     };
 
-    // 3) Record a deletion: when a Nauli/template row is deleted (confirmed), mark it
-    // removed for today so the seeder won't bring it back until tomorrow.
     var pendingEl = null;
     document.addEventListener('click', function (e) { pendingEl = e.target; }, true);
     function nameFromEl(el) { var scan = el; for (var d = 0; d < 8 && scan; d++) { if (scan.querySelectorAll) { var ins = scan.querySelectorAll('input'); for (var i = 0; i < ins.length; i++) { var val = (ins[i].value || '').trim(); if (val) return val; } } scan = scan.parentElement; } return ''; }
