@@ -153,7 +153,7 @@
   function wire(el) {
     var s = el.querySelector('#fpSearch');
     if (s) s.oninput = function () { q = this.value.trim().toLowerCase(); refresh(); };
-    el.querySelectorAll('.fpAdd').forEach(function (b) { b.onclick = function () { clickApp(/^\+?\s*Sale$/i); }; });
+    el.querySelectorAll('.fpAdd').forEach(function (b) { b.onclick = function () { openInvoiceBuilder(); }; });
     el.querySelectorAll('.fpAddP').forEach(function (b) { b.onclick = function () { clickApp(/^\+?\s*Purchase$/i); }; });
     el.querySelectorAll('.fpAddPlus').forEach(function (b) { b.onclick = function (e) { e.stopPropagation(); miniMenu(b, addMoreItems()); }; });
     var ts = el.querySelector('.fpTitleSwitch'); if (ts) ts.onclick = function (e) { e.stopPropagation(); miniMenu(ts, [['Sale Invoices', function () { clickNav(/Sale Invoices/i); }], ['Estimate / Quotation', function () { clickNav(/Estimate/i); }], ['Proforma Invoice', function () { clickNav(/Proforma/i); }], ['Payment-In', function () { clickNav(/Payment-?In/i); }], ['Sale Order', function () { clickNav(/Sale Order/i); }], ['Delivery Challan', function () { clickNav(/Delivery Challan/i); }], ['Sale Return / Credit Note', function () { clickNav(/Sale Return/i); }]]); };
@@ -172,7 +172,7 @@
   }
   function clickApp(re) { var b = Array.prototype.slice.call(document.querySelectorAll('main button, header button')).find(function (x) { return re.test((x.textContent || '').trim()); }); if (b) b.click(); }
   function clickNav(re) { var a = Array.prototype.slice.call(document.querySelectorAll('aside a, aside button, nav a, main button')).find(function (x) { return re.test((x.textContent || '').trim()); }); if (a) a.click(); }
-  function addMoreItems() { return [['Sale Invoice', function () { clickApp(/^\+?\s*Sale$/i); }], ['Payment-In', function () { clickNav(/Payment-?In/i); }], ['Sale Return / Credit Note', function () { clickNav(/Sale Return/i); }], ['Sale Order', function () { clickNav(/Sale Order/i); }], ['Estimate / Quotation', function () { clickNav(/Estimate/i); }], ['Proforma Invoice', function () { clickNav(/Proforma/i); }], ['Delivery Challan', function () { clickNav(/Delivery Challan/i); }], ['Purchase Bill', function () { clickApp(/^\+?\s*Purchase$/i); }]]; }
+  function addMoreItems() { return [['Sale Invoice', function () { openInvoiceBuilder(); }], ['Payment-In', function () { clickNav(/Payment-?In/i); }], ['Sale Return / Credit Note', function () { clickNav(/Sale Return/i); }], ['Sale Order', function () { clickNav(/Sale Order/i); }], ['Estimate / Quotation', function () { clickNav(/Estimate/i); }], ['Proforma Invoice', function () { clickNav(/Proforma/i); }], ['Delivery Challan', function () { clickNav(/Delivery Challan/i); }], ['Purchase Bill', function () { clickApp(/^\+?\s*Purchase$/i); }]]; }
 
   function recFor(no) { return (DATA || []).find(function (r) { return String(r.InvoiceNo) === String(no); }) || {}; }
 
@@ -221,11 +221,80 @@
     else modal(({ 'return': 'Convert To Return', 'cancel': 'Cancel Invoice', 'delete': 'Delete', 'dup': 'Duplicate', 'hist': 'View History' })[k] || 'Kitendo', '<div style="padding:20px;font-size:14px;line-height:1.6">Kitendo hiki kinaunganishwa na backend salama — kinakuja hatua inayofuata.</div>', '<span class="fpx" style="border:1px solid #cbd5e1;color:#334155;border-radius:20px;padding:7px 15px;font-size:13px;font-weight:600;cursor:pointer">Sawa</span>');
   }
 
+  /* ---- New Invoice builder (skin-side, real line items; saves invoice via the
+   * app's existing generic saveRow, items kept per-invoice in localStorage) ---- */
+  var nbItems = [];
+  function invItemsKey(no) { return 'fp_inv_items_' + String(no).replace(/[^A-Za-z0-9]/g, '_'); }
+  function loadInvItems(no) { try { var a = JSON.parse(localStorage.getItem(invItemsKey(no)) || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } }
+  function nextInvNo() { var max = 0; (DATA || []).forEach(function (r) { var m = String(r.InvoiceNo || '').match(/(\d+)\s*$/); if (m) { var n = +m[1]; if (n > max) max = n; } }); return 'FP/INV/' + String(max + 1).padStart(4, '0'); }
+  function nbTotal() { var t = 0; nbItems.forEach(function (it) { t += (num(it.qty) || 0) * (num(it.price) || 0); }); return t; }
+  function nbRowsHTML() {
+    return nbItems.map(function (it, i) {
+      var amt = (num(it.qty) || 0) * (num(it.price) || 0);
+      return '<tr data-i="' + i + '"><td style="padding:4px"><input class="nbF" data-k="name" value="' + esc(it.name || '') + '" placeholder="Item / Kazi" style="width:100%;border:1px solid #dbe3ec;border-radius:8px;padding:7px 9px;font:inherit"></td>'
+        + '<td style="padding:4px;width:64px"><input class="nbF" data-k="qty" value="' + esc(it.qty || '') + '" inputmode="decimal" style="width:100%;border:1px solid #dbe3ec;border-radius:8px;padding:7px 9px;font:inherit;text-align:right"></td>'
+        + '<td style="padding:4px;width:66px"><input class="nbF" data-k="unit" value="' + esc(it.unit || '') + '" placeholder="Pcs" style="width:100%;border:1px solid #dbe3ec;border-radius:8px;padding:7px 9px;font:inherit"></td>'
+        + '<td style="padding:4px;width:104px"><input class="nbF" data-k="price" value="' + esc(it.price || '') + '" inputmode="decimal" style="width:100%;border:1px solid #dbe3ec;border-radius:8px;padding:7px 9px;font:inherit;text-align:right"></td>'
+        + '<td style="padding:4px;text-align:right;white-space:nowrap;font-weight:600;font-size:12px">' + money(amt) + '</td>'
+        + '<td style="padding:4px"><span class="nbDel" data-i="' + i + '" style="cursor:pointer;color:#e2483d;font-size:18px">&times;</span></td></tr>';
+    }).join('');
+  }
+  function openInvoiceBuilder() {
+    nbItems = [{ name: '', qty: '1', unit: 'Pcs', price: '' }];
+    var body = '<div style="padding:16px 20px">'
+      + '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px">'
+      + '<label style="flex:1;min-width:180px;font-size:12px;color:#475569">Customer <span style="color:#e11d48">*</span><input id="nbCust" placeholder="Jina la mteja" style="width:100%;margin-top:4px;border:1px solid #dbe3ec;border-radius:9px;padding:9px 11px;font:inherit"></label>'
+      + '<label style="width:150px;font-size:12px;color:#475569">Phone<input id="nbPhone" placeholder="0..." style="width:100%;margin-top:4px;border:1px solid #dbe3ec;border-radius:9px;padding:9px 11px;font:inherit"></label>'
+      + '<label style="width:150px;font-size:12px;color:#475569">Date<input id="nbDate" type="date" style="width:100%;margin-top:4px;border:1px solid #dbe3ec;border-radius:9px;padding:9px 11px;font:inherit"></label>'
+      + '</div>'
+      + '<table style="width:100%;border-collapse:collapse"><thead><tr style="text-align:left;font-size:11px;color:#64748b"><th style="padding:4px 5px">Item / Kazi</th><th style="padding:4px 5px;text-align:right">Qty</th><th style="padding:4px 5px">Unit</th><th style="padding:4px 5px;text-align:right">Price</th><th style="padding:4px 5px;text-align:right">Amount</th><th></th></tr></thead><tbody id="nbBody">' + nbRowsHTML() + '</tbody></table>'
+      + '<div style="margin-top:8px"><span id="nbAdd" style="cursor:pointer;color:#185fa5;font-weight:600;font-size:13px">+ Ongeza item</span></div>'
+      + '<div style="display:flex;justify-content:flex-end;gap:22px;margin-top:14px;align-items:center"><label style="font-size:12px;color:#475569">Paid<input id="nbPaid" inputmode="decimal" placeholder="0" style="width:130px;margin-left:8px;border:1px solid #dbe3ec;border-radius:9px;padding:8px 10px;font:inherit;text-align:right"></label><div style="font-size:15px;font-weight:800">Total: <span id="nbTot">' + money(nbTotal()) + '</span></div></div>'
+      + '<div id="nbErr" style="color:#e11d48;font-size:12.5px;margin-top:8px"></div>'
+      + '</div>';
+    modal('New Invoice', body, '<span class="fpx fpbtn" style="border:1px solid #cbd5e1;color:#334155;border-radius:20px;padding:8px 16px;font-weight:600;cursor:pointer">Ghairi</span><span id="nbSave" class="fpbtn" style="border:none;background:#e2483d;color:#fff;border-radius:20px;padding:8px 18px;font-weight:700;cursor:pointer">Save Invoice</span>');
+    var dEl = document.getElementById('nbDate'); if (dEl) dEl.value = todayStr();
+    wireBuilder();
+  }
+  function wireBuilder() {
+    var body = document.getElementById('nbBody');
+    function reRows() { if (body) { body.innerHTML = nbRowsHTML(); bindRows(); } var tt = document.getElementById('nbTot'); if (tt) tt.textContent = money(nbTotal()); }
+    function bindRows() {
+      body.querySelectorAll('.nbF').forEach(function (inp) { inp.oninput = function () { var tr = inp.closest('tr'); var i = +tr.getAttribute('data-i'); var k = inp.getAttribute('data-k'); if (nbItems[i]) nbItems[i][k] = inp.value; var amtCell = tr.children[4]; if (amtCell) amtCell.textContent = money((num(nbItems[i].qty) || 0) * (num(nbItems[i].price) || 0)); var tt = document.getElementById('nbTot'); if (tt) tt.textContent = money(nbTotal()); }; });
+      body.querySelectorAll('.nbDel').forEach(function (x) { x.onclick = function () { var i = +x.getAttribute('data-i'); nbItems.splice(i, 1); if (!nbItems.length) nbItems = [{ name: '', qty: '1', unit: 'Pcs', price: '' }]; reRows(); }; });
+    }
+    if (body) bindRows();
+    var add = document.getElementById('nbAdd'); if (add) add.onclick = function () { nbItems.push({ name: '', qty: '1', unit: 'Pcs', price: '' }); reRows(); };
+    var sv = document.getElementById('nbSave'); if (sv) sv.onclick = saveNewInvoice;
+  }
+  function saveNewInvoice() {
+    var cust = ((document.getElementById('nbCust') || {}).value || '').trim();
+    var err = document.getElementById('nbErr');
+    var items = nbItems.filter(function (it) { return (it.name || '').trim() && num(it.price) > 0; });
+    if (!cust) { if (err) err.textContent = 'Weka jina la mteja.'; return; }
+    if (!items.length) { if (err) err.textContent = 'Weka angalau item moja yenye jina na bei.'; return; }
+    var total = nbTotal(), paid = num((document.getElementById('nbPaid') || {}).value || 0), bal = total - paid;
+    var status = bal <= 0 ? 'Paid' : (paid > 0 ? 'Partial' : 'Unpaid');
+    var dv = (document.getElementById('nbDate') || {}).value || todayStr();
+    var phone = (document.getElementById('nbPhone') || {}).value || '';
+    var no = nextInvNo();
+    var rec = { InvoiceNo: no, Date: dv, CustomerName: cust, Phone: phone, TotalAmount: total, PaidAmount: paid, Balance: bal, Status: status };
+    try { localStorage.setItem(invItemsKey(no), JSON.stringify(items.map(function (it) { return { name: it.name, qty: it.qty || '1', unit: it.unit || '', price: it.price, amount: (num(it.qty) || 0) * (num(it.price) || 0) }; }))); } catch (e) {}
+    var url = backend(); var sv = document.getElementById('nbSave'); if (sv) { sv.textContent = 'Inahifadhi…'; sv.onclick = null; }
+    fetch(url, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: 'saveRow', tab: 'Invoices', record: rec }) }).then(function (r) { return r.json(); }).then(function () {
+      closeOv(); nbItems = []; DATA = null; load().then(function () { applyFilter(); build(); });
+    }).catch(function () { if (err) err.textContent = 'Imeshindwa kuhifadhi — angalia Sync.'; if (sv) { sv.textContent = 'Save Invoice'; sv.onclick = saveNewInvoice; } });
+  }
+
   /* ---- A4 invoice preview — matches the "utu kwanza" (Invoice 815) Vyapar layout ---- */
   function sheetHTML(d, wp) {
     function md(n) { return 'Sh ' + Math.round(num(n)).toLocaleString('en-US') + '.0'; }
     function dd(s) { if (!s) return ''; var x = new Date(s); if (isNaN(x.getTime())) return String(s); return ('0' + x.getDate()).slice(-2) + '-' + ('0' + (x.getMonth() + 1)).slice(-2) + '-' + x.getFullYear(); }
     var total = num(d.TotalAmount), paid = num(d.PaidAmount), bal = num(d.Balance); var BLUE = '#0979a7';
+    var its = loadInvItems(d.InvoiceNo); var real = its.length > 0; var qsum = 0;
+    if (real) its.forEach(function (it) { qsum += (num(it.qty) || 0); }); else qsum = 1;
+    var itemRows = real ? its.map(function (it, i) { var amt = num(it.amount) || (num(it.qty) || 0) * (num(it.price) || 0); return '<tr><td style="padding:9px 10px;border-bottom:1px solid #e5e9ef;vertical-align:top">' + (i + 1) + '</td><td style="padding:9px 10px;border-bottom:1px solid #e5e9ef"><div style="font-weight:700">' + esc(it.name || '') + '</div></td><td style="padding:9px 10px;border-bottom:1px solid #e5e9ef;text-align:right">' + esc(it.qty || '1') + '</td><td style="padding:9px 10px;border-bottom:1px solid #e5e9ef;text-align:right">' + esc(it.unit || '—') + '</td>' + (wp ? '' : '<td style="padding:9px 10px;border-bottom:1px solid #e5e9ef;text-align:right">' + md(num(it.price)) + '</td><td style="padding:9px 10px;border-bottom:1px solid #e5e9ef;text-align:right">' + md(amt) + '</td>') + '</tr>'; }).join('')
+      : '<tr><td style="padding:9px 10px;border-bottom:1px solid #e5e9ef;vertical-align:top">1</td><td style="padding:9px 10px;border-bottom:1px solid #e5e9ef"><div style="font-weight:700">Kazi / Huduma</div><div style="font-size:10.5px;color:#8a8f98">(Goods / Services)</div></td><td style="padding:9px 10px;border-bottom:1px solid #e5e9ef;text-align:right">1</td><td style="padding:9px 10px;border-bottom:1px solid #e5e9ef;text-align:right">—</td>' + (wp ? '' : '<td style="padding:9px 10px;border-bottom:1px solid #e5e9ef;text-align:right">' + md(total) + '</td><td style="padding:9px 10px;border-bottom:1px solid #e5e9ef;text-align:right">' + md(total) + '</td>') + '</tr>';
     return '<div id="fpSheet" style="position:relative;overflow:hidden;background:#fff;color:#1f2733;max-width:794px;margin:0 auto;padding:34px 40px;font-family:Asap,Arial,sans-serif;font-size:12.5px">'
       + '<img src="/femmas-logo-03-mqrt99vq.png" alt="" style="position:absolute;top:52%;left:50%;transform:translate(-50%,-50%) rotate(-18deg);width:66%;opacity:.06;pointer-events:none;z-index:0">'
       + '<div style="position:relative;z-index:1">'
@@ -233,8 +302,8 @@
       + '<div style="text-align:center;font-size:24px;font-weight:800;color:' + BLUE + ';padding:16px 0 12px">' + (wp ? 'Delivery Challan' : 'Invoice') + '</div>'
       + '<div style="display:flex;justify-content:space-between;gap:16px"><div><div style="font-weight:800">Bill To</div><div style="font-weight:800;margin-top:4px">' + esc((d.CustomerName || '—').toUpperCase()) + '</div></div><div style="text-align:right"><div style="font-weight:800">Invoice Details</div><div style="margin-top:4px;line-height:1.9">Invoice No. : ' + esc(d.InvoiceNo || '') + '<br>Date : ' + dd(d.Date) + '</div></div></div>'
       + '<table style="width:100%;border-collapse:collapse;margin-top:14px"><thead><tr style="background:' + BLUE + ';color:#fff;text-align:left;font-size:11.5px"><th style="padding:8px 10px">#</th><th style="padding:8px 10px">Item name</th><th style="padding:8px 10px;text-align:right">Quantity</th><th style="padding:8px 10px;text-align:right">Unit</th>' + (wp ? '' : '<th style="padding:8px 10px;text-align:right">Price/ Unit</th><th style="padding:8px 10px;text-align:right">Amount</th>') + '</tr></thead><tbody>'
-      + '<tr><td style="padding:9px 10px;border-bottom:1px solid #e5e9ef;vertical-align:top">1</td><td style="padding:9px 10px;border-bottom:1px solid #e5e9ef"><div style="font-weight:700">Kazi / Huduma</div><div style="font-size:10.5px;color:#8a8f98">(Goods / Services)</div></td><td style="padding:9px 10px;border-bottom:1px solid #e5e9ef;text-align:right">1</td><td style="padding:9px 10px;border-bottom:1px solid #e5e9ef;text-align:right">—</td>' + (wp ? '' : '<td style="padding:9px 10px;border-bottom:1px solid #e5e9ef;text-align:right">' + md(total) + '</td><td style="padding:9px 10px;border-bottom:1px solid #e5e9ef;text-align:right">' + md(total) + '</td>') + '</tr>'
-      + '<tr><td style="padding:9px 10px"></td><td style="padding:9px 10px;font-weight:800">Total</td><td style="padding:9px 10px;text-align:right;font-weight:800">1</td><td></td>' + (wp ? '' : '<td></td><td style="padding:9px 10px;text-align:right;font-weight:800">' + md(total) + '</td>') + '</tr></tbody></table>'
+      + itemRows
+      + '<tr><td style="padding:9px 10px"></td><td style="padding:9px 10px;font-weight:800">Total</td><td style="padding:9px 10px;text-align:right;font-weight:800">' + qsum + '</td><td></td>' + (wp ? '' : '<td></td><td style="padding:9px 10px;text-align:right;font-weight:800">' + md(total) + '</td>') + '</tr></tbody></table>'
       + (wp ? '<div style="margin-top:12px;font-size:11px;color:#5b6675">Hati ya usafirishaji — items na idadi tu (bila bei).</div>' : '<div style="display:flex;justify-content:space-between;gap:26px;margin-top:16px"><div style="flex:1;font-size:11.5px;line-height:1.6"><div style="margin-bottom:10px"><strong>Invoice Amount in Words:</strong> ' + numToWords(total) + ' only</div><div style="margin-bottom:10px"><strong>Payment mode:</strong> FP BANK</div><div style="margin-bottom:10px"><strong>Terms and Conditions</strong> Validity of Price: 30 Days from Date of Issue.<br>Delivery Period: 7 Days after approval of artwork.<br>Payment terms: 70% advance, 30% ON DELIVERY!</div><div style="margin-bottom:10px">Payment Details:<br>Account Name: Femmas Print<br>Account no: 0150322619500 (CRDB Bank)</div><div style="margin-bottom:10px">Merchant Name: Femmas Print<br>Lipa Number: 5521084 (Tigo)<br>Lipa Number: 5767888 (Voda)</div><div style="margin-top:14px"><strong>Bank Details</strong><br>Name : CRDB BANK<br>Account No. : 0150322619500<br>Account holder\'s name : FEMMAS PRINT</div></div><div style="width:270px;font-size:12.5px"><div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #eef1f5"><span>Sub Total</span><span>' + md(total) + '</span></div><div style="display:flex;justify-content:space-between;padding:9px 0;font-weight:800;border-top:2px solid #1f2733;border-bottom:2px solid #1f2733"><span>Total</span><span>' + md(total) + '</span></div><div style="display:flex;justify-content:space-between;padding:6px 0"><span>Received</span><span>' + md(paid) + '</span></div><div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #eef1f5"><span>Balance</span><span>' + md(bal) + '</span></div><div style="display:flex;justify-content:space-between;padding:6px 0;margin-top:10px"><span>Previous Balance</span><span>Sh 0.0</span></div><div style="display:flex;justify-content:space-between;padding:6px 0"><span>Current Balance</span><span>' + md(bal) + '</span></div></div></div>')
       + '<div style="display:flex;justify-content:flex-end;margin-top:26px"><div style="text-align:center;width:210px"><div style="font-size:12px;margin-bottom:2px">For : <strong>FEMMAS PRINT</strong></div><img src="/femmas-signature.png" style="height:46px;object-fit:contain;display:block;margin:0 auto;mix-blend-mode:multiply"><div style="font-weight:800;font-size:12px;margin-top:2px">Authorized Signatory</div></div></div>'
       + '</div></div>';
