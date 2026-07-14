@@ -391,7 +391,7 @@
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { closeMenu(); closeOv(); } });
   window.addEventListener('scroll', closeMenu, true);
 
-  var busy = false, t = null;
+  var busy = false, t = null, autoMonthDefault = false;
   function shell() {
     var el = document.getElementById('fpSkin');
     if (!el) {
@@ -420,17 +420,27 @@
     var hid = document.querySelectorAll('[data-fphid="1"]');
     for (var i = 0; i < hid.length; i++) { var c = hid[i]; c.style.display = c.getAttribute('data-fpdisp') || ''; c.removeAttribute('data-fphid'); c.removeAttribute('data-fpdisp'); }
   }
+  // If we auto-defaulted to This Month but this month has no invoices yet,
+  // fall back to showing ALL (most-recent-first, capped at 100) so the page is
+  // never blank. Only fires for the auto default — a manual pick is respected.
+  function autoExpandIfEmpty() {
+    if (autoMonthDefault && view.length === 0) {
+      autoMonthDefault = false;
+      fromISO = ''; toISO = ''; periodLabel = 'All';
+      applyFilter();
+    }
+  }
   function tick() {
     var on = isInvPage(); var el = document.getElementById('fpSkin');
     if (on) {
       if (!el) { el = shell(); }                       // opaque cover instantly — hides the old page (no flash)
       hideApp();                                        // and REMOVE the old page from render entirely
-      if (DATA) { if (el.getAttribute('data-built') !== '1') { applyFilter(); build(); } }
-      else if (!busy) { busy = true; load().then(function () { busy = false; applyFilter(); if (isInvPage()) build(); }); }
+      if (DATA) { if (el.getAttribute('data-built') !== '1') { applyFilter(); autoExpandIfEmpty(); build(); } }
+      else if (!busy) { busy = true; load().then(function () { busy = false; applyFilter(); autoExpandIfEmpty(); if (isInvPage()) build(); }); }
     } else { if (el) el.remove(); showApp(); }
   }
   function ready(fn) { if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fn); else fn(); }
-  ready(function () { if (!fromISO && !toISO && periodLabel === 'Custom') { fromISO = monthStart(); toISO = monthEnd(); periodLabel = 'This Month'; } tick(); setInterval(tick, 400); });
+  ready(function () { if (!fromISO && !toISO && periodLabel === 'Custom') { fromISO = monthStart(); toISO = monthEnd(); periodLabel = 'This Month'; autoMonthDefault = true; } tick(); setInterval(tick, 400); });
 })();
 
 /* FEMMAS PRINT — Quick Sale daily-expense "removed today" fix.
