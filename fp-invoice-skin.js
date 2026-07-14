@@ -244,7 +244,7 @@
   function closeOv() { if (ov) { ov.remove(); ov = null; } }
   function modal(title, body, foot) {
     closeOv();
-    ov = document.createElement('div');
+    ov = document.createElement('div'); ov.id = 'fpOverlay';
     ov.style.cssText = 'position:fixed;inset:0;z-index:2147483500;background:rgba(15,23,42,.5);display:flex;align-items:center;justify-content:center;padding:16px';
     ov.innerHTML = '<div style="background:#fff;color:#1f2733;border-radius:12px;max-width:860px;width:100%;max-height:92vh;display:flex;flex-direction:column;box-shadow:0 26px 64px rgba(0,0,0,.4)"><div style="display:flex;align-items:center;justify-content:space-between;padding:13px 18px;border-bottom:1px solid #e6ebf2;font-weight:600;font-size:16px">' + title + '<span class="fpx" style="cursor:pointer;font-size:22px;color:#94a3b8">&times;</span></div><div style="overflow:auto">' + body + '</div>' + (foot ? '<div style="display:flex;gap:8px;justify-content:flex-end;padding:12px 18px;border-top:1px solid #e6ebf2">' + foot + '</div>' : '') + '</div>';
     ov.addEventListener('click', function (e) { if (e.target === ov || e.target.closest('.fpx')) { closeOv(); return; } if (e.target.closest('.fpPrint')) { printSheet(); } else if (e.target.closest('.fpShare')) { shareInvoice(curDoc || {}); } });
@@ -260,7 +260,7 @@
     var sh = document.getElementById('fpSheet'); if (!sh) return;
     var old = document.getElementById('fpPrintArea'); if (old) old.remove();
     var area = document.createElement('div'); area.id = 'fpPrintArea'; area.innerHTML = sh.outerHTML;
-    if (!document.getElementById('fpPrintStyle')) { var ps = document.createElement('style'); ps.id = 'fpPrintStyle'; ps.textContent = '@media print{ body{display:none !important} #fpSkin{display:none !important} #fpPrintArea{display:block !important} }'; document.head.appendChild(ps); }
+    if (!document.getElementById('fpPrintStyle')) { var ps = document.createElement('style'); ps.id = 'fpPrintStyle'; ps.textContent = '@media print{ body{display:none !important} #fpSkin{display:none !important} #fpOverlay{display:none !important} #fpPrintArea{display:block !important} }'; document.head.appendChild(ps); }
     document.documentElement.appendChild(area);
     setTimeout(function () { try { window.print(); } catch (e) {} setTimeout(function () { var a = document.getElementById('fpPrintArea'); if (a) a.remove(); }, 900); }, 120);
   }
@@ -273,7 +273,7 @@
     var html = '<div id="fpSheet" style="font-family:Asap,sans-serif;color:#1f2733;padding:24px"><div style="display:flex;justify-content:space-between;align-items:flex-end;border-bottom:3px solid #13315a;padding-bottom:10px;margin-bottom:12px"><div style="font-size:18px;font-weight:800;color:#13315a">FEMMAS PRINT — Sale Invoices</div><div style="font-size:11.5px;color:#5b6675">Total: ' + money(tot) + ' &middot; Received: ' + money(paid) + ' &middot; Balance: ' + money(bal) + '</div></div><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#13315a;color:#fff;text-align:left"><th style="padding:7px 8px">#</th><th style="padding:7px 8px">Date</th><th style="padding:7px 8px">Invoice no</th><th style="padding:7px 8px">Party Name</th><th style="padding:7px 8px;text-align:right">Amount</th><th style="padding:7px 8px;text-align:right">Balance</th><th style="padding:7px 8px">Status</th></tr></thead><tbody>' + body + '</tbody></table></div>';
     var old = document.getElementById('fpPrintArea'); if (old) old.remove();
     var area = document.createElement('div'); area.id = 'fpPrintArea'; area.innerHTML = html;
-    if (!document.getElementById('fpPrintStyle')) { var ps = document.createElement('style'); ps.id = 'fpPrintStyle'; ps.textContent = '@media print{ body{display:none !important} #fpSkin{display:none !important} #fpPrintArea{display:block !important} }'; document.head.appendChild(ps); }
+    if (!document.getElementById('fpPrintStyle')) { var ps = document.createElement('style'); ps.id = 'fpPrintStyle'; ps.textContent = '@media print{ body{display:none !important} #fpSkin{display:none !important} #fpOverlay{display:none !important} #fpPrintArea{display:block !important} }'; document.head.appendChild(ps); }
     document.documentElement.appendChild(area);
     setTimeout(function () { try { window.print(); } catch (e) {} setTimeout(function () { var a = document.getElementById('fpPrintArea'); if (a) a.remove(); }, 900); }, 120);
   }
