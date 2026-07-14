@@ -180,7 +180,7 @@
     el.querySelectorAll('.fpr').forEach(function (r, i) {
       r.onmouseenter = function () { if (i !== 0) r.style.background = '#eaf3ff'; };
       r.onmouseleave = function () { if (i !== 0) r.style.background = ''; };
-      r.ondblclick = function () { openPreview(recFor(r.getAttribute('data-no'))); };
+      r.ondblclick = function () { openInvoiceBuilder(recFor(r.getAttribute('data-no'))); };
       r.oncontextmenu = function (e) { e.preventDefault(); var mb = r.querySelector('.fpa[data-a="menu"]'); openMenu(mb || r, recFor(r.getAttribute('data-no'))); };
       r.querySelectorAll('.fpa').forEach(function (a) {
         a.style.cursor = 'pointer';
@@ -214,16 +214,16 @@
     });
   }
   function doAction(k, rec) {
-    if (k === 'preview' || k === 'openpdf' || k === 'print' || k === 'edit') openPreview(rec);
+    if (k === 'edit') openInvoiceBuilder(rec);
+    else if (k === 'preview' || k === 'openpdf' || k === 'print') openPreview(rec);
     else if (k === 'challan') openPreview(rec, true);
     else if (k === 'payhist') modal('Payment History', '<div style="padding:18px 20px;font-size:14px;line-height:2">Received during Sale : <b>' + Math.round(num(rec.PaidAmount)).toLocaleString('en-US') + '</b>' + (num(rec.Balance) > 0 ? '<br>Balance : <b style="color:#993c1d">' + Math.round(num(rec.Balance)).toLocaleString('en-US') + '</b>' : '') + '</div>', '<span class="fpx" style="border:1px solid #185fa5;color:#185fa5;border-radius:20px;padding:7px 15px;font-size:13px;font-weight:600;cursor:pointer">CLOSE</span>');
     else if (k === 'recvpay') modal('Receive Payment', '<div style="padding:20px;font-size:14px;line-height:1.9">Salio linalodaiwa (Balance due): <b style="color:#993c1d">' + money(rec.Balance) + '</b><br><br>Kupokea malipo (record payment) kunaunganishwa na backend salama — kinakuja hatua inayofuata.</div>', '<span class="fpx" style="border:1px solid #185fa5;color:#185fa5;border-radius:20px;padding:7px 15px;font-size:13px;font-weight:600;cursor:pointer">Sawa</span>');
     else modal(({ 'return': 'Convert To Return', 'cancel': 'Cancel Invoice', 'delete': 'Delete', 'dup': 'Duplicate', 'hist': 'View History' })[k] || 'Kitendo', '<div style="padding:20px;font-size:14px;line-height:1.6">Kitendo hiki kinaunganishwa na backend salama — kinakuja hatua inayofuata.</div>', '<span class="fpx" style="border:1px solid #cbd5e1;color:#334155;border-radius:20px;padding:7px 15px;font-size:13px;font-weight:600;cursor:pointer">Sawa</span>');
   }
 
-  /* ---- New Invoice builder (skin-side, real line items; saves invoice via the
-   * app's existing generic saveRow, items kept per-invoice in localStorage) ---- */
-  var nbItems = [];
+  /* ---- New / Edit Invoice builder (skin-side, real line items) ---- */
+  var nbItems = [], nbEditNo = null;
   function invItemsKey(no) { return 'fp_inv_items_' + String(no).replace(/[^A-Za-z0-9]/g, '_'); }
   function loadInvItems(no) { try { var a = JSON.parse(localStorage.getItem(invItemsKey(no)) || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } }
   function nextInvNo() { var max = 0; (DATA || []).forEach(function (r) { var m = String(r.InvoiceNo || '').match(/(\d+)\s*$/); if (m) { var n = +m[1]; if (n > max) max = n; } }); return 'FP/INV/' + String(max + 1).padStart(4, '0'); }
@@ -239,21 +239,24 @@
         + '<td style="padding:4px"><span class="nbDel" data-i="' + i + '" style="cursor:pointer;color:#e2483d;font-size:18px">&times;</span></td></tr>';
     }).join('');
   }
-  function openInvoiceBuilder() {
-    nbItems = [{ name: '', qty: '1', unit: 'Pcs', price: '' }];
-    var body = '<div style="padding:16px 20px">'
+  function openInvoiceBuilder(editRec) {
+    nbEditNo = (editRec && editRec.InvoiceNo) ? editRec.InvoiceNo : null;
+    if (nbEditNo) { nbItems = loadInvItems(nbEditNo); if (!nbItems.length) nbItems = [{ name: '', qty: '1', unit: 'Pcs', price: '' }]; }
+    else nbItems = [{ name: '', qty: '1', unit: 'Pcs', price: '' }];
+    var body = '<div style="background:#fff;border:1px solid #e6ebf2;border-radius:14px;padding:18px 20px">'
       + '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px">'
-      + '<label style="flex:1;min-width:180px;font-size:12px;color:#475569">Customer <span style="color:#e11d48">*</span><input id="nbCust" placeholder="Jina la mteja" style="width:100%;margin-top:4px;border:1px solid #dbe3ec;border-radius:9px;padding:9px 11px;font:inherit"></label>'
-      + '<label style="width:150px;font-size:12px;color:#475569">Phone<input id="nbPhone" placeholder="0..." style="width:100%;margin-top:4px;border:1px solid #dbe3ec;border-radius:9px;padding:9px 11px;font:inherit"></label>'
-      + '<label style="width:150px;font-size:12px;color:#475569">Date<input id="nbDate" type="date" style="width:100%;margin-top:4px;border:1px solid #dbe3ec;border-radius:9px;padding:9px 11px;font:inherit"></label>'
+      + '<label style="flex:1;min-width:200px;font-size:12px;color:#475569">Customer <span style="color:#e11d48">*</span><input id="nbCust" placeholder="Jina la mteja" style="width:100%;margin-top:4px;border:1px solid #dbe3ec;border-radius:9px;padding:9px 11px;font:inherit"></label>'
+      + '<label style="width:160px;font-size:12px;color:#475569">Phone<input id="nbPhone" placeholder="0..." style="width:100%;margin-top:4px;border:1px solid #dbe3ec;border-radius:9px;padding:9px 11px;font:inherit"></label>'
+      + '<label style="width:160px;font-size:12px;color:#475569">Date<input id="nbDate" type="date" style="width:100%;margin-top:4px;border:1px solid #dbe3ec;border-radius:9px;padding:9px 11px;font:inherit"></label>'
       + '</div>'
       + '<table style="width:100%;border-collapse:collapse"><thead><tr style="text-align:left;font-size:11px;color:#64748b"><th style="padding:4px 5px">Item / Kazi</th><th style="padding:4px 5px;text-align:right">Qty</th><th style="padding:4px 5px">Unit</th><th style="padding:4px 5px;text-align:right">Price</th><th style="padding:4px 5px;text-align:right">Amount</th><th></th></tr></thead><tbody id="nbBody">' + nbRowsHTML() + '</tbody></table>'
       + '<div style="margin-top:8px"><span id="nbAdd" style="cursor:pointer;color:#185fa5;font-weight:600;font-size:13px">+ Ongeza item</span></div>'
-      + '<div style="display:flex;justify-content:flex-end;gap:22px;margin-top:14px;align-items:center"><label style="font-size:12px;color:#475569">Paid<input id="nbPaid" inputmode="decimal" placeholder="0" style="width:130px;margin-left:8px;border:1px solid #dbe3ec;border-radius:9px;padding:8px 10px;font:inherit;text-align:right"></label><div style="font-size:15px;font-weight:800">Total: <span id="nbTot">' + money(nbTotal()) + '</span></div></div>'
+      + '<div style="display:flex;justify-content:flex-end;gap:22px;margin-top:16px;align-items:center"><label style="font-size:12px;color:#475569">Paid<input id="nbPaid" inputmode="decimal" placeholder="0" style="width:140px;margin-left:8px;border:1px solid #dbe3ec;border-radius:9px;padding:8px 10px;font:inherit;text-align:right"></label><div style="font-size:16px;font-weight:800">Total: <span id="nbTot">' + money(nbTotal()) + '</span></div></div>'
       + '<div id="nbErr" style="color:#e11d48;font-size:12.5px;margin-top:8px"></div>'
       + '</div>';
-    modal('New Invoice', body, '<span class="fpx fpbtn" style="border:1px solid #cbd5e1;color:#334155;border-radius:20px;padding:8px 16px;font-weight:600;cursor:pointer">Ghairi</span><span id="nbSave" class="fpbtn" style="border:none;background:#e2483d;color:#fff;border-radius:20px;padding:8px 18px;font-weight:700;cursor:pointer">Save Invoice</span>');
-    var dEl = document.getElementById('nbDate'); if (dEl) dEl.value = todayStr();
+    modal(nbEditNo ? 'Edit Invoice ' + nbEditNo : 'New Invoice', body, '<span class="fpx fpbtn" style="border:1px solid #cbd5e1;color:#334155;border-radius:20px;padding:8px 16px;font-weight:600;cursor:pointer">Ghairi</span><span id="nbSave" class="fpbtn" style="border:none;background:#e2483d;color:#fff;border-radius:20px;padding:8px 18px;font-weight:700;cursor:pointer">' + (nbEditNo ? 'Sasisha (Update)' : 'Save Invoice') + '</span>');
+    var dEl = document.getElementById('nbDate'); if (dEl) dEl.value = (editRec && editRec.Date) ? toISODate(editRec.Date) : todayStr();
+    if (editRec) { var cu = document.getElementById('nbCust'); if (cu) cu.value = editRec.CustomerName || ''; var ph = document.getElementById('nbPhone'); if (ph) ph.value = editRec.Phone || ''; var pd = document.getElementById('nbPaid'); if (pd && num(editRec.PaidAmount)) pd.value = num(editRec.PaidAmount); }
     wireBuilder();
   }
   function wireBuilder() {
@@ -277,9 +280,11 @@
     var status = bal <= 0 ? 'Paid' : (paid > 0 ? 'Partial' : 'Unpaid');
     var dv = (document.getElementById('nbDate') || {}).value || todayStr();
     var phone = (document.getElementById('nbPhone') || {}).value || '';
+    var itemsJson = JSON.stringify(items.map(function (it) { return { name: it.name, qty: it.qty || '1', unit: it.unit || '', price: it.price, amount: (num(it.qty) || 0) * (num(it.price) || 0) }; }));
+    if (nbEditNo) { try { localStorage.setItem(invItemsKey(nbEditNo), itemsJson); } catch (e) {} closeOv(); nbEditNo = null; nbItems = []; refresh(); return; }
     var no = nextInvNo();
     var rec = { InvoiceNo: no, Date: dv, CustomerName: cust, Phone: phone, TotalAmount: total, PaidAmount: paid, Balance: bal, Status: status };
-    try { localStorage.setItem(invItemsKey(no), JSON.stringify(items.map(function (it) { return { name: it.name, qty: it.qty || '1', unit: it.unit || '', price: it.price, amount: (num(it.qty) || 0) * (num(it.price) || 0) }; }))); } catch (e) {}
+    try { localStorage.setItem(invItemsKey(no), itemsJson); } catch (e) {}
     var url = backend(); var sv = document.getElementById('nbSave'); if (sv) { sv.textContent = 'Inahifadhi…'; sv.onclick = null; }
     fetch(url, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: 'saveRow', tab: 'Invoices', record: rec }) }).then(function (r) { return r.json(); }).then(function () {
       closeOv(); nbItems = []; DATA = null; load().then(function () { applyFilter(); build(); });
@@ -295,7 +300,7 @@
     if (real) its.forEach(function (it) { qsum += (num(it.qty) || 0); }); else qsum = 1;
     var itemRows = real ? its.map(function (it, i) { var amt = num(it.amount) || (num(it.qty) || 0) * (num(it.price) || 0); return '<tr><td style="padding:9px 10px;border-bottom:1px solid #e5e9ef;vertical-align:top">' + (i + 1) + '</td><td style="padding:9px 10px;border-bottom:1px solid #e5e9ef"><div style="font-weight:700">' + esc(it.name || '') + '</div></td><td style="padding:9px 10px;border-bottom:1px solid #e5e9ef;text-align:right">' + esc(it.qty || '1') + '</td><td style="padding:9px 10px;border-bottom:1px solid #e5e9ef;text-align:right">' + esc(it.unit || '—') + '</td>' + (wp ? '' : '<td style="padding:9px 10px;border-bottom:1px solid #e5e9ef;text-align:right">' + md(num(it.price)) + '</td><td style="padding:9px 10px;border-bottom:1px solid #e5e9ef;text-align:right">' + md(amt) + '</td>') + '</tr>'; }).join('')
       : '<tr><td style="padding:9px 10px;border-bottom:1px solid #e5e9ef;vertical-align:top">1</td><td style="padding:9px 10px;border-bottom:1px solid #e5e9ef"><div style="font-weight:700">Kazi / Huduma</div><div style="font-size:10.5px;color:#8a8f98">(Goods / Services)</div></td><td style="padding:9px 10px;border-bottom:1px solid #e5e9ef;text-align:right">1</td><td style="padding:9px 10px;border-bottom:1px solid #e5e9ef;text-align:right">—</td>' + (wp ? '' : '<td style="padding:9px 10px;border-bottom:1px solid #e5e9ef;text-align:right">' + md(total) + '</td><td style="padding:9px 10px;border-bottom:1px solid #e5e9ef;text-align:right">' + md(total) + '</td>') + '</tr>';
-    return '<div id="fpSheet" style="position:relative;overflow:hidden;background:#fff;color:#1f2733;max-width:794px;margin:0 auto;padding:34px 40px;font-family:Asap,Arial,sans-serif;font-size:12.5px">'
+    return '<div id="fpSheet" style="position:relative;overflow:hidden;background:#fff;color:#1f2733;max-width:794px;margin:0 auto;padding:34px 40px;font-family:Asap,Arial,sans-serif;font-size:12.5px;box-shadow:0 4px 24px rgba(0,0,0,.08)">'
       + '<img src="/femmas-logo-03-mqrt99vq.png" alt="" style="position:absolute;top:52%;left:50%;transform:translate(-50%,-50%) rotate(-18deg);width:66%;opacity:.06;pointer-events:none;z-index:0">'
       + '<div style="position:relative;z-index:1">'
       + '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:20px;border-bottom:2px solid #1f2733;padding-bottom:14px"><div><div style="font-size:26px;font-weight:800;color:#111">FEMMAS PRINT</div><div style="font-size:11px;color:#333;line-height:1.7;margin-top:6px">AMANI &amp; CONGO Street, Jangwani, Ilala-Dar es Salaam<br>Phone no. : +255658843344<br>Email : femmasprint@gmail.com<br>TIN : 102-075-552</div></div><img src="/femmas-logo-03-mqrt99vq.png" style="width:74px;height:74px;object-fit:contain"></div>'
@@ -314,22 +319,25 @@
   function modal(title, body, foot) {
     closeOv();
     ov = document.createElement('div'); ov.id = 'fpOverlay';
-    ov.style.cssText = 'position:fixed;inset:0;z-index:2147483500;background:rgba(15,23,42,.5);display:flex;align-items:center;justify-content:center;padding:16px';
-    ov.innerHTML = '<div style="background:#fff;color:#1f2733;border-radius:12px;max-width:860px;width:100%;max-height:92vh;display:flex;flex-direction:column;box-shadow:0 26px 64px rgba(0,0,0,.4)"><div style="display:flex;align-items:center;justify-content:space-between;padding:13px 18px;border-bottom:1px solid #e6ebf2;font-weight:600;font-size:16px">' + title + '<span class="fpx" style="cursor:pointer;font-size:22px;color:#94a3b8">&times;</span></div><div style="overflow:auto">' + body + '</div>' + (foot ? '<div style="display:flex;gap:8px;justify-content:flex-end;padding:12px 18px;border-top:1px solid #e6ebf2">' + foot + '</div>' : '') + '</div>';
-    ov.addEventListener('click', function (e) { if (e.target === ov || e.target.closest('.fpx')) { closeOv(); return; } if (e.target.closest('.fpPrint')) { printSheet(); } else if (e.target.closest('.fpShare')) { shareInvoice(curDoc || {}); } });
+    var L = window.innerWidth < 1024 ? 0 : 208;
+    ov.style.cssText = 'position:fixed;left:' + L + 'px;top:0;right:0;bottom:0;z-index:2147483400;background:#f4f7fb;overflow:auto;font-family:-apple-system,Segoe UI,Roboto,sans-serif;color:#1f2733';
+    ov.innerHTML = '<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 22px;background:#fff;border-bottom:1px solid #e6ebf2;position:sticky;top:0;z-index:4"><div style="font-size:18px;font-weight:700">' + title + '</div><span class="fpx" style="cursor:pointer;display:inline-flex;align-items:center;gap:6px;color:#64748b;font-size:13px;font-weight:600"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 6l12 12M18 6L6 18"/></svg>Funga</span></div>'
+      + '<div style="max-width:900px;margin:0 auto;padding:20px 20px 96px">' + body + '</div>'
+      + (foot ? '<div style="position:fixed;left:' + L + 'px;right:0;bottom:0;background:#fff;border-top:1px solid #e6ebf2;padding:12px 22px;display:flex;gap:10px;justify-content:flex-end;z-index:4">' + foot + '</div>' : '');
+    ov.addEventListener('click', function (e) { if (e.target.closest('.fpx')) { closeOv(); return; } if (e.target.closest('.fpPrint')) { printSheet(); } else if (e.target.closest('.fpShare')) { shareInvoice(curDoc || {}); } });
     document.documentElement.appendChild(ov);
   }
   function openPreview(rec, challan) {
     curDoc = rec;
     var foot = '<span class="fpPrint fpbtn" style="border:1px solid #f0997b;color:#d85a30">Open PDF</span><span class="fpPrint fpbtn" style="border:1px solid #85b7eb;color:#185fa5">Print</span><span class="fpPrint fpbtn" style="border:1px solid #9fe1cb;color:#0f6e56">Save PDF</span><span class="fpShare fpbtn" style="border:1px solid #25d366;background:#25d366;color:#fff">Sambaza WhatsApp</span><span class="fpx fpbtn" style="border:1px solid #e2483d;color:#e2483d">Close</span>';
     modal(challan ? 'Delivery Challan' : 'Invoice', sheetHTML(rec, challan), foot);
-    if (ov) ov.querySelectorAll('.fpbtn').forEach(function (b) { b.style.borderRadius = '20px'; b.style.padding = '7px 15px'; b.style.fontSize = '13px'; b.style.fontWeight = '600'; b.style.cursor = 'pointer'; b.style.background = b.style.background || 'transparent'; });
+    if (ov) ov.querySelectorAll('.fpbtn').forEach(function (b) { b.style.borderRadius = '20px'; b.style.padding = '8px 16px'; b.style.fontSize = '13px'; b.style.fontWeight = '600'; b.style.cursor = 'pointer'; b.style.background = b.style.background || 'transparent'; });
   }
   function printSheet() {
     var sh = document.getElementById('fpSheet'); if (!sh) return;
     var old = document.getElementById('fpPrintArea'); if (old) old.remove();
     var area = document.createElement('div'); area.id = 'fpPrintArea'; area.innerHTML = sh.outerHTML;
-    if (!document.getElementById('fpPrintStyle')) { var ps = document.createElement('style'); ps.id = 'fpPrintStyle'; ps.textContent = '@media print{ body{display:none !important} #fpSkin{display:none !important} #fpOverlay{display:none !important} #fpPrintArea{display:block !important} }'; document.head.appendChild(ps); }
+    if (!document.getElementById('fpPrintStyle')) { var ps = document.createElement('style'); ps.id = 'fpPrintStyle'; ps.textContent = '@media print{ body{display:none !important} #fpSkin{display:none !important} #fpOverlay{display:none !important} #fpPrintArea{display:block !important} #fpPrintArea #fpSheet{box-shadow:none !important} }'; document.head.appendChild(ps); }
     document.documentElement.appendChild(area);
     setTimeout(function () { try { window.print(); } catch (e) {} setTimeout(function () { var a = document.getElementById('fpPrintArea'); if (a) a.remove(); }, 900); }, 120);
   }
@@ -342,7 +350,7 @@
     var html = '<div id="fpSheet" style="font-family:Asap,sans-serif;color:#1f2733;padding:24px"><div style="display:flex;justify-content:space-between;align-items:flex-end;border-bottom:3px solid #13315a;padding-bottom:10px;margin-bottom:12px"><div style="font-size:18px;font-weight:800;color:#13315a">FEMMAS PRINT — Sale Invoices</div><div style="font-size:11.5px;color:#5b6675">Total: ' + money(tot) + ' &middot; Received: ' + money(paid) + ' &middot; Balance: ' + money(bal) + '</div></div><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#13315a;color:#fff;text-align:left"><th style="padding:7px 8px">#</th><th style="padding:7px 8px">Date</th><th style="padding:7px 8px">Invoice no</th><th style="padding:7px 8px">Party Name</th><th style="padding:7px 8px;text-align:right">Amount</th><th style="padding:7px 8px;text-align:right">Balance</th><th style="padding:7px 8px">Status</th></tr></thead><tbody>' + body + '</tbody></table></div>';
     var old = document.getElementById('fpPrintArea'); if (old) old.remove();
     var area = document.createElement('div'); area.id = 'fpPrintArea'; area.innerHTML = html;
-    if (!document.getElementById('fpPrintStyle')) { var ps = document.createElement('style'); ps.id = 'fpPrintStyle'; ps.textContent = '@media print{ body{display:none !important} #fpSkin{display:none !important} #fpOverlay{display:none !important} #fpPrintArea{display:block !important} }'; document.head.appendChild(ps); }
+    if (!document.getElementById('fpPrintStyle')) { var ps = document.createElement('style'); ps.id = 'fpPrintStyle'; ps.textContent = '@media print{ body{display:none !important} #fpSkin{display:none !important} #fpOverlay{display:none !important} #fpPrintArea{display:block !important} #fpPrintArea #fpSheet{box-shadow:none !important} }'; document.head.appendChild(ps); }
     document.documentElement.appendChild(area);
     setTimeout(function () { try { window.print(); } catch (e) {} setTimeout(function () { var a = document.getElementById('fpPrintArea'); if (a) a.remove(); }, 900); }, 120);
   }
@@ -355,7 +363,7 @@
     setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
   }
   function summaryModal() {
-    modal('Muhtasari — Sale Invoices', '<div style="padding:20px 22px;font-size:14px;line-height:2"><div>Jumla ya invoice: <b>' + view.length + '</b></div><div>Total Sales: <b>' + money(tot) + '</b></div><div>Imelipwa (Received): <b style="color:#0f6e56">' + money(paid) + '</b></div><div>Salio (Balance): <b style="color:#993c1d">' + money(bal) + '</b></div></div>', '<span class="fpx" style="border:1px solid #185fa5;color:#185fa5;border-radius:20px;padding:7px 15px;font-size:13px;font-weight:600;cursor:pointer">Sawa</span>');
+    modal('Muhtasari — Sale Invoices', '<div style="background:#fff;border:1px solid #e6ebf2;border-radius:14px;padding:20px 22px;font-size:14px;line-height:2"><div>Jumla ya invoice: <b>' + view.length + '</b></div><div>Total Sales: <b>' + money(tot) + '</b></div><div>Imelipwa (Received): <b style="color:#0f6e56">' + money(paid) + '</b></div><div>Salio (Balance): <b style="color:#993c1d">' + money(bal) + '</b></div></div>', '<span class="fpx" style="border:1px solid #185fa5;color:#185fa5;border-radius:20px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer">Sawa</span>');
   }
   function miniMenu(anchor, items) {
     closeMenu();
