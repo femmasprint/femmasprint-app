@@ -14,7 +14,16 @@
   function money(n) { return 'Sh ' + Math.round(num(n)).toLocaleString('en-US'); }
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]; }); }
   function normPhone(s) { var x = String(s || '').replace(/[^0-9]/g, ''); if (!x) return ''; if (x.charAt(0) === '0') x = '255' + x.slice(1); else if (x.slice(0, 3) !== '255' && x.length <= 9) x = '255' + x; return x; }
-  function fmtDate(s) { if (!s) return ''; var d = new Date(s); if (isNaN(d.getTime())) return String(s); var dd = ('0' + d.getDate()).slice(-2), mm = ('0' + (d.getMonth() + 1)).slice(-2); return dd + '/' + mm + '/' + d.getFullYear(); }
+  // Robust date parser — handles ISO (2026-07-14 / full ISO) AND the backend's
+  // DD-MM-YYYY / DD/MM/YYYY sheet format. Returns a Date or null (never throws).
+  function parseD(s) {
+    if (!s) return null; if (s instanceof Date) return isNaN(s.getTime()) ? null : s;
+    s = String(s).trim();
+    var m = s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})/);
+    if (m) { var dt = new Date(+m[3], +m[2] - 1, +m[1]); return isNaN(dt.getTime()) ? null : dt; }
+    var d = new Date(s); return isNaN(d.getTime()) ? null : d;
+  }
+  function fmtDate(s) { var d = parseD(s); if (!d) return String(s || ''); var dd = ('0' + d.getDate()).slice(-2), mm = ('0' + (d.getMonth() + 1)).slice(-2); return dd + '/' + mm + '/' + d.getFullYear(); }
   function numToWords(n) {
     n = Math.round(num(n)); if (!n) return 'Zero';
     var a = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
@@ -47,11 +56,11 @@
     } catch (e) { return false; }
   }
 
-  function toISODate(s) { if (!s) return ''; var d = new Date(s); if (isNaN(d.getTime())) return ''; return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
+  function toISODate(s) { var d = parseD(s); if (!d) return ''; return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
   function applyFilter() {
     view = (DATA || []).filter(function (r) {
       if (q) { var s = ((r.InvoiceNo || '') + ' ' + (r.CustomerName || '')).toLowerCase(); if (s.indexOf(q) < 0) return false; }
-      if (fromISO || toISO) { var dd = toISODate(r.Date); if (!dd) return false; if (fromISO && dd < fromISO) return false; if (toISO && dd > toISO) return false; }
+      if (fromISO || toISO) { var dd = toISODate(r.Date); if (!dd) return true; if (fromISO && dd < fromISO) return false; if (toISO && dd > toISO) return false; }
       return true;
     });
     tot = 0; paid = 0; bal = 0;
@@ -292,7 +301,7 @@
   /* ---- A4 invoice preview — matches the "utu kwanza" (Invoice 815) Vyapar layout ---- */
   function sheetHTML(d, wp) {
     function md(n) { return 'Sh ' + Math.round(num(n)).toLocaleString('en-US') + '.0'; }
-    function dd(s) { if (!s) return ''; var x = new Date(s); if (isNaN(x.getTime())) return String(s); return ('0' + x.getDate()).slice(-2) + '-' + ('0' + (x.getMonth() + 1)).slice(-2) + '-' + x.getFullYear(); }
+    function dd(s) { var x = parseD(s); if (!x) return String(s || ''); return ('0' + x.getDate()).slice(-2) + '-' + ('0' + (x.getMonth() + 1)).slice(-2) + '-' + x.getFullYear(); }
     var total = num(d.TotalAmount), paid = num(d.PaidAmount), bal = num(d.Balance); var BLUE = '#0979a7';
     var its = loadInvItems(d.InvoiceNo); var real = its.length > 0; var qsum = 0;
     if (real) its.forEach(function (it) { qsum += (num(it.qty) || 0); }); else qsum = 1;
@@ -393,13 +402,32 @@
     }
     return el;
   }
+  // Completely REMOVE the app's old Sale Invoices page from render (not just cover it).
+  // We hide <main>'s own children so the old theme stops painting underneath — no
+  // "double page", no wasted weight. Restored automatically when leaving the page.
+  function hideApp() {
+    var m = document.querySelector('main'); if (!m) return;
+    for (var i = 0; i < m.children.length; i++) {
+      var c = m.children[i];
+      if (c.id === 'fpSkin') continue;
+      if (c.getAttribute('data-fphid') === '1') continue;
+      c.setAttribute('data-fphid', '1');
+      c.setAttribute('data-fpdisp', c.style.display || '');
+      c.style.display = 'none';
+    }
+  }
+  function showApp() {
+    var hid = document.querySelectorAll('[data-fphid="1"]');
+    for (var i = 0; i < hid.length; i++) { var c = hid[i]; c.style.display = c.getAttribute('data-fpdisp') || ''; c.removeAttribute('data-fphid'); c.removeAttribute('data-fpdisp'); }
+  }
   function tick() {
     var on = isInvPage(); var el = document.getElementById('fpSkin');
     if (on) {
       if (!el) { el = shell(); }                       // opaque cover instantly — hides the old page (no flash)
+      hideApp();                                        // and REMOVE the old page from render entirely
       if (DATA) { if (el.getAttribute('data-built') !== '1') { applyFilter(); build(); } }
       else if (!busy) { busy = true; load().then(function () { busy = false; applyFilter(); if (isInvPage()) build(); }); }
-    } else { if (el) el.remove(); }
+    } else { if (el) el.remove(); showApp(); }
   }
   function ready(fn) { if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fn); else fn(); }
   ready(function () { if (!fromISO && !toISO && periodLabel === 'Custom') { fromISO = monthStart(); toISO = monthEnd(); periodLabel = 'This Month'; } tick(); setInterval(tick, 400); });
