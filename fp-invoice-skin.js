@@ -180,7 +180,7 @@
     el.querySelectorAll('.fpAdd').forEach(function (b) { b.onclick = function () { openInvoiceBuilder(); }; });
     el.querySelectorAll('.fpAddP').forEach(function (b) { b.onclick = function () { clickApp(/^\+?\s*Purchase$/i); }; });
     el.querySelectorAll('.fpAddPlus').forEach(function (b) { b.onclick = function (e) { e.stopPropagation(); miniMenu(b, addMoreItems()); }; });
-    var ts = el.querySelector('.fpTitleSwitch'); if (ts) ts.onclick = function (e) { e.stopPropagation(); miniMenu(ts, [['Sale Invoices (hapa)', function () {}], ['Quick Sale', function () { tryNav('Quick Sale', /Quick Sale/i); }], ['Purchase & Expense', function () { tryNav('Purchase & Expense', /Purchase\s*&?\s*Expense/i); }], ['Delivery', function () { tryNav('Delivery', /^Delivery$/i); }], ['Receipts', function () { tryNav('Receipts', /Receipts/i); }], ['Cash & Bank', function () { tryNav('Cash & Bank', /Cash\s*&?\s*Bank/i); }], ['Debtors', function () { tryNav('Debtors', /Debtors/i); }], ['Reports', function () { tryNav('Reports', /^Reports$/i); }]]); };
+    var ts = el.querySelector('.fpTitleSwitch'); if (ts) ts.onclick = function (e) { e.stopPropagation(); miniMenu(ts, [['Sale Invoices (hapa)', function () {}], ['Estimate / Quotation', function () { navToSale('Estimate / Quotation', /Estimate/i); }], ['Proforma Invoice', function () { navToSale('Proforma Invoice', /Proforma/i); }], ['Payment-In', function () { navToSale('Payment-In', /Payment-?In/i); }], ['Sale Order', function () { navToSale('Sale Order', /Sale Order/i); }], ['Delivery Challan', function () { navToSale('Delivery Challan', /Delivery Challan/i); }], ['Sale Return / Credit Note', function () { navToSale('Sale Return / Credit Note', /Sale Return/i); }], ['Femmas POS', function () { navToSale('Femmas POS', /Femmas POS|^POS$/i); }]]); };
     el.querySelectorAll('.fpPrintList').forEach(function (b) { b.onclick = function (e) { e.stopPropagation(); printList(); }; });
     el.querySelectorAll('.fpXls').forEach(function (b) { b.onclick = function (e) { e.stopPropagation(); exportCSV(); }; });
     el.querySelectorAll('.fpChart').forEach(function (b) { b.onclick = function (e) { e.stopPropagation(); summaryModal(); }; });
@@ -198,7 +198,18 @@
   function clickApp(re) { var b = Array.prototype.slice.call(document.querySelectorAll('main button, header button')).find(function (x) { return re.test((x.textContent || '').trim()); }); if (b) { b.click(); return true; } return false; }
   function clickNav(re) { var a = Array.prototype.slice.call(document.querySelectorAll('aside a, aside button, nav a, nav button, main button')).find(function (x) { return re.test((x.textContent || '').trim()); }); if (a) { a.click(); return true; } return false; }
   function tryNav(label, re) { if (!clickNav(re)) toast('“' + label + '” haipatikani kwenye menyu ya app.'); }
-  function addMoreItems() { return [['Sale Invoice (mpya)', function () { openInvoiceBuilder(); }], ['Quick Sale', function () { tryNav('Quick Sale', /Quick Sale/i); }], ['Purchase & Expense', function () { tryNav('Purchase & Expense', /Purchase\s*&?\s*Expense/i); }], ['Delivery', function () { tryNav('Delivery', /^Delivery$/i); }], ['Receipts', function () { tryNav('Receipts', /Receipts/i); }], ['Customers', function () { tryNav('Customers', /Customers/i); }], ['Items', function () { tryNav('Items', /^Items$/i); }]]; }
+  // The Sale sub-pages (Estimate, Proforma, Payment-In, Sale Order, Delivery Challan,
+  // Sale Return, POS) live inside the collapsed "Sale" submenu — their links are not
+  // in the DOM until the submenu is expanded. So: try to click; if not found, expand
+  // the "Sale" parent, then poll briefly and click the target sub-link.
+  function navToSale(label, re) {
+    if (clickNav(re)) return;
+    var sale = Array.prototype.slice.call(document.querySelectorAll('aside a, aside button, aside div, aside li, nav a, nav button')).find(function (x) { return /^Sale$/i.test((x.textContent || '').trim()); });
+    if (!sale) { if (!clickNav(re)) toast('“' + label + '” haipatikani kwenye menyu.'); return; }
+    sale.click();
+    var tries = 0; var iv = setInterval(function () { tries++; if (clickNav(re) || tries > 10) { clearInterval(iv); if (tries > 10) toast('“' + label + '” haipatikani kwenye menyu.'); } }, 120);
+  }
+  function addMoreItems() { return [['Sale Invoice (mpya hapa)', function () { openInvoiceBuilder(); }], ['Estimate / Quotation', function () { navToSale('Estimate / Quotation', /Estimate/i); }], ['Proforma Invoice', function () { navToSale('Proforma Invoice', /Proforma/i); }], ['Payment-In', function () { navToSale('Payment-In', /Payment-?In/i); }], ['Sale Order', function () { navToSale('Sale Order', /Sale Order/i); }], ['Delivery Challan', function () { navToSale('Delivery Challan', /Delivery Challan/i); }], ['Sale Return / Credit Note', function () { navToSale('Sale Return / Credit Note', /Sale Return/i); }], ['Femmas POS', function () { navToSale('Femmas POS', /Femmas POS|^POS$/i); }]]; }
 
   function recFor(no) { return (DATA || []).find(function (r) { return String(r.InvoiceNo) === String(no); }) || {}; }
 
