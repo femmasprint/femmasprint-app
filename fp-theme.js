@@ -817,25 +817,43 @@
     var plus = "";
     var core = trimmed;
     if (core.charAt(0) === "+") { plus = "+ "; core = core.slice(1).trim(); }
-    if (map[core] !== undefined) return raw.replace(trimmed, plus + map[core]);
+
+    var arrow = "";
+    var arrowMatch = core.match(/\s*([▼▾])$/);
+    if (arrowMatch) {
+      arrow = " " + arrowMatch[1];
+      core = core.slice(0, arrowMatch.index).trim();
+    }
+    if (map[core] !== undefined) return raw.replace(trimmed, plus + map[core] + arrow);
 
     var output = raw;
-    var keys = Object.keys(map).sort(function (a, b) { return b.length - a.length; });
-    for (var i = 0; i < keys.length; i++) {
-      if (output.indexOf(keys[i]) > -1) output = output.split(keys[i]).join(map[keys[i]]);
-    }
-
     if (lang === "sw") {
+      output = output.replace(/^\s*Received:/i, function (m) { return m.replace(/Received/i, "Imepokelewa"); });
+      output = output.replace(/\|\s*Balance:/i, "| Salio:");
       output = output.replace(/Panga\s*\(sort\)/gi, "Panga");
       output = output.replace(/Leo\s*\(Today\)/gi, "Leo");
       output = output.replace(/Zimeonyeshwa\s+invoice\s+(\d+)\s+kati\s+ya\s+jumla\s+(\d+)\s*·\s*bonyeza\s+kichwa\s+cha\s+safu\s+Panga/gi,
         "Zimeonyeshwa ankara $1 kati ya jumla $2 · bonyeza kichwa cha safu kupanga");
     } else {
+      output = output.replace(/^\s*Imepokelewa:/i, function (m) { return m.replace(/Imepokelewa/i, "Received"); });
+      output = output.replace(/\|\s*Salio:/i, "| Balance:");
+      output = output.replace(/^\s*Panga\s*$/i, "Sort");
       output = output.replace(/Leo\s*\(Today\)/gi, "Today");
       output = output.replace(/Zimeonyeshwa\s+(?:invoice|ankara)\s+(\d+)\s+kati\s+ya\s+jumla\s+(\d+)\s*·\s*bonyeza\s+kichwa\s+cha\s+safu\s+(?:kupanga|Panga(?:\s*\(sort\))?)/gi,
         "Showing $1 invoices out of $2 · click a column heading to sort");
     }
     return output;
+  }
+
+  function isSafeInvoiceLabel(node) {
+    var parent = node && node.parentElement;
+    if (!parent) return false;
+    if (parent.closest("#fpSheet")) return false;
+    var row = parent.closest(".fpr");
+    if (!row) return true;
+    var cell = parent.closest("td");
+    if (!cell) return false;
+    return cell.cellIndex === 3 || cell.cellIndex === 4 || cell.cellIndex === 7 || cell.cellIndex === 8;
   }
 
   function applyInvoiceLanguage() {
@@ -850,6 +868,7 @@
       var node, nodes = [];
       while ((node = walker.nextNode())) nodes.push(node);
       for (var i = 0; i < nodes.length; i++) {
+        if (!isSafeInvoiceLabel(nodes[i])) continue;
         var current = nodes[i].nodeValue;
         var translated = translateValue(current, map, lang);
         if (translated !== current) nodes[i].nodeValue = translated;
