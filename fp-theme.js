@@ -620,7 +620,9 @@
     "#fpSkin>div:not(:first-child) .fpAdd,#fpSkin>div:not(:first-child) .fpAddP{background:var(--fp-brand-gradient)!important;border-color:transparent!important;color:#fff!important;box-shadow:0 8px 20px rgba(51,153,255,.24)!important;}",
     "#fpSkin .fpAddPlus{background:rgba(255,255,255,.16)!important;color:#fff!important;border:1px solid rgba(255,255,255,.38)!important;box-shadow:inset 1px 1px 0 rgba(255,255,255,.26)!important;}",
     "#fpSkin .fpPrintList,#fpSkin .fpTopMenu{color:#fff!important;}",
-    "#fpSkin .fpPrintList svg,#fpSkin .fpTopMenu>svg{stroke:currentColor!important;fill:none;}",
+    "#fpSkin .fpPrintList svg{stroke:currentColor!important;}",
+    "#fpSkin .fpTopMenu>svg[fill]{fill:currentColor!important;}",
+    "#fpSkin .fpTopMenu>svg[stroke]{stroke:currentColor!important;}",
 
     "#fpSkin .fpTitleSwitch{color:var(--fp-text)!important;}",
     "#fpSkin #fpTotInner,#fpSkin #fpTableWrap{background:var(--fp-surface-strong)!important;color:var(--fp-text)!important;border:1px solid var(--fp-line)!important;border-radius:16px!important;box-shadow:var(--fp-shadow-raised)!important;}",
@@ -640,8 +642,7 @@
     "html.fp-dark #fpSkin [style*='color:#1f2733'],html.fp-dark #fpSkin [style*='color:#334155'],html.fp-dark #fpSkin [style*='color:#0f172a']{color:var(--fp-text)!important;}",
     "html.fp-dark #fpSkin [style*='background:#fff'],html.fp-dark #fpSkin [style*='background: #fff'],html.fp-dark #fpSkin [style*='background:#f4f6f9'],html.fp-dark #fpSkin [style*='background:#f1f5f9'],html.fp-dark #fpSkin [style*='background:#eef2f7']{background:var(--fp-surface-strong)!important;color:var(--fp-text)!important;border-color:var(--fp-line)!important;}",
 
-    "#fpSkin #fpSheet,#fpSkin #fpSheet *{text-shadow:none!important;filter:none!important;}",
-    "#fpSkin #fpSheet{background:#fff!important;color:#1F2733!important;box-shadow:0 18px 55px rgba(7,21,38,.22)!important;}",
+    "#fpSkin #fpSheet{background:#fff!important;color:#1F2733!important;}",
     "html.fp-dark #fpSkin #fpSheet{background:#fff!important;color:#1F2733!important;}",
     "html.fp-dark #fpSkin #fpSheet [style*='background:#fff'],html.fp-dark #fpSkin #fpSheet [style*='background: #fff']{background:#fff!important;}",
     "html.fp-dark #fpSkin #fpSheet [style*='color:#1f2733'],html.fp-dark #fpSkin #fpSheet [style*='color:#334155'],html.fp-dark #fpSkin #fpSheet [style*='color:#0f172a']{color:#1F2733!important;}",
@@ -733,6 +734,144 @@
     new MutationObserver(function () { requestAnimationFrame(addSkinControls); })
       .observe(document.documentElement, { childList: true, subtree: true });
     setInterval(addSkinControls, 1200);
+  }
+
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
+  else boot();
+})();
+
+
+/* FEMMAS APP V3 INVOICE LANGUAGE GUARD
+ * Keeps the separately-mounted live invoice list entirely in the selected
+ * language. Business data, customer names and document contents are untouched.
+ */
+(function () {
+  "use strict";
+  var pairs = [
+    ["Search Transactions","Tafuta Miamala"],
+    ["Add Sale","Mauzo"],
+    ["Add Purchase","Manunuzi"],
+    ["Add More","Ongeza Zaidi"],
+    ["Sale Invoices","Ankara za Mauzo"],
+    ["Filter by :","Chuja kwa:"],
+    ["Filter by:","Chuja kwa:"],
+    ["To","Hadi"],
+    ["All Firms","Biashara Zote"],
+    ["All Users","Watumiaji Wote"],
+    ["Clear","Futa"],
+    ["Transactions","Miamala"],
+    ["Total Sales Amount","Jumla ya Mauzo"],
+    ["Received","Imepokelewa"],
+    ["Balance","Salio"],
+    ["Date","Tarehe"],
+    ["Invoice no","Namba ya Ankara"],
+    ["Party Name","Jina la Mteja"],
+    ["Transaction","Muamala"],
+    ["Payment Type","Aina ya Malipo"],
+    ["Amount","Kiasi"],
+    ["Status","Hali"],
+    ["Actions","Vitendo"],
+    ["Print","Chapa"],
+    ["Share","Sambaza"],
+    ["More Actions","Vitendo Zaidi"],
+    ["Sort","Panga"],
+    ["Summary","Muhtasari"],
+    ["Refresh","Onyesha upya"],
+    ["Export Excel (CSV)","Pakua Excel (CSV)"],
+    ["Print list","Chapa orodha"],
+    ["Today","Leo"],
+    ["This Month","Mwezi Huu"],
+    ["Last Month","Mwezi Uliopita"],
+    ["This Quarter","Robo Hii"],
+    ["This Year","Mwaka Huu"],
+    ["All Sale Invoices","Ankara Zote za Mauzo"],
+    ["All","Zote"],
+    ["Choose period","Chagua kipindi"],
+    ["Open calendar","Fungua kalenda"],
+    ["Filter by firm","Chuja kwa biashara"],
+    ["Filter by user","Chuja kwa mtumiaji"],
+    ["Remove filters","Ondoa vichujio"],
+    ["Change type","Badilisha aina"],
+    ["Paid","Imelipwa"],
+    ["Unpaid","Haijalipwa"],
+    ["Cash","Taslimu"],
+    ["Sale","Mauzo"]
+  ];
+
+  function maps() {
+    var sw = {}, en = {};
+    for (var i = 0; i < pairs.length; i++) {
+      sw[pairs[i][0]] = pairs[i][1];
+      en[pairs[i][1]] = pairs[i][0];
+    }
+    return { sw: sw, en: en };
+  }
+
+  function selectedLanguage() {
+    try { return localStorage.getItem("fp_lang") || "sw"; } catch (e) { return "sw"; }
+  }
+
+  function translateValue(raw, map, lang) {
+    if (!raw) return raw;
+    var trimmed = raw.replace(/\s+/g, " ").trim();
+    var plus = "";
+    var core = trimmed;
+    if (core.charAt(0) === "+") { plus = "+ "; core = core.slice(1).trim(); }
+    if (map[core] !== undefined) return raw.replace(trimmed, plus + map[core]);
+
+    var output = raw;
+    var keys = Object.keys(map).sort(function (a, b) { return b.length - a.length; });
+    for (var i = 0; i < keys.length; i++) {
+      if (output.indexOf(keys[i]) > -1) output = output.split(keys[i]).join(map[keys[i]]);
+    }
+
+    if (lang === "sw") {
+      output = output.replace(/Panga\s*\(sort\)/gi, "Panga");
+      output = output.replace(/Leo\s*\(Today\)/gi, "Leo");
+      output = output.replace(/Zimeonyeshwa\s+invoice\s+(\d+)\s+kati\s+ya\s+jumla\s+(\d+)\s*·\s*bonyeza\s+kichwa\s+cha\s+safu\s+Panga/gi,
+        "Zimeonyeshwa ankara $1 kati ya jumla $2 · bonyeza kichwa cha safu kupanga");
+    } else {
+      output = output.replace(/Leo\s*\(Today\)/gi, "Today");
+      output = output.replace(/Zimeonyeshwa\s+(?:invoice|ankara)\s+(\d+)\s+kati\s+ya\s+jumla\s+(\d+)\s*·\s*bonyeza\s+kichwa\s+cha\s+safu\s+(?:kupanga|Panga(?:\s*\(sort\))?)/gi,
+        "Showing $1 invoices out of $2 · click a column heading to sort");
+    }
+    return output;
+  }
+
+  function applyInvoiceLanguage() {
+    var skin = document.getElementById("fpSkin");
+    if (!skin) return;
+    var lang = selectedLanguage();
+    var all = maps();
+    var map = lang === "sw" ? all.sw : all.en;
+
+    try {
+      var walker = document.createTreeWalker(skin, NodeFilter.SHOW_TEXT, null, false);
+      var node, nodes = [];
+      while ((node = walker.nextNode())) nodes.push(node);
+      for (var i = 0; i < nodes.length; i++) {
+        var current = nodes[i].nodeValue;
+        var translated = translateValue(current, map, lang);
+        if (translated !== current) nodes[i].nodeValue = translated;
+      }
+
+      var attrs = skin.querySelectorAll("[placeholder],[title],[aria-label]");
+      for (var a = 0; a < attrs.length; a++) {
+        ["placeholder","title","aria-label"].forEach(function (name) {
+          var value = attrs[a].getAttribute(name);
+          if (!value) return;
+          var translated = translateValue(value, map, lang);
+          if (translated !== value) attrs[a].setAttribute(name, translated);
+        });
+      }
+    } catch (e) {}
+  }
+
+  function boot() {
+    applyInvoiceLanguage();
+    new MutationObserver(function () { requestAnimationFrame(applyInvoiceLanguage); })
+      .observe(document.documentElement, { childList: true, subtree: true });
+    setInterval(applyInvoiceLanguage, 850);
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
