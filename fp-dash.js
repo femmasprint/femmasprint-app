@@ -198,3 +198,204 @@
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start);
   else start();
 })();
+
+
+/* FEMMAS APP V3 REAL-DATA BARS
+ * Converts the existing sales line into rounded interactive bars without changing
+ * its source, period controls, values or tooltip calculations.
+ */
+(function () {
+  "use strict";
+  var NS = "http://www.w3.org/2000/svg";
+  var STYLE_ID = "fp-v3-real-bars-css";
+  var css = [
+    ".fp-v3-bars{pointer-events:none;}",
+    ".fp-v3-bar-track{fill:rgba(19,49,90,.075);}",
+    ".fp-v3-bar{fill:#13315A;filter:drop-shadow(0 7px 8px rgba(19,49,90,.13));transform-box:fill-box;transform-origin:center bottom;animation:fpV3BarRise .72s cubic-bezier(.2,.78,.28,1) both;}",
+    ".fp-v3-bar.fp-v3-bar-selected{fill:#3399FF;filter:drop-shadow(0 9px 11px rgba(51,153,255,.28));}",
+    ".fp-v3-chart-line{opacity:.075!important;}",
+    ".fp-cross{stroke:#3399FF!important;stroke-dasharray:3 4!important;}",
+    ".fp-hoverdot{fill:#3399FF!important;filter:drop-shadow(0 0 7px rgba(51,153,255,.95))!important;}",
+    ".fp-tip{border-color:rgba(51,153,255,.65)!important;background:rgba(10,26,47,.97)!important;}",
+    ".fp-tip .v{color:#72BDFF!important;}",
+    "html.fp-dark .fp-v3-bar-track{fill:rgba(220,234,255,.085);}",
+    "html.fp-dark .fp-v3-bar{fill:#6EAFF0;filter:drop-shadow(0 8px 10px rgba(0,5,14,.34));}",
+    "html.fp-dark .fp-v3-bar.fp-v3-bar-selected{fill:#3399FF;filter:drop-shadow(0 9px 12px rgba(51,153,255,.34));}",
+    "@keyframes fpV3BarRise{from{transform:scaleY(.025);opacity:.2}to{transform:scaleY(1);opacity:1}}",
+    "@media(prefers-reduced-motion:reduce){.fp-v3-bar{animation:none!important;}}"
+  ].join("");
+
+  function addStyles() {
+    if (document.getElementById(STYLE_ID)) return;
+    var style = document.createElement("style");
+    style.id = STYLE_ID;
+    style.textContent = css;
+    document.head.appendChild(style);
+  }
+
+  function findChart() {
+    var svgs = document.querySelectorAll("#fp-main svg");
+    for (var i = 0; i < svgs.length; i++) {
+      var viewBox = svgs[i].getAttribute("viewBox") || "";
+      if (viewBox.indexOf("920") > -1 && viewBox.indexOf("320") > -1) return svgs[i];
+    }
+    return null;
+  }
+
+  function readAxes(svg) {
+    var labels = svg.querySelectorAll("text");
+    var x = [], y = [];
+    for (var i = 0; i < labels.length; i++) {
+      var px = parseFloat(labels[i].getAttribute("x"));
+      var py = parseFloat(labels[i].getAttribute("y"));
+      if (!isFinite(px) || !isFinite(py)) continue;
+      if (px < 40) y.push({ y: py, label: (labels[i].textContent || "").trim() });
+      else if (py > 295) x.push({ x: px, label: (labels[i].textContent || "").trim() });
+    }
+    x.sort(function (a, b) { return a.x - b.x; });
+    y.sort(function (a, b) { return a.y - b.y; });
+    return { x: x, y: y };
+  }
+
+  function findDataLine(svg, axes) {
+    var paths = svg.querySelectorAll("path");
+    var best = null, bestScore = -1;
+    var minWidth = axes.x.length > 1 ? (axes.x[axes.x.length - 1].x - axes.x[0].x) * .65 : 300;
+    for (var i = 0; i < paths.length; i++) {
+      var path = paths[i];
+      try {
+        var box = path.getBBox();
+        var length = path.getTotalLength();
+        var stroke = path.getAttribute("stroke");
+        var fill = path.getAttribute("fill");
+        if (box.width < minWidth || box.height < 4 || length < minWidth) continue;
+        if (!stroke && fill && fill !== "none") continue;
+        var score = box.width + box.height * 2 + Math.min(length, 1800) * .05;
+        if (score > bestScore) { best = path; bestScore = score; }
+      } catch (e) {}
+    }
+    return best;
+  }
+
+  function pointAtX(path, targetX) {
+    var total = path.getTotalLength();
+    var low = 0, high = total, point = path.getPointAtLength(0);
+    for (var i = 0; i < 22; i++) {
+      var mid = (low + high) / 2;
+      point = path.getPointAtLength(mid);
+      if (point.x < targetX) low = mid;
+      else high = mid;
+    }
+    var a = path.getPointAtLength(low);
+    var b = path.getPointAtLength(high);
+    return Math.abs(a.x - targetX) < Math.abs(b.x - targetX) ? a : b;
+  }
+
+  function makeRect(className, x, y, width, height, delay) {
+    var rect = document.createElementNS(NS, "rect");
+    rect.setAttribute("class", className);
+    rect.setAttribute("x", x.toFixed(2));
+    rect.setAttribute("y", y.toFixed(2));
+    rect.setAttribute("width", width.toFixed(2));
+    rect.setAttribute("height", Math.max(0, height).toFixed(2));
+    rect.setAttribute("rx", Math.min(12, width / 2).toFixed(2));
+    if (delay) rect.style.animationDelay = delay + "ms";
+    return rect;
+  }
+
+  function decorate() {
+    addStyles();
+    var svg = findChart();
+    if (!svg) return;
+    if (svg.__fpBarsV3 && svg.querySelector(".fp-v3-bars")) return;
+
+    var old = svg.querySelector(".fp-v3-bars");
+    if (old) old.remove();
+
+    var axes = readAxes(svg);
+    if (axes.x.length < 2 || axes.y.length < 2) return;
+    var line = findDataLine(svg, axes);
+    if (!line) return;
+
+    var yTop = axes.y[0].y;
+    var yBottom = axes.y[axes.y.length - 1].y;
+    if (!isFinite(yTop) || !isFinite(yBottom) || yBottom <= yTop) return;
+
+    var gaps = [];
+    for (var g = 1; g < axes.x.length; g++) gaps.push(axes.x[g].x - axes.x[g - 1].x);
+    gaps.sort(function (a, b) { return a - b; });
+    var medianGap = gaps[Math.floor(gaps.length / 2)] || 70;
+    var width = Math.max(18, Math.min(44, medianGap * .54));
+
+    var group = document.createElementNS(NS, "g");
+    group.setAttribute("class", "fp-v3-bars");
+    group.setAttribute("aria-hidden", "true");
+
+    var points = [];
+    for (var i = 0; i < axes.x.length; i++) {
+      try {
+        var point = pointAtX(line, axes.x[i].x);
+        var py = Math.max(yTop, Math.min(yBottom, point.y));
+        points.push({ x: axes.x[i].x, y: py });
+      } catch (e) {
+        points.push({ x: axes.x[i].x, y: yBottom });
+      }
+    }
+
+    var selectedIndex = -1;
+    for (var s = points.length - 1; s >= 0; s--) {
+      if (yBottom - points[s].y > 3) { selectedIndex = s; break; }
+    }
+    if (selectedIndex < 0) selectedIndex = Math.floor(points.length / 2);
+
+    for (var b = 0; b < points.length; b++) {
+      var left = points[b].x - width / 2;
+      group.appendChild(makeRect("fp-v3-bar-track", left, yTop, width, yBottom - yTop, 0));
+      var fillHeight = Math.max(3, yBottom - points[b].y);
+      var classes = "fp-v3-bar" + (b === selectedIndex ? " fp-v3-bar-selected" : "");
+      group.appendChild(makeRect(classes, left, yBottom - fillHeight, width, fillHeight, b * 54));
+    }
+
+    var firstInteractive = svg.querySelector(".fp-cross,.fp-hoverdot,rect[fill='transparent']");
+    if (firstInteractive) svg.insertBefore(group, firstInteractive);
+    else svg.appendChild(group);
+
+    line.classList.add("fp-v3-chart-line");
+    svg.__fpBarsV3 = true;
+
+    var overlay = svg.querySelector("rect[fill='transparent']");
+    if (overlay && !overlay.__fpBarHover) {
+      overlay.__fpBarHover = true;
+      overlay.addEventListener("mousemove", function (event) {
+        var pt = svg.createSVGPoint();
+        pt.x = event.clientX;
+        pt.y = event.clientY;
+        var local = pt.matrixTransform(svg.getScreenCTM().inverse());
+        var nearest = 0, distance = Infinity;
+        for (var j = 0; j < points.length; j++) {
+          var d = Math.abs(points[j].x - local.x);
+          if (d < distance) { distance = d; nearest = j; }
+        }
+        var bars = group.querySelectorAll(".fp-v3-bar");
+        for (var k = 0; k < bars.length; k++) bars[k].classList.toggle("fp-v3-bar-selected", k === nearest);
+      });
+      overlay.addEventListener("mouseleave", function () {
+        var bars = group.querySelectorAll(".fp-v3-bar");
+        for (var k = 0; k < bars.length; k++) bars[k].classList.toggle("fp-v3-bar-selected", k === selectedIndex);
+      });
+    }
+  }
+
+  function boot() {
+    decorate();
+    var main = document.getElementById("fp-main");
+    if (main) {
+      new MutationObserver(function () { requestAnimationFrame(decorate); })
+        .observe(main, { childList: true, subtree: true });
+    }
+    setInterval(decorate, 1300);
+  }
+
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
+  else boot();
+})();
