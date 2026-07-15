@@ -564,3 +564,40 @@
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
   else boot();
 })();
+
+
+/* FEMMAS APP V3 PRINT AND TOPBAR GUARD
+ * Keeps existing printable invoice documents visually untouched and prevents
+ * compact top rows from clipping text in either language.
+ */
+(function () {
+  var id = "fp-v3-print-topbar-guard";
+  if (document.getElementById(id)) return;
+  var style = document.createElement("style");
+  style.id = id;
+  style.textContent = [
+    "#fp-main>[data-topbanner='1'],#fp-main>[data-topbanner='1'] *{line-height:1.4!important;max-height:none!important;overflow:visible!important;}",
+    "#fp-main>.fp-v3-topbar{max-height:none!important;}",
+    "#fp-main>.fp-v3-topbar :is(h1,h2,h3,p,[data-title]){white-space:normal!important;max-height:none!important;overflow:visible!important;padding-top:1px!important;padding-bottom:1px!important;}",
+
+    "#fp-main .fp-printable{background:#fff!important;color:#111827!important;box-shadow:none!important;}",
+    "html.fp-dark #fp-main .fp-printable{background:#fff!important;color:#111827!important;}",
+    "html.fp-dark #fp-main .fp-printable [style*='background:#fff'],html.fp-dark #fp-main .fp-printable [style*='background: #fff'],html.fp-dark #fp-main .fp-printable [style*='background:#ffffff']{background:#fff!important;}",
+    "html.fp-dark #fp-main .fp-printable [style*='color:#1F2937'],html.fp-dark #fp-main .fp-printable [style*='color:#111827'],html.fp-dark #fp-main .fp-printable [style*='color:#0f172a']{color:#111827!important;}",
+    "#fp-main .fp-printable table{background:#fff!important;color:#111827!important;box-shadow:none!important;border-radius:0!important;}",
+    "#fp-main .fp-printable th,#fp-main .fp-printable td{color:#111827!important;background:transparent!important;}",
+
+    "@media print{",
+      "html,body,#fp-main{background:#fff!important;color:#111827!important;}",
+      "#fp-main .fp-printable,#fp-main .fp-printable *{text-shadow:none!important;filter:none!important;}",
+      "#fp-main .fp-printable{background:#fff!important;color:#111827!important;border-radius:0!important;box-shadow:none!important;}",
+      "#fp-main .fp-printable :is(input,select,textarea){background:transparent!important;color:#111827!important;border:none!important;border-radius:0!important;box-shadow:none!important;}",
+      "#fp-main .fp-printable table{display:table!important;background:#fff!important;color:#111827!important;box-shadow:none!important;border-radius:0!important;overflow:visible!important;}",
+      "#fp-main .fp-printable thead{display:table-header-group!important;}",
+      "#fp-main .fp-printable tbody{display:table-row-group!important;}",
+      "#fp-main .fp-printable tr{display:table-row!important;}",
+      "#fp-main .fp-printable th,#fp-main .fp-printable td{display:table-cell!important;background:transparent!important;color:#111827!important;}",
+    "}"
+  ].join("");
+  document.head.appendChild(style);
+})();
