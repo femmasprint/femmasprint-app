@@ -446,7 +446,7 @@
     for (var n = 0; n < navItems.length; n++) {
       var item = navItems[n];
       var style = (item.getAttribute("style") || "").toLowerCase();
-      if (item.getAttribute("aria-current") === "page" || style.indexOf("#008ece") > -1 || style.indexOf("51,153,255") > -1) {
+      if (item.getAttribute("aria-current") === "page" || style.indexOf("#008ece") > -1 || style.indexOf("51,153,255") > -1 || style.indexOf("46,144,240") > -1) {
         item.classList.add("fp-v3-active");
       } else {
         item.classList.remove("fp-v3-active");
@@ -600,4 +600,141 @@
     "}"
   ].join("");
   document.head.appendChild(style);
+})();
+
+
+/* FEMMAS APP V3 INVOICE LIST SKIN
+ * Brings the live Sales Invoices list overlay into the same logo-led theme.
+ * The A4 document surface (#fpSheet / #fpPrintArea) is deliberately excluded.
+ */
+(function () {
+  "use strict";
+  var STYLE_ID = "fp-v3-invoice-list-skin";
+  var css = [
+    "#fpSkin{background:var(--fp-page)!important;color:var(--fp-text)!important;font-family:'Plus Jakarta Sans',system-ui,sans-serif!important;}",
+    "#fpSkin>div:first-child{position:sticky!important;top:0!important;z-index:15!important;min-height:62px!important;height:auto!important;overflow:visible!important;flex-wrap:wrap!important;background:var(--fp-brand-gradient)!important;color:#fff!important;border-bottom:0!important;box-shadow:0 12px 30px rgba(19,49,90,.22)!important;}",
+    "#fpSkin>div:first-child>div:first-child{background:rgba(255,255,255,.94)!important;border:1px solid rgba(255,255,255,.45)!important;box-shadow:inset 2px 2px 7px rgba(19,49,90,.10),0 5px 14px rgba(7,21,38,.13)!important;}",
+    "#fpSkin #fpSearch{background:transparent!important;color:#13315A!important;box-shadow:none!important;border:none!important;}",
+    "#fpSkin #fpSearch::placeholder{color:#71839B!important;}",
+    "#fpSkin .fpAdd,#fpSkin .fpAddP{display:inline-flex!important;align-items:center!important;justify-content:center!important;min-height:34px!important;padding:7px 14px!important;border:1px solid rgba(255,255,255,.42)!important;border-radius:999px!important;background:rgba(255,255,255,.15)!important;color:#fff!important;box-shadow:inset 1px 1px 0 rgba(255,255,255,.28),0 6px 15px rgba(7,21,38,.14)!important;backdrop-filter:blur(8px);}",
+    "#fpSkin>div:not(:first-child) .fpAdd,#fpSkin>div:not(:first-child) .fpAddP{background:var(--fp-brand-gradient)!important;border-color:transparent!important;color:#fff!important;box-shadow:0 8px 20px rgba(51,153,255,.24)!important;}",
+    "#fpSkin .fpAddPlus{background:rgba(255,255,255,.16)!important;color:#fff!important;border:1px solid rgba(255,255,255,.38)!important;box-shadow:inset 1px 1px 0 rgba(255,255,255,.26)!important;}",
+    "#fpSkin .fpPrintList,#fpSkin .fpTopMenu{color:#fff!important;}",
+    "#fpSkin .fpPrintList svg,#fpSkin .fpTopMenu>svg{stroke:currentColor!important;fill:none;}",
+
+    "#fpSkin .fpTitleSwitch{color:var(--fp-text)!important;}",
+    "#fpSkin #fpTotInner,#fpSkin #fpTableWrap{background:var(--fp-surface-strong)!important;color:var(--fp-text)!important;border:1px solid var(--fp-line)!important;border-radius:16px!important;box-shadow:var(--fp-shadow-raised)!important;}",
+    "#fpSkin #fpTotInner{padding:15px!important;}",
+    "#fpSkin #fpTableWrap{overflow:auto!important;}",
+    "#fpSkin #fpTableWrap table{width:100%!important;background:var(--fp-surface-strong)!important;color:var(--fp-text)!important;border-collapse:separate!important;border-spacing:0!important;}",
+    "#fpSkin #fpTableWrap thead,#fpSkin #fpTableWrap th{background:rgba(19,49,90,.075)!important;color:#13315A!important;border-color:var(--fp-line)!important;}",
+    "#fpSkin #fpTableWrap td{background:transparent!important;color:var(--fp-text)!important;border-color:var(--fp-line)!important;}",
+    "#fpSkin #fpTableWrap tr:hover td{background:rgba(51,153,255,.06)!important;}",
+    "#fpSkin :is(.fpSort,.fpr,.fpPeriod,.fpCal,.fpFirms,.fpUsers,.fpClear,.fpFocusSearch,.fpChart,.fpXls,.fpbtn){background:var(--fp-surface-strong)!important;color:var(--fp-text)!important;border-color:var(--fp-line)!important;border-radius:12px!important;box-shadow:var(--fp-shadow-soft)!important;}",
+    "#fpSkin :is(.fpPrint,.fpShare){background:var(--fp-brand-gradient)!important;color:#fff!important;border-color:transparent!important;box-shadow:0 8px 20px rgba(51,153,255,.24)!important;}",
+    "#fpSkin :is(.fpmm,.fpmi){background:var(--fp-surface-strong)!important;color:var(--fp-text)!important;border-color:var(--fp-line)!important;box-shadow:0 18px 45px rgba(7,21,38,.25)!important;}",
+    "#fpSkin :is(input,select,textarea){background:var(--fp-surface-soft)!important;color:var(--fp-text)!important;border:1px solid var(--fp-line)!important;border-radius:11px!important;box-shadow:var(--fp-shadow-inset)!important;}",
+    "#fpSkin :is(input,select,textarea):focus{border-color:#3399FF!important;outline:none!important;box-shadow:var(--fp-shadow-inset),var(--fp-focus)!important;}",
+
+    "html.fp-dark #fpSkin #fpTableWrap thead,html.fp-dark #fpSkin #fpTableWrap th{background:rgba(51,153,255,.11)!important;color:#DCEAFF!important;}",
+    "html.fp-dark #fpSkin [style*='color:#1f2733'],html.fp-dark #fpSkin [style*='color:#334155'],html.fp-dark #fpSkin [style*='color:#0f172a']{color:var(--fp-text)!important;}",
+    "html.fp-dark #fpSkin [style*='background:#fff'],html.fp-dark #fpSkin [style*='background: #fff'],html.fp-dark #fpSkin [style*='background:#f4f6f9'],html.fp-dark #fpSkin [style*='background:#f1f5f9'],html.fp-dark #fpSkin [style*='background:#eef2f7']{background:var(--fp-surface-strong)!important;color:var(--fp-text)!important;border-color:var(--fp-line)!important;}",
+
+    "#fpSkin #fpSheet,#fpSkin #fpSheet *{text-shadow:none!important;filter:none!important;}",
+    "#fpSkin #fpSheet{background:#fff!important;color:#1F2733!important;box-shadow:0 18px 55px rgba(7,21,38,.22)!important;}",
+    "html.fp-dark #fpSkin #fpSheet{background:#fff!important;color:#1F2733!important;}",
+    "html.fp-dark #fpSkin #fpSheet [style*='background:#fff'],html.fp-dark #fpSkin #fpSheet [style*='background: #fff']{background:#fff!important;}",
+    "html.fp-dark #fpSkin #fpSheet [style*='color:#1f2733'],html.fp-dark #fpSkin #fpSheet [style*='color:#334155'],html.fp-dark #fpSkin #fpSheet [style*='color:#0f172a']{color:#1F2733!important;}",
+    "#fpPrintArea,#fpPrintArea #fpSheet{background:#fff!important;color:#1F2733!important;box-shadow:none!important;}",
+
+    ".fp-skin-utility{display:inline-flex!important;align-items:center!important;justify-content:center!important;gap:5px!important;height:34px!important;min-width:38px!important;padding:0 9px!important;border:1px solid rgba(255,255,255,.40)!important;border-radius:11px!important;background:rgba(255,255,255,.14)!important;color:#fff!important;box-shadow:inset 1px 1px 0 rgba(255,255,255,.28),0 6px 15px rgba(7,21,38,.14)!important;cursor:pointer!important;backdrop-filter:blur(8px);font:800 11px system-ui,sans-serif!important;}",
+    ".fp-skin-utility svg{width:16px;height:16px;stroke:currentColor;fill:none;flex:none;}",
+
+    "@media(max-width:700px){",
+      "#fpSkin>div:first-child{padding:9px 10px!important;gap:7px!important;}",
+      "#fpSkin>div:first-child>div:first-child{order:2!important;flex:1 0 100%!important;max-width:none!important;width:100%!important;}",
+      "#fpSkin>div:first-child>div:nth-child(2){display:none!important;}",
+      "#fpSkin .fpAdd,#fpSkin .fpAddP{font-size:11px!important;padding:6px 10px!important;}",
+      "#fpSkin #fpTableWrap{max-width:100%!important;-webkit-overflow-scrolling:touch;}",
+    "}",
+    "@media print{#fpSkin{display:none!important;}#fpPrintArea,#fpPrintArea #fpSheet{display:block!important;background:#fff!important;color:#1F2733!important;box-shadow:none!important;}}"
+  ].join("");
+
+  function injectStyles() {
+    if (document.getElementById(STYLE_ID)) return;
+    var style = document.createElement("style");
+    style.id = STYLE_ID;
+    style.textContent = css;
+    document.head.appendChild(style);
+  }
+
+  function globeIcon() {
+    return '<svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"></path></svg>';
+  }
+
+  function themeIcon() {
+    return '<svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 14.2A8.3 8.3 0 0 1 9.8 3.5 8.5 8.5 0 1 0 20.5 14.2z"></path></svg>';
+  }
+
+  function addSkinControls() {
+    var skin = document.getElementById("fpSkin");
+    if (!skin) return;
+    var toolbar = skin.firstElementChild;
+    if (!toolbar) return;
+
+    if (!toolbar.querySelector(".fp-skin-lang")) {
+      var langButton = document.createElement("button");
+      langButton.type = "button";
+      langButton.className = "fp-skin-utility fp-skin-lang";
+      var lang = "sw";
+      try { lang = localStorage.getItem("fp_lang") || "sw"; } catch (e) {}
+      langButton.innerHTML = globeIcon() + "<span>" + (lang === "sw" ? "SW" : "EN") + "</span>";
+      langButton.title = "Badili lugha / Switch language";
+      langButton.setAttribute("aria-label", langButton.title);
+      langButton.addEventListener("click", function () {
+        var current = "sw";
+        try { current = localStorage.getItem("fp_lang") || "sw"; } catch (e) {}
+        var next = current === "sw" ? "en" : "sw";
+        try { localStorage.setItem("fp_lang", next); } catch (e) {}
+        if (typeof window.FPSetLang === "function") window.FPSetLang(next);
+        window.setTimeout(function () { window.location.reload(); }, 90);
+      });
+      var printButton = toolbar.querySelector(".fpPrintList");
+      toolbar.insertBefore(langButton, printButton || null);
+    }
+
+    if (!toolbar.querySelector(".fp-skin-theme")) {
+      var themeButton = document.createElement("button");
+      themeButton.type = "button";
+      themeButton.className = "fp-skin-utility fp-skin-theme";
+      themeButton.innerHTML = themeIcon();
+      themeButton.title = "Mwanga / Giza";
+      themeButton.setAttribute("aria-label", themeButton.title);
+      themeButton.addEventListener("click", function () {
+        var next = document.documentElement.classList.contains("fp-dark") ? "light" : "dark";
+        var nativeControl = document.querySelector('.fp-theme button[data-m="' + next + '"]');
+        if (nativeControl) nativeControl.click();
+        else {
+          try {
+            localStorage.setItem("fp_mode", next);
+            localStorage.setItem("fp_dark", next === "dark" ? "1" : "0");
+          } catch (e) {}
+          document.documentElement.classList.toggle("fp-dark", next === "dark");
+        }
+      });
+      var printList = toolbar.querySelector(".fpPrintList");
+      toolbar.insertBefore(themeButton, printList || null);
+    }
+  }
+
+  function boot() {
+    injectStyles();
+    addSkinControls();
+    new MutationObserver(function () { requestAnimationFrame(addSkinControls); })
+      .observe(document.documentElement, { childList: true, subtree: true });
+    setInterval(addSkinControls, 1200);
+  }
+
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
+  else boot();
 })();
