@@ -5354,7 +5354,9 @@ class Component extends DCLogic {
     this.showToast('⏳ Saving FemmasBot settings…');
     try {
       const entries = Object.keys(cfg).map(k => [k, cfg[k] == null ? '' : String(cfg[k])]);
-      for (const entry of entries) await this.backendPost_({ action: 'saveRow', tab: 'BotConfig', record: { ConfigKey: entry[0], ConfigValue: entry[1] } });
+      const writes = Promise.all(entries.map(entry => this.backendPost_({ action: 'saveRow', tab: 'BotConfig', record: { ConfigKey: entry[0], ConfigValue: entry[1] } })));
+      const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('Cloud save timeout')), 20000));
+      await Promise.race([writes, timeout]);
       this.setState({ botSavedAt: new Date().toLocaleString('en-GB') });
       this.showToast('✓ Offers saved to cloud — WhatsApp & web update within 30 seconds');
     } catch (e) {
