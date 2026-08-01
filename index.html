@@ -5325,7 +5325,17 @@ class Component extends DCLogic {
   loadBotConfig = async () => {
     if (!/\/exec$/.test((this.state.backendUrl || '').trim())) return;
     try {
-      const r = await this.backendGet_('getTable', { tab: 'BotConfig' });
+      const results = await Promise.all([this.backendGet_('getTable', { tab: 'BotConfig' }), this.backendGet_('getTable', { tab: 'BotPrices' })]);
+      const r = results[0], pricesResult = results[1];
+      let cloudOffers = null;
+      if (pricesResult && pricesResult.ok && Array.isArray(pricesResult.rows)) {
+        const manifestRow = pricesResult.rows.find(x => String(x.service || '').toLowerCase().trim() === 'offer-manifest');
+        const manifest = manifestRow && String(manifestRow.price || '').replace(/\.0+$/, '');
+        if (manifest) {
+          const prefix = 'offer:' + manifest + ':';
+          cloudOffers = pricesResult.rows.filter(x => String(x.service || '').toLowerCase().startsWith(prefix.toLowerCase())).map((x, i) => ({ id: 'offer-cloud-' + i, name: String(x.service || '').slice(prefix.length).trim(), price: Number(x.price || 0).toLocaleString('en-US') })).filter(o => o.name && o.price !== '0');
+        }
+      }
       if (r && r.ok && Array.isArray(r.rows)) {
         const cfg = {}; r.rows.forEach(row => { if (row.ConfigKey) cfg[row.ConfigKey] = row.ConfigValue; });
         if (Object.keys(cfg).length) {
@@ -5337,8 +5347,10 @@ class Component extends DCLogic {
               { id: 'offer-mug', name: 'Mug', price: String(cfg.offerMug || '8,000') }
             ];
           }
-          this.setState(s => ({ botConfig: { ...(s.botConfig || {}), ...cfg }, botOffers: offers }));
+          this.setState(s => ({ botConfig: { ...(s.botConfig || {}), ...cfg }, botOffers: (cloudOffers && cloudOffers.length) ? cloudOffers : offers }));
         }
+      } else if (cloudOffers && cloudOffers.length) {
+        this.setState({ botOffers: cloudOffers });
       }
     } catch (e) { console.error('Load bot config failed', e); }
   };
@@ -5354,9 +5366,11 @@ class Component extends DCLogic {
     this.showToast('⏳ Saving FemmasBot settings…');
     try {
       const entries = Object.keys(cfg).map(k => [k, cfg[k] == null ? '' : String(cfg[k])]);
-      const writes = Promise.all(entries.map(entry => this.backendPost_({ action: 'saveRow', tab: 'BotConfig', record: { ConfigKey: entry[0], ConfigValue: entry[1] } })));
-      const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('Cloud save timeout')), 20000));
-      await Promise.race([writes, timeout]);
+      const version = Date.now();
+      const validOffers = offers.map(o => ({ name: String(o.name || '').trim(), price: Number(String(o.price || '').replace(/[^0-9.]/g, '')) })).filter(o => o.name && o.price > 0);
+      await Promise.all(validOffers.map(o => this.backendPost_({ action: 'bot_setCustomPrice', service: 'offer:' + version + ':' + o.name, price: o.price, updatedBy: 'femmas-app' })));
+      await this.backendPost_({ action: 'bot_setCustomPrice', service: 'offer-manifest', price: version, updatedBy: 'femmas-app' });
+      Promise.allSettled(entries.map(entry => this.backendPost_({ action: 'saveRow', tab: 'BotConfig', record: { ConfigKey: entry[0], ConfigValue: entry[1] } })));
       this.setState({ botSavedAt: new Date().toLocaleString('en-GB') });
       this.showToast('✓ Offers saved to cloud — WhatsApp & web update within 30 seconds');
     } catch (e) {
