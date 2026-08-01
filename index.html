@@ -3046,7 +3046,7 @@ window.addEventListener('load', function () {
           <button onClick="{{ saveBotConfig }}" style="display:flex;align-items:center;gap:7px;padding:10px 18px;border:none;border-radius:11px;background:#fff;color:#00578d;font-weight:800;font-size:13px;font-family:inherit;cursor:pointer;flex:none" style-hover="background:#eaf4fc"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#00578d" stroke-width="2.4"><path d="M5 12l5 5L20 6"></path></svg>Hifadhi</button>
         </div>
 
-        <div style="display:grid;grid-template-columns:1.3fr 1fr;gap:18px;align-items:start">
+        <div style="display:grid;grid-template-columns:1fr;gap:18px;align-items:start">
           <!-- config -->
           <div style="display:flex;flex-direction:column;gap:16px">
             <div style="background:rgba(255,255,255,.7);backdrop-filter:blur(18px) saturate(160%);-webkit-backdrop-filter:blur(18px) saturate(160%);border:1px solid rgba(255,255,255,.45);border-radius:16px;padding:20px;box-shadow:0 8px 30px rgba(0,87,141,.1)">
@@ -3081,33 +3081,42 @@ window.addEventListener('load', function () {
             </div>
           </div>
 
-          <!-- leads -->
-          <div style="background:rgba(255,255,255,.7);backdrop-filter:blur(18px) saturate(160%);-webkit-backdrop-filter:blur(18px) saturate(160%);border:1px solid rgba(255,255,255,.45);border-radius:16px;overflow:hidden;box-shadow:0 8px 30px rgba(0,87,141,.1)">
-            <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid rgba(0,87,141,.1)">
-              <div><h3 style="font-size:14px;font-weight:800;color:#00578d">Leads &amp; Activities</h3><div style="font-size:11.5px;color:#94a3b8;margin-top:1px">{{ botLeadCount }} shughuli za hivi karibuni · FemmasBot</div></div>
-              <button onClick="{{ refreshBotLeads }}" title="Refresh" style="width:34px;height:34px;border:1px solid #e3e6eb;border-radius:9px;background:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="background:#f4f5f7"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2"><path d="M3 12a9 9 0 0115-6.7L21 8M21 12a9 9 0 01-15 6.7L3 16"></path><path d="M21 4v4h-4M3 20v-4h4"></path></svg></button>
+          <!-- WhatsApp inbox -->
+          <div style="order:-1;background:#fff;border:1px solid rgba(0,87,141,.14);border-radius:16px;overflow:hidden;box-shadow:0 8px 30px rgba(0,87,141,.1)">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:15px 18px;border-bottom:1px solid #e8edf2;background:linear-gradient(90deg,#f7fcff,#fff)">
+              <div><h3 style="font-size:15px;font-weight:800;color:#00578d">WhatsApp Inbox</h3><div style="font-size:11.5px;color:#64748b;margin-top:2px">{{ botConversationCount }} mazungumzo · ujumbe mpya huonekana kila sekunde 10</div></div>
+              <button onClick="{{ refreshBotLeads }}" title="Pakia ujumbe mpya" style="padding:8px 13px;border:1px solid #b9d9ed;border-radius:10px;background:#fff;color:#00578d;font-size:12px;font-weight:800;font-family:inherit;cursor:pointer">↻ Refresh</button>
             </div>
-            <sc-if value="{{ botHasLeads }}" hint-placeholder-val="{{ false }}">
-              <div style="max-height:560px;overflow-y:auto">
-                <sc-for list="{{ botLeads }}" as="l" hint-placeholder-count="4">
-                  <div style="margin:12px 14px;padding:13px 15px;background:rgba(255,255,255,.75);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.55);border-radius:14px;box-shadow:0 4px 16px rgba(0,87,141,.08)">
-                    <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
-                      <span style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#008ece,#00578d);color:#fff;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;flex:none">{{ l.initial }}</span>
-                      <span style="flex:1;min-width:0"><span style="display:block;font-size:13.5px;font-weight:700;color:#0f172a">{{ l.name }}</span><span style="display:block;font-size:11.5px;color:#008ece;font-weight:600">{{ l.phone }}</span></span>
-                      <span style="{{ l.statusStyle }}">{{ l.status }}</span>
-                    </div>
-                    <div style="font-size:12.5px;color:#334155;line-height:1.5;background:rgba(0,142,206,.06);border-radius:10px;padding:9px 11px">{{ l.message }}</div>
-                    <div style="font-size:11px;color:#94a3b8;font-weight:600;margin-top:6px;display:flex;align-items:center;gap:6px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2"><path d="M21 11.5a8.4 8.4 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.4 8.4 0 01-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.4 8.4 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"></path></svg>{{ l.service }} · {{ l.date }}</div>
+            <sc-if value="{{ botHasConversations }}" hint-placeholder-val="{{ true }}">
+              <div style="display:grid;grid-template-columns:minmax(250px,32%) 1fr;min-height:570px;max-height:650px">
+                <div style="border-right:1px solid #e8edf2;overflow:hidden;display:flex;flex-direction:column;background:#f8fafc">
+                  <div style="padding:12px;border-bottom:1px solid #e8edf2"><input value="{{ botChatSearch }}" onChange="{{ onBotChatSearch }}" placeholder="Tafuta jina, namba au ujumbe…" style="width:100%;padding:10px 12px;border:1px solid #d7e2ea;border-radius:10px;background:#fff;font-size:12.5px;font-family:inherit;outline:none"></div>
+                  <div style="overflow-y:auto;flex:1;padding:7px">
+                    <sc-for list="{{ botConversations }}" as="c" hint-placeholder-count="5">
+                      <button onClick="{{ c.click }}" style="{{ c.selectedStyle }};width:100%;display:flex;gap:10px;align-items:center;text-align:left;padding:11px;border-width:1px;border-style:solid;border-radius:12px;margin-bottom:5px;cursor:pointer;font-family:inherit">
+                        <span style="width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#25d366,#128c7e);color:#fff;font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center;flex:none">{{ c.initial }}</span>
+                        <span style="min-width:0;flex:1"><span style="display:block;font-size:13px;font-weight:800;color:#172033;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ c.name }}</span><span style="display:block;font-size:11px;color:#64748b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px">{{ c.latest }}</span></span>
+                        <sc-if value="{{ c.hasUnread }}" hint-placeholder-val="{{ false }}"><span style="min-width:20px;height:20px;padding:0 5px;border-radius:10px;background:#25d366;color:#fff;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center">{{ c.unreadLabel }}</span></sc-if>
+                      </button>
+                    </sc-for>
                   </div>
-                </sc-for>
+                </div>
+                <div style="display:flex;flex-direction:column;min-width:0;background:#efeae2">
+                  <div style="height:64px;padding:10px 15px;background:#f0f2f5;border-bottom:1px solid #dfe3e7;display:flex;align-items:center;gap:11px">
+                    <span style="width:40px;height:40px;border-radius:50%;background:#128c7e;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800">WA</span>
+                    <span style="flex:1;min-width:0"><strong style="display:block;color:#172033;font-size:14px">{{ botSelectedName }}</strong><span style="font-size:11.5px;color:#64748b">{{ botSelectedNumber }}</span></span>
+                    <button onClick="{{ openBotReply }}" style="padding:9px 14px;border:none;border-radius:10px;background:#25d366;color:#fff;font-size:12px;font-weight:800;font-family:inherit;cursor:pointer">Jibu WhatsApp</button>
+                  </div>
+                  <div style="flex:1;overflow-y:auto;padding:18px 20px;background-color:#efeae2;background-image:radial-gradient(rgba(18,140,126,.06) 1px,transparent 1px);background-size:18px 18px">
+                    <sc-for list="{{ botMessages }}" as="m" hint-placeholder-count="6">
+                      <div style="{{ m.rowStyle }}"><div style="{{ m.bubbleStyle }}"><div style="font-size:11px;font-weight:800;color:#128c7e;margin-bottom:3px">{{ m.who }}</div><div style="font-size:13px;line-height:1.45;white-space:pre-wrap;word-break:break-word">{{ m.body }}</div><div style="font-size:10px;color:#7b8790;text-align:right;margin-top:4px">{{ m.time }}</div></div></div>
+                    </sc-for>
+                  </div>
+                  <div style="padding:10px 14px;background:#f0f2f5;border-top:1px solid #dfe3e7;font-size:11.5px;color:#64748b;text-align:center">Ujumbe wa zamani wa simu hauwezi kuingizwa na Meta; inbox hii hukusanya ujumbe unaopita kwenye FEMMAS APP.</div>
+                </div>
               </div>
             </sc-if>
-            <sc-if value="{{ botNoLeads }}" hint-placeholder-val="{{ true }}">
-              <div style="padding:54px 20px;display:flex;flex-direction:column;align-items:center;gap:13px">
-                <span style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,rgba(0,142,206,.12),rgba(0,87,141,.12));display:flex;align-items:center;justify-content:center"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#008ece" stroke-width="1.6"><path d="M21 11.5a8.4 8.4 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.4 8.4 0 01-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.4 8.4 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"></path></svg></span>
-                <div style="text-align:center"><div style="font-size:13.5px;font-weight:700;color:#00578d">Inasubiri ujumbe wa wateja…</div><div style="font-size:12px;color:#94a3b8;margin-top:3px">Customer messages from FemmasBot will appear here live.</div></div>
-              </div>
-            </sc-if>
+            <sc-if value="{{ botInboxEmpty }}" hint-placeholder-val="{{ false }}"><div style="padding:70px 20px;text-align:center;color:#64748b"><div style="font-size:42px;margin-bottom:10px">💬</div><strong style="color:#00578d">Inasubiri ujumbe mpya wa WhatsApp</strong><div style="font-size:12px;margin-top:5px">Ujumbe mpya ukifika utaonekana hapa moja kwa moja.</div></div></sc-if>
           </div>
         </div>
       </sc-if>
@@ -4497,7 +4506,7 @@ window.addEventListener('load', function () {
 class Component extends DCLogic {
   state = {
     darkMode: (function(){try{return localStorage.getItem('fp_dark')==='1';}catch(e){return false;}})(),
-    botConfig: { businessName: 'Femmas Print', phone: '+255 658 843 344', email: 'femmasprint@gmail.com', address: 'Amani & Congo Street, Jangwani, Ilala — Dar es Salaam', greeting: 'Karibu! Mimi ni FemmasBot wa Femmas Print. Naweza kukusaidiaje leo — makadirio ya bei, ujumbe kwa mteja, au taarifa ya huduma zetu?', services: 'Printing, Branding, Graphic Design, Large Format, DTF, Embroidery, ID Cards, Banners', offerBusinessCards: '15,000', offerMug: '8,000', offerSabaSaba: '50,000' }, botSavedAt: '', botLeads: [],
+    botConfig: { businessName: 'Femmas Print', phone: '+255 658 843 344', email: 'femmasprint@gmail.com', address: 'Amani & Congo Street, Jangwani, Ilala — Dar es Salaam', greeting: 'Karibu! Mimi ni FemmasBot wa Femmas Print. Naweza kukusaidiaje leo — makadirio ya bei, ujumbe kwa mteja, au taarifa ya huduma zetu?', services: 'Printing, Branding, Graphic Design, Large Format, DTF, Embroidery, ID Cards, Banners', offerBusinessCards: '15,000', offerMug: '8,000', offerSabaSaba: '50,000' }, botSavedAt: '', botLeads: [], botChatSearch: '', botSelectedPhone: '',
     qsPeriodOpen: false, period: 'This Month', periodOpen: false, screen: (function(){try{return sessionStorage.getItem('fp_screen')||'home';}catch(e){return 'home';}})(), customerIdx: 0, item: 6, openMenu: '', report: 'sale', setTab: 'transaction', multiPay: false, globalSearch: '', searchFocused: false, hiddenCards: [], customerSearch: '', hoverIdx: null,
     saleOpen: false, saleTitle: 'Sale', customerFormOpen: false, itemFormOpen: false, payInOpen: false, payInForm: { customer: '', amount: '', payMode: '', relType: '', relId: '', ref: '', notes: '' }, payInErr: '', contactsOpen: false, waOpen: false, toast: '', saleMode: 'credit', discountPct: 0, discountShManual: '', discountMode: 'pct', taxPct: 0, roundOff: true, received: false, receivedAmt: '',
     customer: '', customerOpen: false, paymentType: null, payTypeOpen: false, invFilter: 'all', invFilterOpen: false, unitOpenRow: null, cmdOpen: false, cmdQuery: '', itemTab: 'products', adjustOpen: false, adjustMode: 'add', adjustQty: '', widgets: [], widgetPickerOpen: false, selectedContacts: [], contactSource: 'gmail', storeCategory: 'All', storeStock: {}, metaCatalog: [], metaCatalogStatus: 'loading', metaCatalogError: '',
@@ -7792,6 +7801,59 @@ class Component extends DCLogic {
           list = acts;
         }
         return { botLeads: list, botHasLeads: list.length > 0, botNoLeads: list.length === 0, botLeadCount: list.length };
+      })(),
+      ...(() => {
+        const raw = (this.state.botLeads || []).slice();
+        const phoneOf = (r) => String(r.Phone || r.phone || '').replace(/[^0-9]/g, '');
+        const nameOf = (r) => r.CustomerName || r.ProfileName || r.WhatsAppName || r.Name || r.profile_name || 'WhatsApp User';
+        const stampOf = (r) => String(r.CreatedAt || r.SentAt || r.Timestamp || r.Date || '');
+        const bodyOf = (r) => r.MessageText || r.Message || r.body || '—';
+        const groups = {};
+        raw.forEach((r, idx) => {
+          const phone = phoneOf(r);
+          if (!phone) return;
+          if (!groups[phone]) groups[phone] = { phone, rows: [], name: nameOf(r), latest: '', latestStamp: '', unread: 0 };
+          const g = groups[phone];
+          const nm = nameOf(r);
+          if (nm && nm !== 'WhatsApp User' && nm !== 'Femmasprint') g.name = nm;
+          g.rows.push({ ...r, _idx: idx });
+          const st = stampOf(r);
+          if (st >= g.latestStamp) { g.latestStamp = st; g.latest = bodyOf(r); }
+          if (String(r.Status || '').toLowerCase() === 'new') g.unread++;
+        });
+        const q = String(this.state.botChatSearch || '').toLowerCase().trim();
+        const all = Object.values(groups).sort((a, b) => b.latestStamp.localeCompare(a.latestStamp));
+        const filtered = all.filter(g => !q || g.name.toLowerCase().includes(q) || g.phone.includes(q) || g.latest.toLowerCase().includes(q));
+        let selectedPhone = this.state.botSelectedPhone;
+        if (!groups[selectedPhone]) selectedPhone = filtered[0] ? filtered[0].phone : '';
+        const selected = groups[selectedPhone] || null;
+        const conversations = filtered.map(g => ({
+          name: g.name, phone: '+' + g.phone, initial: (g.name.replace(/[^A-Za-z]/g, '').charAt(0) || 'W').toUpperCase(), latest: g.latest,
+          unread: g.unread, hasUnread: g.unread > 0, unreadLabel: String(g.unread),
+          selectedStyle: g.phone === selectedPhone ? 'background:rgba(0,142,206,.11);border-color:rgba(0,142,206,.28)' : 'background:#fff;border-color:transparent',
+          click: () => this.setState({ botSelectedPhone: g.phone })
+        }));
+        const messages = selected ? selected.rows.sort((a, b) => {
+          const sa = stampOf(a), sb = stampOf(b); return sa === sb ? a._idx - b._idx : sa.localeCompare(sb);
+        }).map(r => {
+          const typ = String(r.MessageType || r.direction || '').toLowerCase();
+          const outgoing = typ.indexOf('assistant') > -1 || typ.indexOf('outbound') > -1 || typ.indexOf('bot:bot') > -1;
+          const stamp = stampOf(r);
+          const time = String(r.SentAt || r.CreatedAt || '').slice(11, 16);
+          return {
+            body: bodyOf(r), who: outgoing ? 'FemmasBot' : (selected.name || 'Mteja'), time: time || String(r.Date || stamp).slice(0, 10),
+            rowStyle: 'display:flex;justify-content:' + (outgoing ? 'flex-end' : 'flex-start') + ';margin:8px 0',
+            bubbleStyle: 'max-width:78%;padding:10px 12px;border-radius:' + (outgoing ? '14px 14px 3px 14px;background:#dcf8c6' : '14px 14px 14px 3px;background:#fff') + ';box-shadow:0 1px 2px rgba(15,23,42,.08);color:#1f2937'
+          };
+        }) : [];
+        const replyPhone = selected ? selected.phone : '';
+        return {
+          botConversations: conversations, botConversationCount: all.length, botHasConversations: all.length > 0,
+          botInboxEmpty: all.length === 0, botSelectedName: selected ? selected.name : 'Chagua mazungumzo', botSelectedNumber: replyPhone ? ('+' + replyPhone) : '',
+          botMessages: messages, botHasMessages: messages.length > 0, botChatSearch: this.state.botChatSearch || '',
+          onBotChatSearch: (e) => this.setState({ botChatSearch: e.target.value }),
+          openBotReply: () => { if (replyPhone) try { window.open('https://wa.me/' + replyPhone, '_blank'); } catch (e) {} }
+        };
       })(),
       refreshBotLeads: this.loadBotLeads,
       botLive: true,
