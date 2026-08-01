@@ -5028,6 +5028,7 @@ class Component extends DCLogic {
     try { this._staffTip = this.staffTips()[Math.floor(Math.random() * this.staffTips().length)]; } catch (e) {}
     try { const d = localStorage.getItem('fp_dark'); if (d === '1') { this.setState({ darkMode: true }); document.documentElement.classList.add('fp-dark'); } } catch (e) {}
     try { const saved = localStorage.getItem('fp_user_photo'); if (saved) this.setState({ userPhoto: saved }); } catch (e) {}
+    try { const bc = JSON.parse(localStorage.getItem('fp_bot_config') || 'null'); const bo = JSON.parse(localStorage.getItem('fp_bot_offers') || 'null'); if (bc && typeof bc === 'object') this.setState(s => ({ botConfig: { ...(s.botConfig || {}), ...bc } })); if (Array.isArray(bo) && bo.length) this.setState({ botOffers: bo }); } catch (e) {}
     try { const burl = localStorage.getItem('fp_backend_url'); if (burl) { this.setState({ backendUrl: burl, syncStatus: 'saved', backendConnected: /\/exec$/.test(burl.trim()) }); setTimeout(() => this.loadTodaySales(), 400); this.startBotPolling(); this.startSyncPoll_(); this.loadAdminPhotoCloud_(); } } catch (e) {}
     try { const sc = localStorage.getItem('fp_saved_customers'); if (sc) { const arr = JSON.parse(sc); if (Array.isArray(arr) && arr.length) this.setState({ savedCustomers: arr }, () => this.runCustomerAudit_(false)); } } catch (e) {}
     // restore Quick Sale + saved documents from browser so a page refresh keeps them on screen
@@ -5341,19 +5342,25 @@ class Component extends DCLogic {
       }
     } catch (e) { console.error('Load bot config failed', e); }
   };
-  saveBotConfig = () => {
+  saveBotConfig = async () => {
     const offers = (this.state.botOffers || []).filter(o => String(o.name || '').trim() || String(o.price || '').trim());
     const cfg = { ...(this.state.botConfig || {}), offersJson: JSON.stringify(offers.map(o => ({ id: o.id, name: String(o.name || '').trim(), price: String(o.price || '').trim() }))) };
     const cards = offers.find(o => /business\s*cards?|kadi za biashara/i.test(o.name || ''));
     const mug = offers.find(o => /\bmug|magi|kikombe/i.test(o.name || ''));
     if (cards) cfg.offerBusinessCards = cards.price;
     if (mug) cfg.offerMug = mug.price;
-    this.setState({ botSavedAt: new Date().toLocaleString('en-GB') });
-    if (!/\/exec$/.test((this.state.backendUrl || '').trim())) { this.showToast('✓ FemmasBot settings saved (locally) — connect Sync to send to Google Sheet'); return; }
+    try { localStorage.setItem('fp_bot_config', JSON.stringify(cfg)); localStorage.setItem('fp_bot_offers', JSON.stringify(offers)); } catch (e) {}
+    if (!/\/exec$/.test((this.state.backendUrl || '').trim())) { this.setState({ botSavedAt: new Date().toLocaleString('en-GB') }); this.showToast('✓ FemmasBot settings saved locally — connect Sync to send to cloud'); return; }
     this.showToast('⏳ Saving FemmasBot settings…');
-    this.backendPost_({ action: 'saveBotConfig', config: cfg })
-      .then(() => this.showToast('✓ FemmasBot settings saved to Google Sheet'))
-      .catch(e => { console.error('Bot config save failed', e); this.showToast('Could not save settings — check Sync'); });
+    try {
+      const entries = Object.keys(cfg).map(k => [k, cfg[k] == null ? '' : String(cfg[k])]);
+      for (const entry of entries) await this.backendPost_({ action: 'saveRow', tab: 'BotConfig', record: { ConfigKey: entry[0], ConfigValue: entry[1] } });
+      this.setState({ botSavedAt: new Date().toLocaleString('en-GB') });
+      this.showToast('✓ Offers saved to cloud — WhatsApp & web update within 30 seconds');
+    } catch (e) {
+      console.error('Bot config save failed', e);
+      this.showToast('Cloud save failed — saved locally; check Sync connection');
+    }
   };
   // Admin profile photo — saved to the cloud (Google Sheet) so it shows on EVERY device,
   // not just the one it was uploaded on. Photo is compressed to ~128px before sending.
