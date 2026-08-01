@@ -2590,8 +2590,8 @@ window.addEventListener('load', function () {
         </div>
         <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:linear-gradient(135deg,#ecfdf5,#f0fdf4);border:1px solid #bbf7d0;border-radius:16px;padding:16px 18px;margin-bottom:18px;box-shadow:0 1px 2px rgba(15,23,42,.04)">
           <div style="width:42px;height:42px;border-radius:12px;background:#25d366;display:flex;align-items:center;justify-content:center;flex:none"><svg width="23" height="23" viewBox="0 0 32 32" fill="#fff"><path d="M16 3C9.4 3 4 8.4 4 15c0 2.1.6 4.2 1.6 6L4 29l8.2-1.6c1.7.9 3.7 1.4 5.8 1.4 6.6 0 12-5.4 12-12S22.6 3 16 3zm0 21.8c-1.8 0-3.6-.5-5.1-1.4l-.4-.2-4.9.9.9-4.8-.2-.4C5.4 18.6 5 16.8 5 15 5 9 9.9 4.1 16 4.1S27 9 27 15 22.1 24.8 16 24.8z"></path></svg></div>
-          <div style="min-width:220px;flex:1"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><div style="font-size:14px;font-weight:800;color:#14532d">WhatsApp Catalogue</div><span style="display:inline-flex;align-items:center;gap:5px;padding:4px 9px;border-radius:20px;background:#dcfce7;color:#15803d;font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.04em"><span style="width:7px;height:7px;border-radius:50%;background:#22c55e"></span>Published</span></div><div style="font-size:11.5px;color:#4b7a5b;margin-top:4px">Catalogue ID 430718204713027 · +255 658 843 344 · Catalogue &amp; basket On</div></div>
-          <a href="https://wa.me/c/255658843344" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:7px;padding:10px 15px;border-radius:10px;background:#16a34a;color:#fff;font-size:12.5px;font-weight:800;text-decoration:none;flex:none" style-hover="background:#15803d">Fungua WhatsApp Catalogue <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4"><path d="M7 17L17 7M9 7h8v8"></path></svg></a>
+          <div style="min-width:220px;flex:1"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><div style="font-size:14px;font-weight:800;color:#14532d">WhatsApp Catalogue</div><span style="display:inline-flex;align-items:center;gap:5px;padding:4px 9px;border-radius:20px;background:#dcfce7;color:#15803d;font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.04em"><span style="width:7px;height:7px;border-radius:50%;background:#22c55e"></span>{{ metaCatalogStatusText }}</span></div><div style="font-size:11.5px;color:#4b7a5b;margin-top:4px">{{ metaCatalogMeta }}</div></div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><button onClick="{{ refreshMetaCatalog }}" style="display:inline-flex;align-items:center;gap:7px;padding:10px 14px;border:1px solid #86efac;border-radius:10px;background:#fff;color:#15803d;font-size:12.5px;font-weight:800;font-family:inherit;cursor:pointer;flex:none" style-hover="background:#f0fdf4">Sync sasa</button><a href="https://wa.me/c/255658843344" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:7px;padding:10px 15px;border-radius:10px;background:#16a34a;color:#fff;font-size:12.5px;font-weight:800;text-decoration:none;flex:none" style-hover="background:#15803d">Fungua WhatsApp Catalogue <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4"><path d="M7 17L17 7M9 7h8v8"></path></svg></a></div>
         </div>
         <!-- category chips -->
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px">
@@ -2613,7 +2613,7 @@ window.addEventListener('load', function () {
             <tbody>
               <sc-for list="{{ storeProducts }}" as="p" hint-placeholder-count="8">
                 <tr style="border-top:1px solid #f1f2f5" style-hover="background:#fafbff">
-                  <td style="padding:13px 22px;font-size:13px;color:#0f172a;font-weight:600">{{ p.name }}</td>
+                  <td style="padding:13px 22px;font-size:13px;color:#0f172a;font-weight:600"><span style="display:flex;align-items:center;gap:10px"><sc-if value="{{ p.hasImage }}"><img src="{{ p.image }}" alt="" style="width:38px;height:38px;border-radius:8px;object-fit:cover;border:1px solid #e2e8f0;background:#f8fafc;flex:none"></sc-if><span>{{ p.name }}</span></span></td>
                   <td style="padding:13px 14px;font-size:12.5px;color:#64748b">{{ p.unit }}</td>
                   <td style="padding:13px 14px;font-size:13px;color:#64748b;text-align:right">Sh {{ p.inv }}</td>
                   <td style="padding:13px 14px;font-size:13px;color:#0f172a;font-weight:700;text-align:right">Sh {{ p.store }}</td>
@@ -4489,7 +4489,7 @@ class Component extends DCLogic {
     botConfig: { businessName: 'Femmas Print', phone: '+255 658 843 344', email: 'femmasprint@gmail.com', address: 'Amani & Congo Street, Jangwani, Ilala — Dar es Salaam', greeting: 'Karibu! Mimi ni FemmasBot wa Femmas Print. Naweza kukusaidiaje leo — makadirio ya bei, ujumbe kwa mteja, au taarifa ya huduma zetu?', services: 'Printing, Branding, Graphic Design, Large Format, DTF, Embroidery, ID Cards, Banners', offerBusinessCards: '15,000', offerMug: '8,000', offerSabaSaba: '50,000' }, botSavedAt: '', botLeads: [],
     qsPeriodOpen: false, period: 'This Month', periodOpen: false, screen: (function(){try{return sessionStorage.getItem('fp_screen')||'home';}catch(e){return 'home';}})(), customerIdx: 0, item: 6, openMenu: '', report: 'sale', setTab: 'transaction', multiPay: false, globalSearch: '', searchFocused: false, hiddenCards: [], customerSearch: '', hoverIdx: null,
     saleOpen: false, saleTitle: 'Sale', customerFormOpen: false, itemFormOpen: false, payInOpen: false, payInForm: { customer: '', amount: '', payMode: '', relType: '', relId: '', ref: '', notes: '' }, payInErr: '', contactsOpen: false, waOpen: false, toast: '', saleMode: 'credit', discountPct: 0, discountShManual: '', discountMode: 'pct', taxPct: 0, roundOff: true, received: false, receivedAmt: '',
-    customer: '', customerOpen: false, paymentType: null, payTypeOpen: false, invFilter: 'all', invFilterOpen: false, unitOpenRow: null, cmdOpen: false, cmdQuery: '', itemTab: 'products', adjustOpen: false, adjustMode: 'add', adjustQty: '', widgets: [], widgetPickerOpen: false, selectedContacts: [], contactSource: 'gmail', storeCategory: 'All', storeStock: {},
+    customer: '', customerOpen: false, paymentType: null, payTypeOpen: false, invFilter: 'all', invFilterOpen: false, unitOpenRow: null, cmdOpen: false, cmdQuery: '', itemTab: 'products', adjustOpen: false, adjustMode: 'add', adjustQty: '', widgets: [], widgetPickerOpen: false, selectedContacts: [], contactSource: 'gmail', storeCategory: 'All', storeStock: {}, metaCatalog: [], metaCatalogStatus: 'loading', metaCatalogError: '',
     settingsChecks: [true,false,false,false,true,true,false,true,true,true,false,false,true,true,true,true,true,true,true,true,true,false,true,true,true,true,false,false,true,true,true,false,false,true,false,true],
     docOpen: false, shareOpen: false, rowMenu: null, hiddenTxns: [], payHistFor: null, custStmtOpen: false, savedDocs: [],
     custForm: { name: '', phone: '', email: '', bal: '', vrn: '', addr: '', consent: false }, custErr: '', custStatus: '', savedCustomers: [], purchaseSyncedIds: {},
@@ -4974,7 +4974,19 @@ class Component extends DCLogic {
     try { clearInterval(this._syncPoll); } catch (e) {}
     this._syncPoll = setInterval(this.syncRefreshSafe_, 30000); // every 30s
   };
+  loadMetaCatalog = async () => {
+    this.setState({ metaCatalogStatus: 'loading', metaCatalogError: '' });
+    try {
+      const response = await fetch('https://femmasbot.vercel.app/api/catalog');
+      const payload = await response.json();
+      if (!response.ok || !payload.ok) throw new Error(payload.error || 'Catalogue haijasomeka');
+      this.setState({ metaCatalog: Array.isArray(payload.products) ? payload.products : [], metaCatalogStatus: 'live', metaCatalogError: '' });
+    } catch (error) {
+      this.setState({ metaCatalogStatus: 'error', metaCatalogError: error && error.message ? error.message : 'Catalogue haijasomeka' });
+    }
+  };
   componentDidMount() {
+    this.loadMetaCatalog();
     try {
       var self = this;
       window.FPApp = window.FPApp || {};
@@ -6347,15 +6359,23 @@ class Component extends DCLogic {
       ['01/06/2026','790','KNK','Sale','465,000','02/06/2026, 2:49 PM']
     ].map(r => ({ date: r[0], no: r[1], customer: r[2] || '—', type: r[3], amount: r[4], deleted: r[5] }));
 
-    const catalogue = [
+    const catalogueFallback = [
       ['KEYHOLDER ALUMINIUM','PER PCS','0','0','gift item'], ['SCRATCH PAD','—','0','0','DIGITAL PRINTING'],
       ['BOTTLE PRINTING','—','0','0','DIGITAL PRINTING'], ['PHOTO SHOOT','—','50,000','50,000','DESIGN & MOCKUP'],
       ['ID CARD + PORCH','—','15,000','15,000','ID HQ PRINTING'], ['DIRECTION SIGNAGE NORMAL','—','10,000','10,000','LARGE FORMAT'],
       ['EXIT SIGNAGE','—','25,000','25,000','LARGE FORMAT'], ['NOTEBOOK SCREEN PRINTING','—','4,500','4,500','DIGITAL PRINTING'],
       ['MOTORCYCLE BRANDING','—','60,000','60,000','LARGE FORMAT'], ['WEBSITE DEVELOPMENT','—','200,000','200,000','DESIGN & MOCKUP'],
       ['WEBSITE DESIGN','—','150,000','150,000','DESIGN & MOCKUP']
-    ].map(c => ({ name: c[0], unit: c[1], inv: c[2], store: c[3], category: c[4] }));
-    const catCategories = ['All','DESIGN & MOCKUP','DIGITAL PRINTING','DTF OUT','EMBROIDERY','gift item','HEAT PRESS','ID HQ PRINTING','LAMINATION','LARGE FORMAT','LASER PRINTING'];
+    ].map(c => ({ name: c[0], unit: c[1], inv: c[2], store: c[3], category: c[4], url: 'https://wa.me/c/255658843344' }));
+    const catalogue = this.state.metaCatalog.length ? this.state.metaCatalog.map(p => ({
+      name: p.name || 'Bidhaa', unit: 'WhatsApp', inv: '—',
+      store: String(p.price || '0').replace(/[^0-9.,]/g, '') || '0',
+      category: 'WhatsApp Catalogue',
+      available: String(p.availability || '').toLowerCase() !== 'out of stock',
+      url: p.url || 'https://wa.me/c/255658843344',
+      image: p.imageUrl || '', hasImage: !!p.imageUrl
+    })) : catalogueFallback;
+    const catCategories = this.state.metaCatalog.length ? ['All','WhatsApp Catalogue'] : ['All','DESIGN & MOCKUP','DIGITAL PRINTING','DTF OUT','EMBROIDERY','gift item','HEAT PRESS','ID HQ PRINTING','LAMINATION','LARGE FORMAT','LASER PRINTING'];
 
     // ===== Online Store interactivity =====
     const storeCat = this.state.storeCategory || 'All';
@@ -6366,7 +6386,7 @@ class Component extends DCLogic {
       style: 'padding:8px 14px;border-radius:20px;font-size:12.5px;cursor:pointer;' + (storeCat === c ? 'background:#008ece;color:#fff;font-weight:700;border:1px solid #008ece;' : 'background:#fff;border:1px solid #e3e6eb;color:#475569;font-weight:600;')
     }));
     const storeProducts = catalogue.filter(p => storeCat === 'All' || p.category === storeCat).map(p => {
-      const inStock = storeStock[p.name] !== false;
+      const inStock = p.available !== false && storeStock[p.name] !== false;
       return {
         ...p, inStock,
         stockLabel: inStock ? 'In Stock' : 'Out of Stock',
@@ -6375,7 +6395,7 @@ class Component extends DCLogic {
         knobStyle: 'position:absolute;top:2.5px;width:14px;height:14px;border-radius:50%;background:#fff;transition:left .15s;left:' + (inStock ? '17.5px' : '2.5px'),
         toggleStock: () => this.setState(s => ({ storeStock: { ...(s.storeStock || {}), [p.name]: !(((s.storeStock || {})[p.name]) !== false) } })),
         editProduct: () => { this.openItemForm(); },
-        shareProduct: () => this.showToast('🔗 Store link for “' + p.name + '” copied')
+        shareProduct: () => { try { window.open(p.url || 'https://wa.me/c/255658843344', '_blank', 'noopener'); } catch (e) {} }
       };
     });
     const bulkRows = [
@@ -7881,6 +7901,9 @@ class Component extends DCLogic {
       isRecycleBin: screen === 'recyclebin', recycleRows,
       catalogue, catCategories, bulkRows, marketingCats,
       storeChips, storeProducts,
+      metaCatalogStatusText: this.state.metaCatalogStatus === 'live' ? 'Live Sync' : (this.state.metaCatalogStatus === 'loading' ? 'Inasoma…' : 'Sync Error'),
+      metaCatalogMeta: this.state.metaCatalogStatus === 'live' ? ('Catalogue ID 430718204713027 · ' + this.state.metaCatalog.length + ' bidhaa · +255 658 843 344') : (this.state.metaCatalogError || 'Inaunganisha Meta catalogue…'),
+      refreshMetaCatalog: this.loadMetaCatalog,
       addStoreCategory: () => this.showToast('+ Add a new product category'),
       viewAllReports: () => this.setState({ screen: 'reports', report: 'sale', openMenu: '' }),
       ...reportVals,
