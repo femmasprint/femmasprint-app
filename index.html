@@ -6359,23 +6359,15 @@ class Component extends DCLogic {
       ['01/06/2026','790','KNK','Sale','465,000','02/06/2026, 2:49 PM']
     ].map(r => ({ date: r[0], no: r[1], customer: r[2] || '—', type: r[3], amount: r[4], deleted: r[5] }));
 
-    const catalogueFallback = [
-      ['KEYHOLDER ALUMINIUM','PER PCS','0','0','gift item'], ['SCRATCH PAD','—','0','0','DIGITAL PRINTING'],
-      ['BOTTLE PRINTING','—','0','0','DIGITAL PRINTING'], ['PHOTO SHOOT','—','50,000','50,000','DESIGN & MOCKUP'],
-      ['ID CARD + PORCH','—','15,000','15,000','ID HQ PRINTING'], ['DIRECTION SIGNAGE NORMAL','—','10,000','10,000','LARGE FORMAT'],
-      ['EXIT SIGNAGE','—','25,000','25,000','LARGE FORMAT'], ['NOTEBOOK SCREEN PRINTING','—','4,500','4,500','DIGITAL PRINTING'],
-      ['MOTORCYCLE BRANDING','—','60,000','60,000','LARGE FORMAT'], ['WEBSITE DEVELOPMENT','—','200,000','200,000','DESIGN & MOCKUP'],
-      ['WEBSITE DESIGN','—','150,000','150,000','DESIGN & MOCKUP']
-    ].map(c => ({ name: c[0], unit: c[1], inv: c[2], store: c[3], category: c[4], url: 'https://wa.me/c/255658843344' }));
-    const catalogue = this.state.metaCatalog.length ? this.state.metaCatalog.map(p => ({
+    const catalogue = this.state.metaCatalog.map(p => ({
       name: p.name || 'Bidhaa', unit: 'WhatsApp', inv: '—',
       store: String(p.price || '0').replace(/[^0-9.,]/g, '') || '0',
       category: 'WhatsApp Catalogue',
       available: String(p.availability || '').toLowerCase() !== 'out of stock',
       url: p.url || 'https://wa.me/c/255658843344',
       image: p.imageUrl || '', hasImage: !!p.imageUrl
-    })) : catalogueFallback;
-    const catCategories = this.state.metaCatalog.length ? ['All','WhatsApp Catalogue'] : ['All','DESIGN & MOCKUP','DIGITAL PRINTING','DTF OUT','EMBROIDERY','gift item','HEAT PRESS','ID HQ PRINTING','LAMINATION','LARGE FORMAT','LASER PRINTING'];
+    }));
+    const catCategories = ['All','WhatsApp Catalogue'];
 
     // ===== Online Store interactivity =====
     const storeCat = this.state.storeCategory || 'All';
