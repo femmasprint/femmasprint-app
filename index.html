@@ -5366,10 +5366,13 @@ class Component extends DCLogic {
     this.showToast('⏳ Saving FemmasBot settings…');
     try {
       const entries = Object.keys(cfg).map(k => [k, cfg[k] == null ? '' : String(cfg[k])]);
-      const version = Date.now();
       const validOffers = offers.map(o => ({ name: String(o.name || '').trim(), price: Number(String(o.price || '').replace(/[^0-9.]/g, '')) })).filter(o => o.name && o.price > 0);
-      await Promise.all(validOffers.map(o => this.backendPost_({ action: 'bot_setCustomPrice', service: 'offer:' + version + ':' + o.name, price: o.price, updatedBy: 'femmas-app' })));
-      await this.backendPost_({ action: 'bot_setCustomPrice', service: 'offer-manifest', price: version, updatedBy: 'femmas-app' });
+      const syncUrl = (this.state.backendUrl || '').trim();
+      const digest = await window.crypto.subtle.digest('SHA-256', new TextEncoder().encode(syncUrl));
+      const proof = Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, '0')).join('');
+      const offerResp = await fetch('https://femmasbot.vercel.app/api/offers', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-fp-sync-proof': proof }, body: JSON.stringify({ offers: validOffers }) });
+      const offerData = await offerResp.json().catch(() => ({}));
+      if (!offerResp.ok || !offerData.ok) throw new Error(offerData.error || 'Offer save failed');
       Promise.allSettled(entries.map(entry => this.backendPost_({ action: 'saveRow', tab: 'BotConfig', record: { ConfigKey: entry[0], ConfigValue: entry[1] } })));
       this.setState({ botSavedAt: new Date().toLocaleString('en-GB') });
       this.showToast('✓ Offers saved to cloud — WhatsApp & web update within 30 seconds');
