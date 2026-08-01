@@ -2703,6 +2703,17 @@ window.addEventListener('load', function () {
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px"><div style="width:36px;height:36px;border-radius:9px;background:#ecfdf5;color:#16a34a;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;flex:none">✓</div><h3 style="font-size:15px;font-weight:700">Google authorization completed</h3></div>
           <div style="font-size:13px;color:#64748b;line-height:1.6">The official FEMMAS PRINT review link is now connected to the app. Use “Ask for a Review” to send customers directly to your verified Google review form.</div>
         </div>
+        <div style="background:#fff;border:1px solid #ebedf1;border-radius:16px;padding:20px;margin-top:18px;box-shadow:0 1px 2px rgba(15,23,42,.04)">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:16px"><div><h3 style="font-size:15px;font-weight:800;color:#0f172a">Wateja wa kuomba review</h3><div style="font-size:12px;color:#64748b;margin-top:3px">Wateja 5 wa hivi karibuni waliolipa · bonyeza Omba kufungua WhatsApp yenye ujumbe tayari.</div></div><span style="padding:5px 10px;border-radius:20px;background:#ecfdf5;color:#15803d;font-size:10.5px;font-weight:800">KILA WIKI</span></div>
+          <sc-if value="{{ hasGoogleReviewCandidates }}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <sc-for list="{{ googleReviewCandidates }}" as="r" hint-placeholder-count="5">
+                <div style="display:flex;align-items:center;gap:12px;padding:12px 13px;border:1px solid #eef0f3;border-radius:12px;background:#fafbfc"><div style="width:36px;height:36px;border-radius:50%;background:#e9f3fe;color:#00578d;font-weight:800;display:flex;align-items:center;justify-content:center;flex:none">{{ r.initial }}</div><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:800;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.name }}</div><div style="font-size:11.5px;color:#64748b;margin-top:2px">{{ r.date }} · Sh {{ r.amount }}</div></div><sc-if value="{{ r.hasPhone }}" hint-placeholder-val="{{ true }}"><a href="{{ r.waHref }}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;padding:8px 13px;border-radius:9px;background:#25d366;color:#fff;font-size:11.5px;font-weight:800;text-decoration:none;flex:none">Omba</a></sc-if><sc-if value="{{ r.noPhone }}" hint-placeholder-val="{{ false }}"><span style="font-size:10.5px;font-weight:700;color:#94a3b8">Hakuna namba</span></sc-if></div>
+              </sc-for>
+            </div>
+          </sc-if>
+          <sc-if value="{{ noGoogleReviewCandidates }}" hint-placeholder-val="{{ false }}"><div style="padding:18px;text-align:center;border:1px dashed #dbe2ea;border-radius:12px;color:#64748b;font-size:12.5px">Hakuna malipo ya karibuni yenye jina la mteja. Yataonekana hapa baada ya kurekodi Payment-In.</div></sc-if>
+        </div>
       </sc-if>
 
       <!-- ============ BULK UPDATE ITEMS ============ -->
@@ -6855,6 +6866,38 @@ class Component extends DCLogic {
       hasTxns: (sp[5] || []).length > 0
     };
 
+    // Google review requests: latest real Payment-In customers, matched to real saved phone numbers.
+    const reviewPhoneByName = {};
+    (this.state.savedCustomers || []).forEach(c => {
+      const key = String(c.name || c.CustomerName || '').trim().toLowerCase();
+      const ph = c.phone || c.Phone || '';
+      if (key && ph) reviewPhoneByName[key] = ph;
+    });
+    (this.state.qsAllRows || []).forEach(s => {
+      const key = String(s.Client || s.client || s.CustomerName || '').trim().toLowerCase();
+      const ph = s.CustomerPhone || s.customerPhone || s.Phone || s.phone || '';
+      if (key && ph && !reviewPhoneByName[key]) reviewPhoneByName[key] = ph;
+    });
+    const reviewSeen = {};
+    const googleReviewCandidates = (this.state.savedPayments || []).slice().sort((a, b) => String(b.CreatedAt || b.Date || '').localeCompare(String(a.CreatedAt || a.Date || ''))).filter(p => {
+      const name = String(p.CustomerName || '').trim();
+      const key = name.toLowerCase();
+      if (!name || name === '-' || reviewSeen[key] || Number(p.Amount || 0) <= 0) return false;
+      reviewSeen[key] = true;
+      return true;
+    }).slice(0, 5).map(p => {
+      const name = String(p.CustomerName || '').trim();
+      const rawPhone = p.Phone || p.CustomerPhone || reviewPhoneByName[name.toLowerCase()] || '';
+      const phone = String(rawPhone).replace(/[^0-9]/g, '').replace(/^0/, '255');
+      const hasPhone = phone.length >= 11 && phone.length <= 13;
+      const dateRaw = String(p.Date || p.CreatedAt || '').slice(0, 10);
+      const date = /^\d{4}-\d{2}-\d{2}$/.test(dateRaw) ? dateRaw.split('-').reverse().join('/') : (dateRaw || '—');
+      const msg = 'Habari ' + name + ', asante kwa kuchagua FEMMAS PRINT. Tunafurahi kukuhudumia. Tafadhali tupe maoni yako mafupi kwenye Google kupitia link hii: https://g.page/r/CR4pWEYPGh59EBE/review Asante sana!';
+      return { name, initial: name.replace(/[^A-Za-z ]/g, '').trim().charAt(0).toUpperCase() || 'M', date, amount: fmt(Number(p.Amount || 0)), hasPhone, noPhone: !hasPhone, waHref: hasPhone ? ('https://wa.me/' + phone + '?text=' + encodeURIComponent(msg)) : '#' };
+    });
+    const hasGoogleReviewCandidates = googleReviewCandidates.length > 0;
+    const noGoogleReviewCandidates = !hasGoogleReviewCandidates;
+
     // ===== items =====
     const idata = [
       ['. Transparent', 0], ['1 CHAMPION KOMBE', -6], ['1. 500g Mozz = 10 sheets', -10],
@@ -7993,7 +8036,7 @@ class Component extends DCLogic {
       ],
       growParent: mkParent('grow', ['grow','googleprofile','marketing','onlinestore']),
       subGoogleProfile: mkSub('googleprofile'), subMarketing: mkSub('marketing'), subOnlineStore: mkSub('onlinestore'),
-      isGoogleProfile: screen === 'googleprofile', isMarketing: screen === 'marketing', isOnlineStore: screen === 'onlinestore', isBulkUpdate: screen === 'bulkupdate', isOrders: screen === 'orders',
+      isGoogleProfile: screen === 'googleprofile', googleReviewCandidates, hasGoogleReviewCandidates, noGoogleReviewCandidates, isMarketing: screen === 'marketing', isOnlineStore: screen === 'onlinestore', isBulkUpdate: screen === 'bulkupdate', isOrders: screen === 'orders',
       subBulkUpdate: mkSub('bulkupdate'),
       saleParent: mkParent('sale', ['sale','pos','saleorder','orders','estimate','proforma','paymentin','challan','salereturn']),
       purchaseParent: mkParent('purchase', ['purchase','paymentout','expenses','purchaseorder','purchasereturn']),
