@@ -1228,7 +1228,10 @@ window.addEventListener('load', function () {
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px">
           <sc-for list="{{ invPills }}" as="c" hint-placeholder-count="4"><div onClick="{{ c.pick }}" style="{{ c.style }}">{{ c.label }}</div></sc-for>
           <sc-if value="{{ invHasOverdue }}" hint-placeholder-val="{{ false }}"><div style="padding:7px 14px;border-radius:999px;font-size:12.5px;font-weight:800;border:1px solid #fecaca;background:#fff1f2;color:#e11d48;display:inline-flex;align-items:center;gap:5px">⚠ Overdue · {{ invOverdueCnt }}</div></sc-if>
+          <div style="margin-left:auto;font-size:11.5px;font-weight:700;color:#64748b">{{ invShowingLabel }}</div>
+          <button onClick="{{ refreshInvoices }}" style="padding:7px 12px;border:1px solid #cfe3ef;border-radius:9px;background:#fff;color:#00578d;font-size:11.5px;font-weight:800;font-family:inherit;cursor:pointer">{{ invRefreshLabel }}</button>
         </div>
+        <sc-if value="{{ invHasLoadError }}" hint-placeholder-val="{{ false }}"><div style="padding:9px 12px;margin-bottom:12px;border:1px solid #fde68a;border-radius:10px;background:#fffbeb;color:#92400e;font-size:11.5px;font-weight:700">{{ invLoadError }}</div></sc-if>
         <div style="background:#fff;border:1px solid #ebedf1;border-radius:16px;overflow:hidden;box-shadow:0 1px 2px rgba(15,23,42,.04)">
           <sc-if value="{{ invHasRows }}" hint-placeholder-val="{{ false }}">
             <table style="width:100%;border-collapse:collapse">
@@ -1272,6 +1275,9 @@ window.addEventListener('load', function () {
             </div>
           </sc-if>
         </div>
+        <sc-if value="{{ invHasMore }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;justify-content:center;padding:14px"><button onClick="{{ invLoadMore }}" style="padding:10px 20px;border:1px solid #b9d8e8;border-radius:11px;background:#fff;color:#00578d;font-size:12.5px;font-weight:800;font-family:inherit;cursor:pointer">Onyesha invoice 50 zaidi</button></div>
+        </sc-if>
       </sc-if>
 
       <!-- ============ PARTIES ============ -->
@@ -4566,6 +4572,7 @@ class Component extends DCLogic {
     customer: '', customerOpen: false, paymentType: null, payTypeOpen: false, invFilter: 'all', invFilterOpen: false, unitOpenRow: null, cmdOpen: false, cmdQuery: '', itemTab: 'products', adjustOpen: false, adjustMode: 'add', adjustQty: '', widgets: [], widgetPickerOpen: false, selectedContacts: [], contactSource: 'gmail', storeCategory: 'All', storeStock: {}, metaCatalog: [], metaCatalogStatus: 'loading', metaCatalogError: '', catalogEditorOpen: false, catalogForm: { id: '', retailerId: '', name: '', description: '', price: '', availability: 'in stock', url: 'https://wa.me/c/255658843344' }, catalogImages: [], catalogSaving: false, catalogErr: '',
     settingsChecks: [true,false,false,false,true,true,false,true,true,true,false,false,true,true,true,true,true,true,true,true,true,false,true,true,true,true,false,false,true,true,true,false,false,true,false,true],
     docOpen: false, shareOpen: false, rowMenu: null, hiddenTxns: [], payHistFor: null, custStmtOpen: false, savedDocs: [],
+    savedInvoices: (function(){try{var x=JSON.parse(localStorage.getItem('fp_invoices_cache')||'[]');return Array.isArray(x)?x:[];}catch(e){return [];}})(), invoiceLoading: false, invoiceLoadError: '', invoiceVisibleLimit: 50,
     custForm: { name: '', phone: '', email: '', bal: '', vrn: '', addr: '', consent: false }, custErr: '', custStatus: '', savedCustomers: [], purchaseSyncedIds: {},
     billingAddrManual: null, shipAddrManual: null, saleImage: null, delivOpen: false,
     deliv: { driver: '', cargo: '', driverPhone: '', receiver: '', receiverPhone: '', location: '' },
@@ -4847,7 +4854,21 @@ class Component extends DCLogic {
   capInvoiceCustomer = () => this.setState(s => { const name = this.capWords(s.invoiceForm.customer); const m = (s.savedCustomers || []).find(c => (c.name || '').trim().toLowerCase() === name.trim().toLowerCase()); return { invoiceForm: { ...s.invoiceForm, customer: name, phone: s.invoiceForm.phone || (m ? (m.phone || '') : '') } }; });
   loadInvoices = async () => {
     if (!/\/exec$/.test((this.state.backendUrl || '').trim())) return;
-    try { const r = await this.backendGet_('getTable', { tab: 'Invoices' }); if (r && r.ok && Array.isArray(r.rows)) this.setState({ savedInvoices: r.rows }); } catch (e) { console.error('Load invoices failed', e); }
+    if (this.state.invoiceLoading) return;
+    this.setState({ invoiceLoading: true, invoiceLoadError: '' });
+    try {
+      const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('Invoice sync timed out')), 15000));
+      const r = await Promise.race([this.backendGet_('getTable', { tab: 'Invoices' }), timeout]);
+      if (r && r.ok && Array.isArray(r.rows)) {
+        try { localStorage.setItem('fp_invoices_cache', JSON.stringify(r.rows)); } catch (e) {}
+        this.setState({ savedInvoices: r.rows, invoiceLoading: false, invoiceLoadError: '' });
+      } else {
+        this.setState({ invoiceLoading: false, invoiceLoadError: 'Sync haikurudisha invoice. Data iliyohifadhiwa bado inaonekana.' });
+      }
+    } catch (e) {
+      console.error('Load invoices failed', e);
+      this.setState({ invoiceLoading: false, invoiceLoadError: 'Muunganisho umechelewa. Data iliyohifadhiwa bado inaonekana.' });
+    }
   };
   saveInvoice = () => {
     const fm = this.state.invoiceForm || {};
@@ -4872,7 +4893,7 @@ class Component extends DCLogic {
     const done = { ...(this.state.invoiceSyncedIds || {}) };
     if (!_prev && Object.values(done).indexOf(sig) > -1) { this.setState({ invoiceOpen: false }); this.showToast('Invoice already recorded'); return; }
     done[iid] = sig;
-    this.setState(s => ({ invoiceOpen: false, invoiceSyncedIds: done, savedInvoices: _prev ? (s.savedInvoices || []).map(r0 => ((r0.InvoiceID === iid || (String(r0.InvoiceNo || "").trim().toLowerCase() === _invNoEdit)) ? rec : r0)) : [rec, ...(s.savedInvoices || [])] }));
+    this.setState(s => ({ invoiceOpen: false, invoiceSyncedIds: done, savedInvoices: _prev ? (s.savedInvoices || []).map(r0 => ((r0.InvoiceID === iid || (String(r0.InvoiceNo || "").trim().toLowerCase() === _invNoEdit)) ? rec : r0)) : [rec, ...(s.savedInvoices || [])] }), () => { try { localStorage.setItem('fp_invoices_cache', JSON.stringify(this.state.savedInvoices || [])); } catch (e) {} });
     if (!/\/exec$/.test((this.state.backendUrl || '').trim())) { this.showToast('✓ Invoice saved (locally) — connect Sync to send to Google Sheet'); return; }
     this.showToast('⏳ Saving invoice…');
     this.backendPost_({ action: 'saveRow', tab: 'Invoices', record: rec })
@@ -8418,7 +8439,7 @@ class Component extends DCLogic {
         // include sales created via the "Add Sale" form (stored in savedDocs) so they show here too
         const sdList = (this.state.savedDocs || []).filter(d => d.typeKey === 'sale' && (statF === 'All' || (d.status || 'Unpaid') === statF) && (!sq || String(d.customer || '').toLowerCase().includes(sq) || String('FP/INV/' + d.no).toLowerCase().includes(sq)));
         const sdRows = sdList.map(d => { const balTxt = fmtI(d.balance); return { date: d.date, no: 'FP/INV/' + d.no, taxLabel: 'TAX INVOICE', customer: d.customer || '—', phone: '', dueDate: '—', overdue: '', overdueDays: 0, odStyle: odStyle, waHref: waLink2('', d.customer, 'FP/INV/'+d.no, balTxt), rowBg: '', amount: 'Sh ' + fmtI(d.amount), paid: 'Sh ' + fmtI((d.amount || 0) - (d.balance || 0)), balance: (d.balance||0)>0 ? 'Sh ' + balTxt : '—', balColor: (d.balance || 0) > 0 ? '#e11d48' : '#94a3b8', status: (d.status || 'Unpaid').toUpperCase()==='PAID'?'Paid':(d.status||'Unpaid'), statusStyle: stStyle(d.status || 'Unpaid') }; });
-        const rows = sdRows.concat(all.slice().sort((a, b) => String(b.CreatedAt || b.Date || '').localeCompare(String(a.CreatedAt || a.Date || ''))).map(p => {
+        const allRows = sdRows.concat(all.slice().sort((a, b) => String(b.CreatedAt || b.Date || '').localeCompare(String(a.CreatedAt || a.Date || ''))).map(p => {
           const dd = String(p.Date || p.CreatedAt || '').slice(0, 10);
           const dateStr = /^\d{4}-\d{2}-\d{2}$/.test(dd) ? dd.split('-').reverse().join('/') : dd;
           const bal = Number(p.Balance != null ? p.Balance : (Number(p.TotalAmount || 0) - Number(p.PaidAmount || 0)));
@@ -8426,29 +8447,35 @@ class Component extends DCLogic {
           const od = overdueOf(p.DueDate, bal); const balTxt = fmtI(bal);
           return { date: dateStr, no: p.InvoiceNo || '—', taxLabel: (p.TaxInvoice===false?'INVOICE':'TAX INVOICE'), customer: p.CustomerName || '—', phone: p.Phone || '', dueDate: fmtDate2(p.DueDate), overdue: od.label, overdueDays: od.days, odStyle: odStyle, waHref: waLink2(p.Phone, p.CustomerName, p.InvoiceNo, balTxt), rowBg: od.days>0 ? 'background:#fff5f5' : '', amount: 'Sh ' + fmtI(p.TotalAmount), paid: 'Sh ' + fmtI(p.PaidAmount), balance: bal>0 ? 'Sh ' + balTxt : '—', balColor: bal > 0 ? '#e11d48' : '#94a3b8', status: st, statusStyle: stStyle(st) };
         }));
+        const visibleLimit = Math.max(50, Number(this.state.invoiceVisibleLimit || 50));
+        const rows = allRows.slice(0, visibleLimit);
         const tot = all.reduce((a, p) => a + Number(p.TotalAmount || 0), 0) + sdList.reduce((a, d) => a + Number(d.amount || 0), 0);
         const paidT = all.reduce((a, p) => a + Number(p.PaidAmount || 0), 0) + sdList.reduce((a, d) => a + (Number(d.amount || 0) - Number(d.balance || 0)), 0);
         const balT = all.reduce((a, p) => a + Number(p.Balance != null ? p.Balance : (Number(p.TotalAmount || 0) - Number(p.PaidAmount || 0))), 0) + sdList.reduce((a, d) => a + Number(d.balance || 0), 0);
         const cnt = (s) => all.filter(p => (p.Status || 'Unpaid') === s).length + sdList.filter(d => (d.status || 'Unpaid') === s).length;
         const presetLabel = { today: 'Today', week: 'This Week', month: 'This Month', year: 'This Year', all: 'All Time', custom: (cs && ce) ? (cs.split('-').reverse().join('/') + ' — ' + ce.split('-').reverse().join('/')) : 'Custom' }[preset];
-        const pchip = (key, label) => ({ label, pick: () => this.setState({ siPreset: key, siDropOpen: false }), style: 'padding:8px 13px;border-radius:9px;font-size:12.5px;font-weight:700;cursor:pointer;' + (preset === key ? 'background:#e9f3fe;color:#00578d' : 'color:#475569') });
+        const pchip = (key, label) => ({ label, pick: () => this.setState({ siPreset: key, siDropOpen: false, invoiceVisibleLimit: 50 }), style: 'padding:8px 13px;border-radius:9px;font-size:12.5px;font-weight:700;cursor:pointer;' + (preset === key ? 'background:#e9f3fe;color:#00578d' : 'color:#475569') });
         const invCustChips = ['Draft', 'Unpaid', 'Partial', 'Paid', 'Cancelled'].map(t => ({ label: t, pick: this.setInvoiceStatus(t), style: 'padding:9px 14px;border-radius:11px;font-size:12.5px;font-weight:700;cursor:pointer;border:1px solid ' + ((this.state.invoiceForm || {}).status === t ? '#008ece;background:linear-gradient(135deg,#008ece,#00578d);color:#fff' : 'rgba(0,87,141,.2);background:rgba(255,255,255,.6);color:#475569') }));
         const f = this.state.invoiceForm || {};
         const nF = (v) => { const x = parseFloat(String(v).replace(/,/g, '')); return isNaN(x) ? 0 : x; };
         return {
-          invRows: rows, invHasRows: rows.length > 0, invEmpty: rows.length === 0,
-          invCount: rows.length, invTotal: fmtI(tot), invPaid: fmtI(paidT), invBalance: fmtI(balT),
-          invUnpaidCnt: cnt('Unpaid'), invPartialCnt: cnt('Partial'), invPaidCnt: cnt('Paid'), invOverdueCnt: rows.filter(r => r.overdueDays > 0).length, invHasOverdue: rows.filter(r => r.overdueDays > 0).length > 0,
-          invPills: [{k:'All',label:'All',n:rows.length},{k:'Paid',label:'Paid',n:cnt('Paid')},{k:'Partial',label:'Partial',n:cnt('Partial')},{k:'Unpaid',label:'Unpaid',n:cnt('Unpaid')}].map(x=>({label:x.label+' · '+x.n, pick:()=>this.setState({siStatusFilter:x.k}), style:'padding:7px 14px;border-radius:999px;font-size:12.5px;font-weight:700;cursor:pointer;border:1px solid '+(statF===x.k?'transparent;background:#008ece;color:#fff':'rgba(0,87,141,.18);background:#fff;color:#475569')})),
+          invRows: rows, invHasRows: rows.length > 0, invEmpty: allRows.length === 0,
+          invCount: allRows.length, invTotal: fmtI(tot), invPaid: fmtI(paidT), invBalance: fmtI(balT),
+          invUnpaidCnt: cnt('Unpaid'), invPartialCnt: cnt('Partial'), invPaidCnt: cnt('Paid'), invOverdueCnt: allRows.filter(r => r.overdueDays > 0).length, invHasOverdue: allRows.some(r => r.overdueDays > 0),
+          invPills: [{k:'All',label:'All',n:allRows.length},{k:'Paid',label:'Paid',n:cnt('Paid')},{k:'Partial',label:'Partial',n:cnt('Partial')},{k:'Unpaid',label:'Unpaid',n:cnt('Unpaid')}].map(x=>({label:x.label+' · '+x.n, pick:()=>this.setState({siStatusFilter:x.k,invoiceVisibleLimit:50}), style:'padding:7px 14px;border-radius:999px;font-size:12.5px;font-weight:700;cursor:pointer;border:1px solid '+(statF===x.k?'transparent;background:#008ece;color:#fff':'rgba(0,87,141,.18);background:#fff;color:#475569')})),
+          invShowingLabel: allRows.length ? ('Inaonyesha ' + Math.min(rows.length, allRows.length) + ' kati ya ' + allRows.length) : 'Hakuna invoice',
+          invHasMore: rows.length < allRows.length, invLoadMore: () => this.setState(s => ({ invoiceVisibleLimit: Number(s.invoiceVisibleLimit || 50) + 50 })),
+          invRefreshLabel: this.state.invoiceLoading ? 'Inasawazisha…' : '↻ Sync mpya', refreshInvoices: this.loadInvoices,
+          invHasLoadError: !!this.state.invoiceLoadError, invLoadError: this.state.invoiceLoadError || '',
           invPresetLabel: presetLabel, invDropOpen: this.state.siDropOpen, toggleInvDrop: () => this.setState(s => ({ siDropOpen: !s.siDropOpen, siCalOpen: false, siStatusDropOpen: false })),
           invPresetChips: [pchip('today', 'Today'), pchip('week', 'This Week'), pchip('month', 'This Month'), pchip('year', 'This Year'), pchip('all', 'All Time')],
           invCalOpen: this.state.siCalOpen, toggleInvCal: () => this.setState(s => ({ siCalOpen: !s.siCalOpen, siDropOpen: false, siStatusDropOpen: false })),
-          invRangeStartV: cs, invRangeEndV: ce, onInvRangeStart: (e) => this.setState({ siRangeStart: e.target.value }), onInvRangeEnd: (e) => this.setState({ siRangeEnd: e.target.value }),
-          applyInvRange: () => this.setState({ siPreset: 'custom', siCalOpen: false }),
-          invSearchV: this.state.siSearch || '', onInvSearch: (e) => this.setState({ siSearch: e.target.value }),
+          invRangeStartV: cs, invRangeEndV: ce, onInvRangeStart: (e) => this.setState({ siRangeStart: e.target.value, invoiceVisibleLimit: 50 }), onInvRangeEnd: (e) => this.setState({ siRangeEnd: e.target.value, invoiceVisibleLimit: 50 }),
+          applyInvRange: () => this.setState({ siPreset: 'custom', siCalOpen: false, invoiceVisibleLimit: 50 }),
+          invSearchV: this.state.siSearch || '', onInvSearch: (e) => this.setState({ siSearch: e.target.value, invoiceVisibleLimit: 50 }),
           invStatusFilter: statF, invStatusDropOpen: this.state.siStatusDropOpen,
           toggleInvStatusDrop: () => this.setState(s => ({ siStatusDropOpen: !s.siStatusDropOpen, siDropOpen: false, siCalOpen: false })),
-          invStatusOptions: ['All', 'Draft', 'Unpaid', 'Partial', 'Paid', 'Cancelled'].map(st => ({ label: st, pick: () => this.setState({ siStatusFilter: st, siStatusDropOpen: false }), style: 'padding:8px 12px;border-radius:8px;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap;' + (statF === st ? 'background:#e9f3fe;color:#00578d' : 'color:#475569') })),
+          invStatusOptions: ['All', 'Draft', 'Unpaid', 'Partial', 'Paid', 'Cancelled'].map(st => ({ label: st, pick: () => this.setState({ siStatusFilter: st, siStatusDropOpen: false, invoiceVisibleLimit: 50 }), style: 'padding:8px 12px;border-radius:8px;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap;' + (statF === st ? 'background:#e9f3fe;color:#00578d' : 'color:#475569') })),
           openInvoiceForm: this.openInvoiceForm, closeInvoiceForm: this.closeInvoiceForm, saveInvoice: this.saveInvoice,
           invoiceOpen: this.state.invoiceOpen, invoiceForm: this.state.invoiceForm || {}, invoiceErr: this.state.invoiceErr || '',
           onInvoiceCustomer: this.onInvoiceField('customer'), capInvoiceCustomer: this.capInvoiceCustomer,
