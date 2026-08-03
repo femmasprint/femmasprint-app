@@ -5427,21 +5427,29 @@ class Component extends DCLogic {
       else { this.setState({ backendStatusMsg: 'Backend replied without ok — check the deployment', backendStatusKind: 'err' }); }
     } catch (err) { this.setState({ backendStatusMsg: String(err && err.message || err), backendStatusKind: 'err' }); }
   };
-  // JSONP call to the Apps Script web app (dodges CORS for reads/ping)
-  backendGet_ = (action, params, timeoutMs) => new Promise((resolve, reject) => {
+  // JSONP call to Apps Script. All reads share one queue so Google is never flooded
+  // by several screens/pollers at once (the main cause of intermittent timeouts).
+  backendGet_ = (action, params, timeoutMs) => {
+    const run = () => new Promise((resolve, reject) => {
     let base = (this.state.backendUrl || '').trim();
     if (!/\/exec$/.test(base)) { reject(new Error('URL lazima iishie na /exec')); return; }
     const cb = 'fpcb_' + Math.random().toString(36).slice(2);
     const q = Object.assign({ action: action, callback: cb }, params || {});
     const qs = Object.keys(q).map(k => encodeURIComponent(k) + '=' + encodeURIComponent(q[k])).join('&');
     const s = document.createElement('script');
-    const timer = setTimeout(() => { cleanup(); reject(new Error('Muda umeisha (timeout) — angalia URL au deployment')); }, Number(timeoutMs || 12000));
-    function cleanup() { clearTimeout(timer); try { delete window[cb]; } catch (e) { window[cb] = undefined; } if (s.parentNode) s.parentNode.removeChild(s); }
-    window[cb] = (data) => { cleanup(); resolve(data); };
-    s.onerror = () => { cleanup(); reject(new Error('Imeshindwa kufikia backend')); };
+    let finished = false;
+    const timer = setTimeout(() => { if(finished)return; finished=true; cleanup(false); reject(new Error('Muda umeisha (timeout) — angalia URL au deployment')); }, Number(timeoutMs || 45000));
+    function cleanup(success) { clearTimeout(timer); if (s.parentNode) s.parentNode.removeChild(s); if(success){try{delete window[cb];}catch(e){window[cb]=undefined;}}else{window[cb]=function(){};setTimeout(function(){try{delete window[cb];}catch(e){window[cb]=undefined;}},120000);} }
+    window[cb] = (data) => { if(finished)return; finished=true; cleanup(true); resolve(data); };
+    s.onerror = () => { if(finished)return; finished=true; cleanup(false); reject(new Error('Imeshindwa kufikia backend')); };
     s.src = base + '?' + qs;
     document.body.appendChild(s);
-  });
+    });
+    const prior = window.__fpBackendReadQueue || Promise.resolve();
+    const next = prior.catch(function(){}).then(run);
+    window.__fpBackendReadQueue = next.catch(function(){});
+    return next;
+  };
   onBotField = (k) => (e) => { const v = e.target.value; this.setState(s => ({ botConfig: { ...(s.botConfig || {}), [k]: v } })); };
   onBotOfferField = (id, key) => (e) => { const value = e.target.value; this.setState(s => ({ botOffers: (s.botOffers || []).map(o => o.id === id ? { ...o, [key]: value } : o) })); };
   addBotOffer = () => this.setState(s => ({ botOffers: [...(s.botOffers || []), { id: 'offer-' + Date.now(), name: '', price: '' }] }));
@@ -5449,8 +5457,8 @@ class Component extends DCLogic {
   loadBotConfig = async () => {
     if (!/\/exec$/.test((this.state.backendUrl || '').trim())) return;
     try {
-      const results = await Promise.all([this.backendGet_('getTable', { tab: 'BotConfig' }), this.backendGet_('getTable', { tab: 'BotPrices' })]);
-      const r = results[0], pricesResult = results[1];
+      const r = await this.backendGet_('getTable', { tab: 'BotConfig' });
+      const pricesResult = await this.backendGet_('getTable', { tab: 'BotPrices' });
       let cloudOffers = null;
       if (pricesResult && pricesResult.ok && Array.isArray(pricesResult.rows)) {
         const manifestRow = pricesResult.rows.find(x => String(x.service || '').toLowerCase().trim() === 'offer-manifest');
