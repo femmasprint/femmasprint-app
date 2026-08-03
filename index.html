@@ -9545,13 +9545,15 @@ class Component extends DCLogic {
     var ch=rgb2hex(cs.color); if(ch){ var dc=mapTx(ch); if(dc)el.style.setProperty('color',dc,'important'); }
     var bt=rgb2hex(cs.borderTopColor); if(bt){ var dbt=mapBd(bt); if(dbt){ el.style.setProperty('border-top-color',dbt,'important'); el.style.setProperty('border-right-color',dbt,'important'); el.style.setProperty('border-bottom-color',dbt,'important'); el.style.setProperty('border-left-color',dbt,'important'); } }
     try{ var bi=el.style.backgroundImage||cs.backgroundImage; if(bi && bi.indexOf('gradient')>-1){ var cols=bi.match(/rgba?\([^)]*\)|#[0-9a-fA-F]{6}|#[0-9a-fA-F]{3}\b/g); if(cols&&cols.length){ var gs=0,gn=0; for(var q=0;q<cols.length;q++){ var cc=cols[q]; var gh=cc.charAt(0)==='#'?normHex(cc):rgb2hex(cc); if(gh){gs+=lum(gh);gn++;} } var gavg=gn?gs/gn:0.5; if(gavg>0.60){ el.style.setProperty('background-image','none','important'); el.style.setProperty('background-color','#141d31','important'); } } } }catch(e){} }
-  function walk(root){ if(!root||root.nodeType!==1)return; darkenEl(root); var els=root.querySelectorAll?root.querySelectorAll('*'):[]; for(var i=0;i<els.length;i++)darkenEl(els[i]); }
+  // Dark mode is already covered by the html.fp-dark CSS rules above.  The old
+  // computed-style walker touched every descendant after every React update and
+  // made large workspaces (especially Sales Invoice) appear frozen.
+  function walk(root){ return; }
   function restore(root){ var els=(root||document.body).querySelectorAll('[data-fpl]'); for(var i=0;i<els.length;i++){ var el=els[i]; el.setAttribute('style', el.getAttribute('data-fpl')||''); el.removeAttribute('data-fpl'); } }
   var obs=null;
   var _pend=[], _ft=null;
   function _flush(){ _ft=null; var arr=_pend; _pend=[]; for(var i=0;i<arr.length;i++) walk(arr[i]); }
-  function on(){ document.documentElement.style.setProperty('background','#0a0e1a','important'); document.body.style.setProperty('background','#0a0e1a','important'); walk(document.body);
-    if(!obs){ obs=new MutationObserver(function(muts){ if(!isDark())return; for(var j=0;j<muts.length;j++){ var a=muts[j].addedNodes; for(var i=0;i<a.length;i++){ if(a[i].nodeType===1)_pend.push(a[i]); } } if(!_ft&&_pend.length)_ft=setTimeout(_flush,30); }); obs.observe(document.body,{childList:true,subtree:true}); } }
+  function on(){ document.documentElement.style.setProperty('background','#0a0e1a','important'); document.body.style.setProperty('background','#0a0e1a','important'); }
   function off(){ if(obs){obs.disconnect();obs=null;} document.documentElement.style.background=''; document.body.style.background=''; restore(document.body); }
   function isDark(){ try{return localStorage.getItem('fp_dark')==='1';}catch(e){return false;} }
   function setDark(v){ try{localStorage.setItem('fp_dark',v?'1':'0');}catch(e){} if(v)on(); else off(); paint(); }
