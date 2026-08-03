@@ -5461,15 +5461,17 @@ class Component extends DCLogic {
       const pricesResult = await this.backendGet_('getTable', { tab: 'BotPrices' });
       let cloudOffers = null;
       if (pricesResult && pricesResult.ok && Array.isArray(pricesResult.rows)) {
-        const manifestRow = pricesResult.rows.find(x => String(x.service || '').toLowerCase().trim() === 'offer-manifest');
+        const readCell = (row, names) => { const key = Object.keys(row || {}).find(k => names.indexOf(String(k).toLowerCase()) > -1); return key ? row[key] : ''; };
+        const normalized = pricesResult.rows.map(x => ({ service: readCell(x, ['service','name','item']), price: readCell(x, ['price','amount','value']) }));
+        const manifestRow = normalized.find(x => String(x.service || '').toLowerCase().trim() === 'offer-manifest');
         const manifest = manifestRow && String(manifestRow.price || '').replace(/\.0+$/, '');
         if (manifest) {
           const prefix = 'offer:' + manifest + ':';
-          cloudOffers = pricesResult.rows.filter(x => String(x.service || '').toLowerCase().startsWith(prefix.toLowerCase())).map((x, i) => ({ id: 'offer-cloud-' + i, name: String(x.service || '').slice(prefix.length).trim(), price: Number(x.price || 0).toLocaleString('en-US') })).filter(o => o.name && o.price !== '0');
+          cloudOffers = normalized.filter(x => String(x.service || '').toLowerCase().startsWith(prefix.toLowerCase())).map((x, i) => ({ id: 'offer-cloud-' + i, name: String(x.service || '').slice(prefix.length).trim(), price: Number(x.price || 0).toLocaleString('en-US') })).filter(o => o.name && o.price !== '0');
         }
       }
       if (r && r.ok && Array.isArray(r.rows)) {
-        const cfg = {}; r.rows.forEach(row => { if (row.ConfigKey) cfg[row.ConfigKey] = row.ConfigValue; });
+        const cfg = {}; r.rows.forEach(row => { const keys=Object.keys(row||{}); const kk=keys.find(k=>/^(configkey|key|name|field)$/i.test(k)); const vk=keys.find(k=>/^(configvalue|value|val|data)$/i.test(k)); if (kk && row[kk]) cfg[row[kk]] = vk ? row[vk] : ''; });
         if (Object.keys(cfg).length) {
           let offers = null;
           try { const parsed = JSON.parse(cfg.offersJson || ''); if (Array.isArray(parsed)) offers = parsed.filter(o => o && (o.name || o.price)).map((o, i) => ({ id: o.id || ('offer-cloud-' + i), name: String(o.name || ''), price: String(o.price || '') })); } catch (e) {}
@@ -5509,7 +5511,7 @@ class Component extends DCLogic {
       const proof = Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, '0')).join('');
       const offerResp = await fetch('https://femmasbot.vercel.app/api/offers', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-fp-sync-proof': proof }, body: JSON.stringify({ offers: validOffers }) });
       const offerData = await offerResp.json().catch(() => ({}));
-      if (!offerResp.ok || !offerData.ok) console.warn('BotPrices mirror unavailable; BotConfig offersjson saved instead');
+      if (!offerResp.ok || !offerData.ok || Number(offerData.count) !== validOffers.length) throw new Error(offerData.error || 'Offer cloud verification failed');
       this.setState({ botSavedAt: new Date().toLocaleString('en-GB') });
       this.showToast('✓ Offers saved to cloud — WhatsApp & web update within 30 seconds');
     } catch (e) {
