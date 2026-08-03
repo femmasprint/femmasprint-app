@@ -8681,6 +8681,7 @@ class Component extends DCLogic {
       themeIcon: this.state.darkMode
         ? React.createElement('svg', { width: 17, height: 17, viewBox: '0 0 24 24', fill: 'none', stroke: '#d97706', 'stroke-width': 2 }, React.createElement('circle', { cx: 12, cy: 12, r: 4 }), React.createElement('path', { d: 'M12 2v2M12 20v2M4 12H2M22 12h-2M5 5l1.5 1.5M17.5 17.5L19 19M19 5l-1.5 1.5M6.5 17.5L5 19' }))
         : React.createElement('svg', { width: 17, height: 17, viewBox: '0 0 24 24', fill: 'none', stroke: '#475569', 'stroke-width': 2 }, React.createElement('path', { d: 'M21 12.8A9 9 0 1111.2 3 7 7 0 0021 12.8z' })),
+      doSync: this.doSync,
       syncOpen: this.state.syncOpen, closeSync: this.closeSync, backendUrl: this.state.backendUrl || '',
       onBackendUrl: this.onBackendUrl, testBackend: this.testBackend, disconnectBackend: this.disconnectBackend, pullCustomers: this.pullCustomers, pullContacts: this.pullContacts, cleanDuplicates: this.cleanDuplicates,
       syncStatus: this.state.syncStatus || 'idle', syncMsg: this.state.syncMsg || '',
