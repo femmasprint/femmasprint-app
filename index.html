@@ -6852,7 +6852,9 @@ class Component extends DCLogic {
     };
 
     // ===== REAL DATA helpers (QuickSale / Expenses / Purchases kutoka Sheet) =====
-    const fpQsAll = this.state.qsAllRows || window.__fpQsAll || [];
+    // Large QuickSale history is only needed while Reports is visible.  Keeping it
+    // out of every unrelated render makes sidebar clicks instant on real datasets.
+    const fpQsAll = screen === 'reports' ? (this.state.qsAllRows || window.__fpQsAll || []) : [];
     const fpMoney = (r) => { const v = parseFloat(String(r.Amount != null ? r.Amount : (r.Total != null ? r.Total : '')).replace(/[^0-9.\-]/g, '')); if (!isNaN(v) && v) return v; return (parseFloat(r.Qty) || 0) * (parseFloat(r.UnitPrice) || 0); };
     const fpDStr = (r) => String(r.Date || r.CreatedAt || '').slice(0, 10);
     const fpPad2 = (n) => String(n).padStart(2, '0');
@@ -6960,7 +6962,7 @@ class Component extends DCLogic {
 
     // ===== Ripoti ya Mauzo: data HALISI kutoka QuickSale + Faida (Mauzo - Gharama ya Items) =====
     const repCostMap = {};
-    (this.state.savedItems || []).forEach(it => { const nm = String(it.ItemName || it.Name || '').trim().toLowerCase(); const c = parseFloat(it.UnitCost != null ? it.UnitCost : it.Cost); if (nm && !isNaN(c) && c > 0) repCostMap[nm] = c; });
+    (screen === 'reports' ? (this.state.savedItems || []) : []).forEach(it => { const nm = String(it.ItemName || it.Name || '').trim().toLowerCase(); const c = parseFloat(it.UnitCost != null ? it.UnitCost : it.Cost); if (nm && !isNaN(c) && c > 0) repCostMap[nm] = c; });
     const fpDMY = (iso) => iso.slice(8, 10) + '/' + iso.slice(5, 7) + '/' + iso.slice(0, 4);
     const repRangeLabel = fpDMY(fpMonthLo) + ' \u2014 ' + fpDMY(fpTodayIso);
     const repQsSaleRows = fpQsAll
@@ -7003,7 +7005,8 @@ class Component extends DCLogic {
       ['PLASMOND AFRICA LTD', 297000, '+255 754 330 990', 'sales@plasmond.com', 'Arusha', [['Sale','802','10/06/2026',297000,297000,'Unpaid']]],
       ['NJE CAMP', 2070000, '+255 783 441 220', 'njecamp@mail.com', 'Serengeti', [['Sale','790','01/06/2026',2070000,2070000,'Unpaid']]]
     ];
-    const savedCustRows = (this.state.savedCustomers || []).map(c => [c.name, c.openingBalance || 0, c.phone || '—', c.email || '—', c.address || 'Tanzania', [], c.synced]);
+    const customerScreens = ['customers','quicksale','sale','estimate','proforma','paymentin','orders','challan','salereturn','pos'];
+    const savedCustRows = (customerScreens.includes(screen) ? (this.state.savedCustomers || []) : []).map(c => [c.name, c.openingBalance || 0, c.phone || '—', c.email || '—', c.address || 'Tanzania', [], c.synced]);
     const pdataAll = [...savedCustRows, ...pdata];
     const selName = this.state.selectedCustomerName != null ? this.state.selectedCustomerName : (pdataAll[0] ? pdataAll[0][0] : '');
     let pIdx = pdataAll.findIndex(p => p[0] === selName);
@@ -7077,7 +7080,7 @@ class Component extends DCLogic {
       if (key && ph && !reviewPhoneByName[key]) reviewPhoneByName[key] = ph;
     });
     const reviewSeen = {};
-    const googleReviewCandidates = (this.state.savedPayments || []).slice().sort((a, b) => String(b.CreatedAt || b.Date || '').localeCompare(String(a.CreatedAt || a.Date || ''))).filter(p => {
+    const googleReviewCandidates = (screen === 'googleprofile' ? (this.state.savedPayments || []) : []).slice().sort((a, b) => String(b.CreatedAt || b.Date || '').localeCompare(String(a.CreatedAt || a.Date || ''))).filter(p => {
       const name = String(p.CustomerName || '').trim();
       const key = name.toLowerCase();
       if (!name || name === '-' || reviewSeen[key] || Number(p.Amount || 0) <= 0) return false;
@@ -8068,7 +8071,7 @@ class Component extends DCLogic {
       saveBotConfig: this.saveBotConfig,
       ...(() => {
         const pill = (c, bg) => 'font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;color:' + c + ';background:' + bg + ';';
-        const realLeads = (this.state.botLeads || []).filter(l => {
+        const realLeads = (screen === 'bot' ? (this.state.botLeads || []) : []).filter(l => {
           const s = ((l.MessageType || '') + ' ' + (l.Channel || '')).toLowerCase();
           return s.indexOf('bot:customer') === -1;
         }).slice().sort((a, b) => String(b.CreatedAt || b.Date || '').localeCompare(String(a.CreatedAt || a.Date || ''))).map(l => {
@@ -8368,7 +8371,7 @@ class Component extends DCLogic {
         else if (preset === 'custom') { lo = cs; hi = ce; }
         const dOf = (p) => String(p.Date || p.CreatedAt || '').slice(0, 10);
         const inRange = (p) => { if (preset === 'all') return true; const dd = dOf(p); if (!dd) return false; if (lo && dd < lo) return false; if (hi && dd > hi) return false; return true; };
-        const all = (this.state.savedOrders || []).filter(p => inRange(p) && (statF === 'All' || (p.Status || 'Pending') === statF) && (!sq || String(p.CustomerName || '').toLowerCase().includes(sq) || String(p.Service || '').toLowerCase().includes(sq)));
+        const all = (screen === 'orders' ? (this.state.savedOrders || []) : []).filter(p => inRange(p) && (statF === 'All' || (p.Status || 'Pending') === statF) && (!sq || String(p.CustomerName || '').toLowerCase().includes(sq) || String(p.Service || '').toLowerCase().includes(sq)));
         const stStyle = (st) => 'font-size:11.5px;font-weight:700;padding:3px 11px;border-radius:20px;' + (st === 'Completed' ? 'color:#16a34a;background:#ecfdf5;' : st === 'In Progress' ? 'color:#2563eb;background:#eff6ff;' : st === 'Cancelled' ? 'color:#64748b;background:#f1f5f9;' : 'color:#d97706;background:#fffbeb;');
         const rows = all.slice().sort((a, b) => String(b.CreatedAt || b.Date || '').localeCompare(String(a.CreatedAt || a.Date || ''))).map(p => {
           const dd = String(p.Date || p.CreatedAt || '').slice(0, 10);
@@ -8429,7 +8432,7 @@ class Component extends DCLogic {
         else if (preset === 'custom') { lo = cs; hi = ce; }
         const dOf = (p) => String(p.Date || p.CreatedAt || '').slice(0, 10);
         const inRange = (p) => { if (preset === 'all') return true; const dd = dOf(p); if (!dd) return false; if (lo && dd < lo) return false; if (hi && dd > hi) return false; return true; };
-        const all = (this.state.savedInvoices || []).filter(p => inRange(p) && (statF === 'All' || (p.Status || 'Unpaid') === statF) && (!sq || String(p.CustomerName || '').toLowerCase().includes(sq) || String(p.InvoiceNo || '').toLowerCase().includes(sq) || String(p.Phone || '').toLowerCase().includes(sq)));
+        const all = (screen === 'sale' ? (this.state.savedInvoices || []) : []).filter(p => inRange(p) && (statF === 'All' || (p.Status || 'Unpaid') === statF) && (!sq || String(p.CustomerName || '').toLowerCase().includes(sq) || String(p.InvoiceNo || '').toLowerCase().includes(sq) || String(p.Phone || '').toLowerCase().includes(sq)));
         const stStyle = (st) => 'font-size:11.5px;font-weight:700;padding:3px 11px;border-radius:20px;' + (st === 'Paid' ? 'color:#16a34a;background:#ecfdf5;' : st === 'Partial' ? 'color:#2563eb;background:#eff6ff;' : st === 'Draft' ? 'color:#64748b;background:#f1f5f9;' : st === 'Cancelled' ? 'color:#64748b;background:#f1f5f9;' : 'color:#e11d48;background:#fff1f2;');
         const _todayISO = (function(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); })();
         const fmtDate2 = (v) => { const s = String(v==null?'':v).slice(0,10); return /^\d{4}-\d{2}-\d{2}$/.test(s) ? s.split('-').reverse().join('/') : (s || '—'); };
@@ -8437,7 +8440,7 @@ class Component extends DCLogic {
         const odStyle = 'display:inline-flex;align-items:center;gap:3px;font-size:10.5px;font-weight:800;color:#e11d48;margin-left:6px;white-space:nowrap';
         const waLink2 = (phone, cust, no, balTxt) => { const ph = String(phone==null?'':phone).replace(/[^0-9]/g,''); if(!ph) return ''; const msg = 'Habari '+(cust||'')+', hii ni kumbukumbu kutoka FEMMAS PRINT kuhusu invoice '+(no||'')+' yenye salio la Sh '+(balTxt||'')+'. Tafadhali kamilisha malipo. Asante.'; return 'https://wa.me/'+ph+'?text='+encodeURIComponent(msg); };
         // include sales created via the "Add Sale" form (stored in savedDocs) so they show here too
-        const sdList = (this.state.savedDocs || []).filter(d => d.typeKey === 'sale' && (statF === 'All' || (d.status || 'Unpaid') === statF) && (!sq || String(d.customer || '').toLowerCase().includes(sq) || String('FP/INV/' + d.no).toLowerCase().includes(sq)));
+        const sdList = (screen === 'sale' ? (this.state.savedDocs || []) : []).filter(d => d.typeKey === 'sale' && (statF === 'All' || (d.status || 'Unpaid') === statF) && (!sq || String(d.customer || '').toLowerCase().includes(sq) || String('FP/INV/' + d.no).toLowerCase().includes(sq)));
         const sdRows = sdList.map(d => { const balTxt = fmtI(d.balance); return { date: d.date, no: 'FP/INV/' + d.no, taxLabel: 'TAX INVOICE', customer: d.customer || '—', phone: '', dueDate: '—', overdue: '', overdueDays: 0, odStyle: odStyle, waHref: waLink2('', d.customer, 'FP/INV/'+d.no, balTxt), rowBg: '', amount: 'Sh ' + fmtI(d.amount), paid: 'Sh ' + fmtI((d.amount || 0) - (d.balance || 0)), balance: (d.balance||0)>0 ? 'Sh ' + balTxt : '—', balColor: (d.balance || 0) > 0 ? '#e11d48' : '#94a3b8', status: (d.status || 'Unpaid').toUpperCase()==='PAID'?'Paid':(d.status||'Unpaid'), statusStyle: stStyle(d.status || 'Unpaid') }; });
         const visibleLimit = Math.max(50, Number(this.state.invoiceVisibleLimit || 50));
         const localRows = sdRows.slice(0, visibleLimit);
@@ -8509,7 +8512,7 @@ class Component extends DCLogic {
         else if (preset === 'custom') { lo = cs; hi = ce; }
         const dOf = (p) => String(p.Date || p.CreatedAt || '').slice(0, 10);
         const inRange = (p) => { if (preset === 'all') return true; const dd = dOf(p); if (!dd) return false; if (lo && dd < lo) return false; if (hi && dd > hi) return false; return true; };
-        const all = (this.state.savedReceipts || []).filter(p => inRange(p) && (modeF === 'All' || (p.PayMode || '') === modeF) && (!sq || String(p.CustomerName || '').toLowerCase().includes(sq) || String(p.ReceiptNo || '').toLowerCase().includes(sq) || String(p.RelatedID || '').toLowerCase().includes(sq)));
+        const all = (screen === 'receipts' ? (this.state.savedReceipts || []) : []).filter(p => inRange(p) && (modeF === 'All' || (p.PayMode || '') === modeF) && (!sq || String(p.CustomerName || '').toLowerCase().includes(sq) || String(p.ReceiptNo || '').toLowerCase().includes(sq) || String(p.RelatedID || '').toLowerCase().includes(sq)));
         const rows = all.slice().sort((a, b) => String(b.CreatedAt || b.Date || '').localeCompare(String(a.CreatedAt || a.Date || ''))).map(p => {
           const dd = String(p.Date || p.CreatedAt || '').slice(0, 10);
           const dateStr = /^\d{4}-\d{2}-\d{2}$/.test(dd) ? dd.split('-').reverse().join('/') : dd;
@@ -8557,7 +8560,7 @@ class Component extends DCLogic {
         else if (preset === 'custom') { lo = cs; hi = ce; }
         const dOf = (p) => String(p.Date || p.CreatedAt || '').slice(0, 10);
         const inRange = (p) => { if (preset === 'all') return true; const dd = dOf(p); if (!dd) return false; if (lo && dd < lo) return false; if (hi && dd > hi) return false; return true; };
-        const all = (this.state.savedProduction || []).filter(p => inRange(p) && (statusF === 'All' || (p.Status || '') === statusF) && (!sq || String(p.OrderID || '').toLowerCase().includes(sq) || String(p.CustomerName || '').toLowerCase().includes(sq) || String(p.JobName || '').toLowerCase().includes(sq) || String(p.AssignedTo || '').toLowerCase().includes(sq)));
+        const all = (screen === 'production' ? (this.state.savedProduction || []) : []).filter(p => inRange(p) && (statusF === 'All' || (p.Status || '') === statusF) && (!sq || String(p.OrderID || '').toLowerCase().includes(sq) || String(p.CustomerName || '').toLowerCase().includes(sq) || String(p.JobName || '').toLowerCase().includes(sq) || String(p.AssignedTo || '').toLowerCase().includes(sq)));
         const statusStyleFor = (st) => { const m = { Completed: 'color:#16a34a;background:#ecfdf5;', 'In Progress': 'color:#008ece;background:rgba(0,142,206,.12);', Pending: 'color:#d97706;background:#fffbeb;', Hold: 'color:#7c3aed;background:#f5f3ff;', Cancelled: 'color:#e11d48;background:#fff1f2;' }; return 'font-size:11px;font-weight:700;padding:3px 11px;border-radius:20px;' + (m[st] || m.Pending); };
         const rows = all.slice().sort((a, b) => String(b.CreatedAt || b.Date || '').localeCompare(String(a.CreatedAt || a.Date || ''))).map(p => {
           const dd = String(p.Date || p.CreatedAt || '').slice(0, 10);
@@ -8568,7 +8571,7 @@ class Component extends DCLogic {
         const cnt = (st) => all.filter(p => (p.Status || '') === st).length;
         const presetLabel = { today: 'Today', week: 'This Week', month: 'This Month', year: 'This Year', all: 'All Time', custom: (cs && ce) ? (cs.split('-').reverse().join('/') + ' — ' + ce.split('-').reverse().join('/')) : 'Custom' }[preset];
         const pchip = (key, label) => ({ label, pick: () => this.setState({ prodPreset: key, prodDropOpen: false }), style: 'padding:8px 13px;border-radius:9px;font-size:12.5px;font-weight:700;cursor:pointer;' + (preset === key ? 'background:#e9f3fe;color:#00578d' : 'color:#475569') });
-        const orderOpts = (this.state.savedOrders || []).map(o => ({ id: o.OrderID || '', label: (o.OrderID || '') + (o.CustomerName ? ' · ' + o.CustomerName : '') }));
+        const orderOpts = (screen === 'production' ? (this.state.savedOrders || []) : []).map(o => ({ id: o.OrderID || '', label: (o.OrderID || '') + (o.CustomerName ? ' · ' + o.CustomerName : '') }));
         return {
           prodRows: rows, prodHasRows: rows.length > 0, prodEmpty: rows.length === 0,
           prodCount: rows.length, prodPending: cnt('Pending'), prodInProgress: cnt('In Progress'), prodCompleted: cnt('Completed'), prodHold: cnt('Hold'),
@@ -8608,7 +8611,7 @@ class Component extends DCLogic {
         else if (preset === 'custom') { lo = cs; hi = ce; }
         const dOf = (p) => String(p.Date || p.CreatedAt || '').slice(0, 10);
         const inRange = (p) => { if (preset === 'all') return true; const dd = dOf(p); if (!dd) return false; if (lo && dd < lo) return false; if (hi && dd > hi) return false; return true; };
-        const all = (this.state.savedDelivery || []).filter(p => inRange(p) && (statusF === 'All' || (p.Status || '') === statusF) && (!sq || String(p.OrderID || '').toLowerCase().includes(sq) || String(p.CustomerName || '').toLowerCase().includes(sq) || String(p.Phone || '').toLowerCase().includes(sq)));
+        const all = (screen === 'delivery' ? (this.state.savedDelivery || []) : []).filter(p => inRange(p) && (statusF === 'All' || (p.Status || '') === statusF) && (!sq || String(p.OrderID || '').toLowerCase().includes(sq) || String(p.CustomerName || '').toLowerCase().includes(sq) || String(p.Phone || '').toLowerCase().includes(sq)));
         const statusStyleFor = (st) => { const m = { Delivered: 'color:#16a34a;background:#ecfdf5;', 'Out for Delivery': 'color:#008ece;background:rgba(0,142,206,.12);', 'Ready for Pickup': 'color:#7c3aed;background:#f5f3ff;', Pending: 'color:#d97706;background:#fffbeb;', 'Failed-Returned': 'color:#e11d48;background:#fff1f2;' }; return 'font-size:11px;font-weight:700;padding:3px 11px;border-radius:20px;' + (m[st] || m.Pending); };
         const rows = all.slice().sort((a, b) => String(b.CreatedAt || b.Date || '').localeCompare(String(a.CreatedAt || a.Date || ''))).map(p => {
           const dd = String(p.Date || p.CreatedAt || '').slice(0, 10);
@@ -8621,7 +8624,7 @@ class Component extends DCLogic {
         const feesTot = all.reduce((a, p) => a + (parseFloat(p.DeliveryFee) || 0), 0);
         const presetLabel = { today: 'Today', week: 'This Week', month: 'This Month', year: 'This Year', all: 'All Time', custom: (cs && ce) ? (cs.split('-').reverse().join('/') + ' — ' + ce.split('-').reverse().join('/')) : 'Custom' }[preset];
         const pchip = (key, label) => ({ label, pick: () => this.setState({ delPreset: key, delDropOpen: false }), style: 'padding:8px 13px;border-radius:9px;font-size:12.5px;font-weight:700;cursor:pointer;' + (preset === key ? 'background:#e9f3fe;color:#00578d' : 'color:#475569') });
-        const orderOpts = (this.state.savedProduction || []).filter(j => (j.Status || '') === 'Completed').map(j => ({ id: j.OrderID || '', label: (j.OrderID || j.JobName || '') + (j.CustomerName ? ' · ' + j.CustomerName : '') }));
+        const orderOpts = (screen === 'delivery' ? (this.state.savedProduction || []) : []).filter(j => (j.Status || '') === 'Completed').map(j => ({ id: j.OrderID || '', label: (j.OrderID || j.JobName || '') + (j.CustomerName ? ' · ' + j.CustomerName : '') }));
         return {
           delRows: rows, delHasRows: rows.length > 0, delEmpty: rows.length === 0,
           delReady: cnt('Ready for Pickup'), delOut: cnt('Out for Delivery'), delDeliveredToday: deliveredToday, delFailed: cnt('Failed-Returned'), delFeesTotal: fmtD(feesTot),
@@ -8663,7 +8666,7 @@ class Component extends DCLogic {
         else if (preset === 'custom') { lo = cs; hi = ce; }
         const dOf = (p) => String(p.Date || p.CreatedAt || '').slice(0, 10);
         const inRange = (p) => { if (preset === 'all') return true; const dd = dOf(p); if (!dd) return false; if (lo && dd < lo) return false; if (hi && dd > hi) return false; return true; };
-        const all = (this.state.savedPurchases || []).filter(p => inRange(p) && (modeF === 'All' || (p.PayMode || '') === modeF) && (!sq || String(p.Supplier || '').toLowerCase().includes(sq) || String(p.Item || '').toLowerCase().includes(sq)));
+        const all = (screen === 'purchase' ? (this.state.savedPurchases || []) : []).filter(p => inRange(p) && (modeF === 'All' || (p.PayMode || '') === modeF) && (!sq || String(p.Supplier || '').toLowerCase().includes(sq) || String(p.Item || '').toLowerCase().includes(sq)));
         const rows = all.slice().sort((a, b) => String(b.CreatedAt || b.Date || '').localeCompare(String(a.CreatedAt || a.Date || ''))).map(p => {
           const dd = String(p.Date || p.CreatedAt || '').slice(0, 10);
           const dateStr = /^\d{4}-\d{2}-\d{2}$/.test(dd) ? dd.split('-').reverse().join('/') : dd;
@@ -8730,7 +8733,7 @@ class Component extends DCLogic {
         else if (preset === 'custom') { lo = cs; hi = ce; }
         const dOf = (p) => String(p.Date || p.CreatedAt || '').slice(0, 10);
         const inRange = (p) => { if (preset === 'all') return true; const dd = dOf(p); if (!dd) return false; if (lo && dd < lo) return false; if (hi && dd > hi) return false; return true; };
-        const all = (this.state.savedExpenses || []).filter(p => inRange(p) && (modeF === 'All' || (p.PayMode || '') === modeF) && (!sq || String(p.Name || '').toLowerCase().includes(sq) || String(p.Reason || '').toLowerCase().includes(sq)));
+        const all = (screen === 'expenses' ? (this.state.savedExpenses || []) : []).filter(p => inRange(p) && (modeF === 'All' || (p.PayMode || '') === modeF) && (!sq || String(p.Name || '').toLowerCase().includes(sq) || String(p.Reason || '').toLowerCase().includes(sq)));
         const rows = all.slice().sort((a, b) => String(b.CreatedAt || b.Date || '').localeCompare(String(a.CreatedAt || a.Date || ''))).map(p => {
           const dd = String(p.Date || p.CreatedAt || '').slice(0, 10);
           const dateStr = /^\d{4}-\d{2}-\d{2}$/.test(dd) ? dd.split('-').reverse().join('/') : dd;
