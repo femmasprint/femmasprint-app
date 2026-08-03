@@ -1533,7 +1533,7 @@ window.addEventListener('load', function () {
             <sc-for list="{{ reportNav }}" as="g" hint-placeholder-count="3">
               <div class="fpReportGroup">{{ g.head }}</div>
               <sc-for list="{{ g.items }}" as="it" hint-placeholder-count="4">
-                <div class="fpReportNavItem {{ it.activeClass }}" onClick="{{ it.click }}">{{ it.label }}</div>
+                <div class="fpReportNavItem" onClick="{{ it.click }}" style="{{ it.style }}">{{ it.label }}</div>
               </sc-for>
             </sc-for>
           </div>
@@ -6840,7 +6840,7 @@ class Component extends DCLogic {
     const mkReport = (key, label) => ({
       label,
       click: () => this.setState({ report: key }),
-      activeClass: report === key ? 'is-active' : ''
+      style: report === key ? 'background:#3496f3!important;color:#fff!important;font-weight:800;' : 'background:#fff!important;color:#13315a!important;font-weight:600;'
     });
     const reportGroups = [
       { head: 'Transaction', items: [['sale','Sale'],['purchase','Purchase'],['daybook','Day Book'],['alltxns','All Transactions'],['pnl','Profit & Loss'],['billwise','Bill Wise Profit'],['cashflow','Cash Flow'],['balancesheet','Balance Sheet']] },
