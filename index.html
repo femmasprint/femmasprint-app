@@ -8439,16 +8439,21 @@ class Component extends DCLogic {
         // include sales created via the "Add Sale" form (stored in savedDocs) so they show here too
         const sdList = (this.state.savedDocs || []).filter(d => d.typeKey === 'sale' && (statF === 'All' || (d.status || 'Unpaid') === statF) && (!sq || String(d.customer || '').toLowerCase().includes(sq) || String('FP/INV/' + d.no).toLowerCase().includes(sq)));
         const sdRows = sdList.map(d => { const balTxt = fmtI(d.balance); return { date: d.date, no: 'FP/INV/' + d.no, taxLabel: 'TAX INVOICE', customer: d.customer || '—', phone: '', dueDate: '—', overdue: '', overdueDays: 0, odStyle: odStyle, waHref: waLink2('', d.customer, 'FP/INV/'+d.no, balTxt), rowBg: '', amount: 'Sh ' + fmtI(d.amount), paid: 'Sh ' + fmtI((d.amount || 0) - (d.balance || 0)), balance: (d.balance||0)>0 ? 'Sh ' + balTxt : '—', balColor: (d.balance || 0) > 0 ? '#e11d48' : '#94a3b8', status: (d.status || 'Unpaid').toUpperCase()==='PAID'?'Paid':(d.status||'Unpaid'), statusStyle: stStyle(d.status || 'Unpaid') }; });
-        const allRows = sdRows.concat(all.slice().sort((a, b) => String(b.CreatedAt || b.Date || '').localeCompare(String(a.CreatedAt || a.Date || ''))).map(p => {
+        const visibleLimit = Math.max(50, Number(this.state.invoiceVisibleLimit || 50));
+        const localRows = sdRows.slice(0, visibleLimit);
+        const remoteLimit = Math.max(0, visibleLimit - localRows.length);
+        const visibleRemote = all.slice().sort((a, b) => String(b.CreatedAt || b.Date || '').localeCompare(String(a.CreatedAt || a.Date || ''))).slice(0, remoteLimit);
+        const remoteRows = visibleRemote.map(p => {
           const dd = String(p.Date || p.CreatedAt || '').slice(0, 10);
           const dateStr = /^\d{4}-\d{2}-\d{2}$/.test(dd) ? dd.split('-').reverse().join('/') : dd;
           const bal = Number(p.Balance != null ? p.Balance : (Number(p.TotalAmount || 0) - Number(p.PaidAmount || 0)));
           const st = p.Status || 'Unpaid';
           const od = overdueOf(p.DueDate, bal); const balTxt = fmtI(bal);
           return { date: dateStr, no: p.InvoiceNo || '—', taxLabel: (p.TaxInvoice===false?'INVOICE':'TAX INVOICE'), customer: p.CustomerName || '—', phone: p.Phone || '', dueDate: fmtDate2(p.DueDate), overdue: od.label, overdueDays: od.days, odStyle: odStyle, waHref: waLink2(p.Phone, p.CustomerName, p.InvoiceNo, balTxt), rowBg: od.days>0 ? 'background:#fff5f5' : '', amount: 'Sh ' + fmtI(p.TotalAmount), paid: 'Sh ' + fmtI(p.PaidAmount), balance: bal>0 ? 'Sh ' + balTxt : '—', balColor: bal > 0 ? '#e11d48' : '#94a3b8', status: st, statusStyle: stStyle(st) };
-        }));
-        const visibleLimit = Math.max(50, Number(this.state.invoiceVisibleLimit || 50));
-        const rows = allRows.slice(0, visibleLimit);
+        });
+        const rows = localRows.concat(remoteRows);
+        const allRowsCount = sdList.length + all.length;
+        const overdueCount = all.reduce((n, p) => { const bal = Number(p.Balance != null ? p.Balance : (Number(p.TotalAmount || 0) - Number(p.PaidAmount || 0))); return n + (overdueOf(p.DueDate, bal).days > 0 ? 1 : 0); }, 0);
         const tot = all.reduce((a, p) => a + Number(p.TotalAmount || 0), 0) + sdList.reduce((a, d) => a + Number(d.amount || 0), 0);
         const paidT = all.reduce((a, p) => a + Number(p.PaidAmount || 0), 0) + sdList.reduce((a, d) => a + (Number(d.amount || 0) - Number(d.balance || 0)), 0);
         const balT = all.reduce((a, p) => a + Number(p.Balance != null ? p.Balance : (Number(p.TotalAmount || 0) - Number(p.PaidAmount || 0))), 0) + sdList.reduce((a, d) => a + Number(d.balance || 0), 0);
@@ -8459,12 +8464,12 @@ class Component extends DCLogic {
         const f = this.state.invoiceForm || {};
         const nF = (v) => { const x = parseFloat(String(v).replace(/,/g, '')); return isNaN(x) ? 0 : x; };
         return {
-          invRows: rows, invHasRows: rows.length > 0, invEmpty: allRows.length === 0,
-          invCount: allRows.length, invTotal: fmtI(tot), invPaid: fmtI(paidT), invBalance: fmtI(balT),
-          invUnpaidCnt: cnt('Unpaid'), invPartialCnt: cnt('Partial'), invPaidCnt: cnt('Paid'), invOverdueCnt: allRows.filter(r => r.overdueDays > 0).length, invHasOverdue: allRows.some(r => r.overdueDays > 0),
-          invPills: [{k:'All',label:'All',n:allRows.length},{k:'Paid',label:'Paid',n:cnt('Paid')},{k:'Partial',label:'Partial',n:cnt('Partial')},{k:'Unpaid',label:'Unpaid',n:cnt('Unpaid')}].map(x=>({label:x.label+' · '+x.n, pick:()=>this.setState({siStatusFilter:x.k,invoiceVisibleLimit:50}), style:'padding:7px 14px;border-radius:999px;font-size:12.5px;font-weight:700;cursor:pointer;border:1px solid '+(statF===x.k?'transparent;background:#008ece;color:#fff':'rgba(0,87,141,.18);background:#fff;color:#475569')})),
-          invShowingLabel: allRows.length ? ('Inaonyesha ' + Math.min(rows.length, allRows.length) + ' kati ya ' + allRows.length) : 'Hakuna invoice',
-          invHasMore: rows.length < allRows.length, invLoadMore: () => this.setState(s => ({ invoiceVisibleLimit: Number(s.invoiceVisibleLimit || 50) + 50 })),
+          invRows: rows, invHasRows: rows.length > 0, invEmpty: allRowsCount === 0,
+          invCount: allRowsCount, invTotal: fmtI(tot), invPaid: fmtI(paidT), invBalance: fmtI(balT),
+          invUnpaidCnt: cnt('Unpaid'), invPartialCnt: cnt('Partial'), invPaidCnt: cnt('Paid'), invOverdueCnt: overdueCount, invHasOverdue: overdueCount > 0,
+          invPills: [{k:'All',label:'All',n:allRowsCount},{k:'Paid',label:'Paid',n:cnt('Paid')},{k:'Partial',label:'Partial',n:cnt('Partial')},{k:'Unpaid',label:'Unpaid',n:cnt('Unpaid')}].map(x=>({label:x.label+' · '+x.n, pick:()=>this.setState({siStatusFilter:x.k,invoiceVisibleLimit:50}), style:'padding:7px 14px;border-radius:999px;font-size:12.5px;font-weight:700;cursor:pointer;border:1px solid '+(statF===x.k?'transparent;background:#008ece;color:#fff':'rgba(0,87,141,.18);background:#fff;color:#475569')})),
+          invShowingLabel: allRowsCount ? ('Inaonyesha ' + Math.min(rows.length, allRowsCount) + ' kati ya ' + allRowsCount) : 'Hakuna invoice',
+          invHasMore: rows.length < allRowsCount, invLoadMore: () => this.setState(s => ({ invoiceVisibleLimit: Number(s.invoiceVisibleLimit || 50) + 50 })),
           invRefreshLabel: this.state.invoiceLoading ? 'Inasawazisha…' : '↻ Sync mpya', refreshInvoices: this.loadInvoices,
           invHasLoadError: !!this.state.invoiceLoadError, invLoadError: this.state.invoiceLoadError || '',
           invPresetLabel: presetLabel, invDropOpen: this.state.siDropOpen, toggleInvDrop: () => this.setState(s => ({ siDropOpen: !s.siDropOpen, siCalOpen: false, siStatusDropOpen: false })),
