@@ -3153,6 +3153,14 @@ window.addEventListener('load', function () {
                     <button onClick="{{ botCreateOrder }}" style="padding:8px 11px;border:1px solid #a9d6ec;border-radius:9px;background:#fff;color:#006a9b;font-size:11px;font-weight:800;font-family:inherit;cursor:pointer">＋ Unda Order</button>
                     <button onClick="{{ botRecordPayment }}" style="padding:8px 11px;border:none;border-radius:9px;background:#00578d;color:#fff;font-size:11px;font-weight:800;font-family:inherit;cursor:pointer">＋ Rekodi Malipo</button>
                   </div>
+                  <div style="padding:10px 14px;background:#fff;border-bottom:1px solid #d9e8f1;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                    <span style="font-size:10px;font-weight:850;color:#64748b;text-transform:uppercase;letter-spacing:.05em;margin-right:2px">Business Record</span>
+                    <sc-if value="{{ botCustomerLinked }}" hint-placeholder-val="false"><span style="padding:7px 10px;border-radius:9px;background:#ecfdf5;color:#15803d;font-size:11px;font-weight:800">✓ Mteja ameunganishwa</span></sc-if>
+                    <sc-if value="{{ botCustomerNotLinked }}" hint-placeholder-val="true"><button onClick="{{ botAddCustomer }}" style="padding:7px 10px;border:1px solid #86efac;border-radius:9px;background:#f0fdf4;color:#15803d;font-size:11px;font-weight:800;font-family:inherit;cursor:pointer">＋ Weka kwa Wateja</button></sc-if>
+                    <button onClick="{{ botAddSupplier }}" style="padding:7px 10px;border:1px solid #c7d2fe;border-radius:9px;background:#eef2ff;color:#4338ca;font-size:11px;font-weight:800;font-family:inherit;cursor:pointer">{{ botSupplierButton }}</button>
+                    <span style="height:24px;border-left:1px solid #dbe4ea"></span>
+                    <sc-for list="{{ botStageChips }}" as="s" hint-placeholder-count="4"><button onClick="{{ s.pick }}" style="{{ s.style }}">{{ s.label }}</button></sc-for>
+                  </div>
                   <div style="flex:1;overflow-y:auto;padding:18px 20px;background-color:#efeae2;background-image:radial-gradient(rgba(18,140,126,.06) 1px,transparent 1px);background-size:18px 18px">
                     <sc-for list="{{ botMessages }}" as="m" hint-placeholder-count="6">
                       <div style="{{ m.rowStyle }}"><div style="{{ m.bubbleStyle }}"><div style="font-size:11px;font-weight:800;color:#128c7e;margin-bottom:3px">{{ m.who }}</div><div style="font-size:13px;line-height:1.45;white-space:pre-wrap;word-break:break-word">{{ m.body }}</div><div style="font-size:10px;color:#7b8790;text-align:right;margin-top:4px">{{ m.time }}</div></div></div>
@@ -4552,7 +4560,7 @@ window.addEventListener('load', function () {
 class Component extends DCLogic {
   state = {
     darkMode: (function(){try{return localStorage.getItem('fp_dark')==='1';}catch(e){return false;}})(),
-    botConfig: { businessName: 'Femmas Print', phone: '+255 658 843 344', email: 'femmasprint@gmail.com', address: 'Amani & Congo Street, Jangwani, Ilala — Dar es Salaam', greeting: 'Karibu! Mimi ni FemmasBot wa Femmas Print. Naweza kukusaidiaje leo — makadirio ya bei, ujumbe kwa mteja, au taarifa ya huduma zetu?', services: 'Printing, Branding, Graphic Design, Large Format, DTF, Embroidery, ID Cards, Banners' }, botOffers: [{ id: 'offer-cards', name: 'Business Cards', price: '15,000' }, { id: 'offer-mug', name: 'Mug', price: '8,000' }], botSavedAt: '', botLeads: [], botLoadError: '', botChatSearch: '', botSelectedPhone: '',
+    botConfig: { businessName: 'Femmas Print', phone: '+255 658 843 344', email: 'femmasprint@gmail.com', address: 'Amani & Congo Street, Jangwani, Ilala — Dar es Salaam', greeting: 'Karibu! Mimi ni FemmasBot wa Femmas Print. Naweza kukusaidiaje leo — makadirio ya bei, ujumbe kwa mteja, au taarifa ya huduma zetu?', services: 'Printing, Branding, Graphic Design, Large Format, DTF, Embroidery, ID Cards, Banners' }, botOffers: [{ id: 'offer-cards', name: 'Business Cards', price: '15,000' }, { id: 'offer-mug', name: 'Mug', price: '8,000' }], botSavedAt: '', botLeads: [], botLoadError: '', botChatSearch: '', botSelectedPhone: '', waMemory: (function(){try{var x=JSON.parse(localStorage.getItem('fp_wa_memory')||'{}');return x&&typeof x==='object'?x:{};}catch(e){return {};}})(),
     qsPeriodOpen: false, period: 'This Month', periodOpen: false, screen: (function(){try{return sessionStorage.getItem('fp_screen')||'home';}catch(e){return 'home';}})(), customerIdx: 0, item: 6, openMenu: '', report: 'sale', setTab: 'transaction', multiPay: false, globalSearch: '', searchFocused: false, hiddenCards: [], customerSearch: '', hoverIdx: null,
     saleOpen: false, saleTitle: 'Sale', customerFormOpen: false, itemFormOpen: false, payInOpen: false, payInForm: { customer: '', amount: '', payMode: '', relType: '', relId: '', ref: '', notes: '' }, payInErr: '', contactsOpen: false, waOpen: false, toast: '', saleMode: 'credit', discountPct: 0, discountShManual: '', discountMode: 'pct', taxPct: 0, roundOff: true, received: false, receivedAmt: '',
     customer: '', customerOpen: false, paymentType: null, payTypeOpen: false, invFilter: 'all', invFilterOpen: false, unitOpenRow: null, cmdOpen: false, cmdQuery: '', itemTab: 'products', adjustOpen: false, adjustMode: 'add', adjustQty: '', widgets: [], widgetPickerOpen: false, selectedContacts: [], contactSource: 'gmail', storeCategory: 'All', storeStock: {}, metaCatalog: [], metaCatalogStatus: 'loading', metaCatalogError: '', catalogEditorOpen: false, catalogForm: { id: '', retailerId: '', name: '', description: '', price: '', availability: 'in stock', url: 'https://wa.me/c/255658843344' }, catalogImages: [], catalogSaving: false, catalogErr: '',
@@ -5539,6 +5547,43 @@ class Component extends DCLogic {
   startBotPolling = () => {
     if (this._botPoll) return;
     this._botPoll = setInterval(() => { if (!this._botLoading && /\/exec$/.test((this.state.backendUrl || '').trim())) this.loadBotLeads(); }, 20000);
+  };
+  saveWaMemory_ = (phone, patch) => {
+    const key = String(phone || '').replace(/[^0-9]/g, '');
+    if (!key) return;
+    const prev = (this.state.waMemory || {})[key] || {};
+    const record = { ...prev, ...patch, Phone: '+' + key, UpdatedAt: new Date().toISOString() };
+    const all = { ...(this.state.waMemory || {}), [key]: record };
+    try { localStorage.setItem('fp_wa_memory', JSON.stringify(all)); } catch (e) {}
+    this.setState({ waMemory: all });
+    if (/\/exec$/.test((this.state.backendUrl || '').trim())) {
+      this.backendPost_({ action: 'saveRow', tab: 'WhatsAppMemory', record: record }).catch(() => {});
+    }
+  };
+  addWhatsAppCustomer_ = (person) => {
+    if (!person || !person.phone) return;
+    const norm = String(person.phone).replace(/[^0-9]/g, '').replace(/^0/, '255');
+    const existing = (this.state.savedCustomers || []).find(c => String(c.phoneNorm || c.phone || '').replace(/[^0-9]/g, '').replace(/^0/, '255') === norm);
+    if (existing) { this.saveWaMemory_(norm, { CustomerID: existing.id || '', CustomerName: existing.name || person.name, LinkedAs: 'Customer' }); this.showToast('✓ Tayari yupo kwenye Wateja'); return; }
+    const id = 'CUST-WA-' + Date.now();
+    const rec = { id, name: this.capWords(person.name || 'WhatsApp Customer'), phone: '+' + norm, phoneNorm: norm, email: '', address: 'Tanzania', openingBalance: 0, vrn: '', marketingConsent: 'No', createdAt: new Date().toISOString(), status: 'active', source: 'WhatsApp', synced: false };
+    this.setState(s => { const list = [rec, ...(s.savedCustomers || [])]; this.persistCustomers_(list); return { savedCustomers: list }; });
+    this.saveWaMemory_(norm, { CustomerID: id, CustomerName: rec.name, LinkedAs: 'Customer' });
+    if (/\/exec$/.test((this.state.backendUrl || '').trim())) this.backendPost_({ action: 'addCustomer', id, name: rec.name, phone: rec.phone, email: '', address: rec.address, marketingConsent: 'No' }).then(() => this.setState(s => { const list=(s.savedCustomers||[]).map(c=>c.id===id?{...c,synced:true}:c);this.persistCustomers_(list);return {savedCustomers:list}; })).catch(() => {});
+    this.showToast('✓ ' + rec.name + ' ameunganishwa na Wateja');
+  };
+  addWhatsAppSupplier_ = (person) => {
+    if (!person || !person.phone) return;
+    const norm = String(person.phone).replace(/[^0-9]/g, '').replace(/^0/, '255');
+    let list = [];
+    try { list = JSON.parse(localStorage.getItem('fp_suppliers') || '[]'); if (!Array.isArray(list)) list=[]; } catch(e) { list=[]; }
+    let supplier = list.find(s => String(s.phone || '').replace(/[^0-9]/g, '').replace(/^0/, '255') === norm);
+    if (!supplier) {
+      supplier = { name: this.capWords(person.name || 'WhatsApp Supplier'), company:'', phone:'+'+norm, altPhone:'', email:'', address:'', contact:'', photo:'', vatStatus:'Unknown', tin:'', vrn:'', currency:'TZS', paymentTerms:'Credit', leadTime:'', rating:'Active', notes:'Imeunganishwa kutoka WhatsApp Inbox.', items:[], transactions:[], createdAt:new Date().toISOString().slice(0,10) };
+      list.unshift(supplier); try { localStorage.setItem('fp_suppliers', JSON.stringify(list)); } catch(e) {}
+    }
+    this.saveWaMemory_(norm, { SupplierName: supplier.name, LinkedAs: 'Supplier' });
+    this.showToast('✓ ' + supplier.name + ' ameunganishwa na Suppliers');
   };
   testBackend = async () => {
     this.setState({ syncStatus: 'testing', syncMsg: '' });
@@ -8072,13 +8117,24 @@ class Component extends DCLogic {
         const amountRaw = amountMatches.length ? amountMatches[amountMatches.length-1].replace(/[^0-9]/g,'') : '';
         const amountNum = Number(amountRaw||0);
         const latestIncoming = incoming.length ? incoming[incoming.length-1] : '';
+        const memory = selected ? ((this.state.waMemory || {})[selected.phone] || {}) : {};
+        const rememberedStage = memory.Stage || '';
+        const effectiveStage = rememberedStage || stage;
+        const customerLinked = !!(selected && (this.state.savedCustomers || []).some(c => String(c.phoneNorm || c.phone || '').replace(/[^0-9]/g,'').replace(/^0/,'255') === selected.phone));
+        let supplierLinked = false;
+        if (selected) { try { const ss=JSON.parse(localStorage.getItem('fp_suppliers')||'[]'); supplierLinked=Array.isArray(ss)&&ss.some(s=>String(s.phone||'').replace(/[^0-9]/g,'').replace(/^0/,'255')===selected.phone); } catch(e){} }
+        const person = selected ? { name:selected.name, phone:selected.phone } : null;
+        const stageOptions = ['Inquiry','Quotation','Confirmed','Paid'];
+        const stageChips = stageOptions.map(label => ({ label, pick: () => { if(selected)this.saveWaMemory_(selected.phone,{Stage:label,CustomerName:selected.name,LastMessage:latestIncoming}); }, style:'padding:6px 9px;border-radius:9px;border:1px solid '+(effectiveStage.toLowerCase().indexOf(label.toLowerCase())>-1?'#008ece':'#d9e3ea')+';background:'+(effectiveStage.toLowerCase().indexOf(label.toLowerCase())>-1?'#e8f6fc':'#fff')+';color:'+(effectiveStage.toLowerCase().indexOf(label.toLowerCase())>-1?'#00578d':'#64748b')+';font-size:10.5px;font-weight:800;font-family:inherit;cursor:pointer' }));
         return {
           botConversations: conversations, botConversationCount: all.length, botHasConversations: all.length > 0,
           botInboxEmpty: all.length === 0 && !this.state.botLoadError, botHasInboxError: !!this.state.botLoadError, botInboxError: this.state.botLoadError || '', botSelectedName: selected ? selected.name : 'Chagua mazungumzo', botSelectedNumber: replyPhone ? ('+' + replyPhone) : '',
           botMessages: messages, botHasMessages: messages.length > 0, botChatSearch: this.state.botChatSearch || '',
           onBotChatSearch: (e) => this.setState({ botChatSearch: e.target.value }),
           openBotReply: () => { if (replyPhone) try { window.open('https://wa.me/' + replyPhone, '_blank'); } catch (e) {} },
-          botBusinessStage: stage, botBusinessSignals: signals, botHasSuggestedAmount: amountNum>0, botSuggestedAmountLabel: amountNum.toLocaleString('en-US'),
+          botBusinessStage: effectiveStage, botBusinessSignals: (rememberedStage ? '✓ hatua imehifadhiwa · ' : '') + signals, botHasSuggestedAmount: amountNum>0, botSuggestedAmountLabel: amountNum.toLocaleString('en-US'),
+          botCustomerLinked: customerLinked, botCustomerNotLinked: !!selected && !customerLinked, botAddCustomer: () => this.addWhatsAppCustomer_(person),
+          botAddSupplier: () => this.addWhatsAppSupplier_(person), botSupplierButton: supplierLinked ? '✓ Supplier ameunganishwa' : '＋ Weka kwa Suppliers', botStageChips: stageChips,
           botCreateOrder: () => { if(!selected)return; this.setState({ orderOpen:true, orderForm:{ customer:selected.name||'', phone:'+'+selected.phone, service:'', desc:latestIncoming, qty:'', price:amountNum?String(amountNum):'', paid:'', status:hasAccept?'Confirmed':'Pending' }, orderErr:'' }); },
           botRecordPayment: () => { if(!selected)return; this.setState({ payInOpen:true, payInForm:{ customer:selected.name||'', amount:amountNum?String(amountNum):'', payMode:'', relType:'Order', relId:'', ref:'WhatsApp '+(selected.phone||''), notes:latestIncoming }, payInErr:'' }); }
         };
