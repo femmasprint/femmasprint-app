@@ -5144,7 +5144,7 @@ class Component extends DCLogic {
     try { this._staffTip = this.staffTips()[Math.floor(Math.random() * this.staffTips().length)]; } catch (e) {}
     try { const d = localStorage.getItem('fp_dark'); if (d === '1') { this.setState({ darkMode: true }); document.documentElement.classList.add('fp-dark'); } } catch (e) {}
     try { const saved = localStorage.getItem('fp_user_photo'); if (saved) this.setState({ userPhoto: saved }); } catch (e) {}
-    try { const bc = JSON.parse(localStorage.getItem('fp_bot_config') || 'null'); const bo = JSON.parse(localStorage.getItem('fp_bot_offers') || 'null'); if (bc && typeof bc === 'object') this.setState(s => ({ botConfig: { ...(s.botConfig || {}), ...bc } })); if (Array.isArray(bo) && bo.length) this.setState({ botOffers: bo }); } catch (e) {}
+    try { const bc = JSON.parse(localStorage.getItem('fp_bot_config') || 'null'); const bo = JSON.parse(localStorage.getItem('fp_bot_offers') || 'null'); const bl = JSON.parse(localStorage.getItem('fp_bot_leads_cache') || 'null'); if (bc && typeof bc === 'object') this.setState(s => ({ botConfig: { ...(s.botConfig || {}), ...bc } })); if (Array.isArray(bo) && bo.length) this.setState({ botOffers: bo }); if (Array.isArray(bl) && bl.length) this.setState({ botLeads: bl }); } catch (e) {}
     try { const burl = localStorage.getItem('fp_backend_url'); if (burl) { this.setState({ backendUrl: burl, syncStatus: 'saved', backendConnected: /\/exec$/.test(burl.trim()) }); setTimeout(() => this.loadTodaySales(), 400); this.startBotPolling(); this.startSyncPoll_(); this.loadAdminPhotoCloud_(); } } catch (e) {}
     try { const sc = localStorage.getItem('fp_saved_customers'); if (sc) { const arr = JSON.parse(sc); if (Array.isArray(arr) && arr.length) this.setState({ savedCustomers: arr }, () => this.runCustomerAudit_(false)); } } catch (e) {}
     // restore Quick Sale + saved documents from browser so a page refresh keeps them on screen
@@ -5420,14 +5420,14 @@ class Component extends DCLogic {
     } catch (err) { this.setState({ backendStatusMsg: String(err && err.message || err), backendStatusKind: 'err' }); }
   };
   // JSONP call to the Apps Script web app (dodges CORS for reads/ping)
-  backendGet_ = (action, params) => new Promise((resolve, reject) => {
+  backendGet_ = (action, params, timeoutMs) => new Promise((resolve, reject) => {
     let base = (this.state.backendUrl || '').trim();
     if (!/\/exec$/.test(base)) { reject(new Error('URL lazima iishie na /exec')); return; }
     const cb = 'fpcb_' + Math.random().toString(36).slice(2);
     const q = Object.assign({ action: action, callback: cb }, params || {});
     const qs = Object.keys(q).map(k => encodeURIComponent(k) + '=' + encodeURIComponent(q[k])).join('&');
     const s = document.createElement('script');
-    const timer = setTimeout(() => { cleanup(); reject(new Error('Muda umeisha (timeout) — angalia URL au deployment')); }, 12000);
+    const timer = setTimeout(() => { cleanup(); reject(new Error('Muda umeisha (timeout) — angalia URL au deployment')); }, Number(timeoutMs || 12000));
     function cleanup() { clearTimeout(timer); try { delete window[cb]; } catch (e) { window[cb] = undefined; } if (s.parentNode) s.parentNode.removeChild(s); }
     window[cb] = (data) => { cleanup(); resolve(data); };
     s.onerror = () => { cleanup(); reject(new Error('Imeshindwa kufikia backend')); };
@@ -5523,9 +5523,10 @@ class Component extends DCLogic {
     if (this._botLoading) return;
     this._botLoading = true;
     try {
-      const r = await this.backendGet_('getTable', { tab: 'MessageLogs' });
+      const r = await this.backendGet_('getTable', { tab: 'MessageLogs' }, 30000);
       if (r && r.ok && Array.isArray(r.rows)) {
         const now = new Date();
+        try { localStorage.setItem('fp_bot_leads_cache', JSON.stringify(r.rows.slice(-1000))); } catch (e) {}
         this.setState({ botLeads: r.rows, botLoadError: '', botSyncedAt: String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0') + ':' + String(now.getSeconds()).padStart(2, '0') });
       } else {
         throw new Error((r && r.error) || 'MessageLogs haikutoa jibu sahihi');
