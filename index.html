@@ -8947,17 +8947,18 @@ class Component extends DCLogic {
   function inject(){
     killFloat();
     var nav=document.querySelector('aside nav'); if(!nav) return;
-    if(document.getElementById('fpxNavGroup')) return;
     var s=sess(); if(!s) return;
     var isAdmin=(s.role==='Admin'||s.role==='Owner');
     var isMgmt=isAdmin||s.role==='Manager'||s.role==='Accountant';
+    var old=document.getElementById('fpxNavGroup');
+    if(old){ var complete=(!isMgmt||!!old.querySelector('[data-fpx-supplier]'))&&(!isAdmin||!!old.querySelector('[data-fpx-admin]')); if(complete)return; if(old.parentNode)old.parentNode.removeChild(old); }
     var grp=document.createElement('div'); grp.id='fpxNavGroup';
     var head=document.createElement('div'); head.textContent='Usimamizi';
     head.setAttribute('style','font-size:10px;font-weight:700;letter-spacing:.07em;color:#6f86a8;text-transform:uppercase;padding:14px 12px 5px');
     grp.appendChild(head);
     if(isMgmt) grp.appendChild(mk('Mahudhurio (hiari)', window.FPCheckin, SVG.chk));
-    if(isMgmt) grp.appendChild(mk('Wauzaji (Suppliers)', window.FPSuppliers, SVG.sup));
-    if(isAdmin) grp.appendChild(mk('Watumiaji & Roles', window.FPAdmin, SVG.usr));
+    if(isMgmt&&window.FPSuppliers){ var _sup=mk('Wauzaji (Suppliers)', window.FPSuppliers, SVG.sup); _sup.setAttribute('data-fpx-supplier','1'); grp.appendChild(_sup); }
+    if(isAdmin&&window.FPAdmin){ var _adm=mk('Watumiaji & Roles', window.FPAdmin, SVG.usr); _adm.setAttribute('data-fpx-admin','1'); grp.appendChild(_adm); }
     if(isAdmin) grp.appendChild(mk('Backup & Restore', window.FPBackup, SVG.bak));
     nav.appendChild(grp);
   }
