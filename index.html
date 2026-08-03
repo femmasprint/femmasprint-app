@@ -437,42 +437,40 @@
   @keyframes fp-dot{0%,100%{opacity:1}50%{opacity:.35}}
   [data-cust-cell]:hover [data-cust-bubble]{opacity:1 !important;visibility:visible !important;transform:translateY(0) !important}
   input::placeholder, textarea::placeholder{color:#9aa3b2;font-weight:500;opacity:1}
-  /* ===== Sales Invoice command workspace ===== */
-  .fpInvWorkspace{position:relative;max-width:1640px;margin:0 auto;padding-bottom:34px}
-  .fpInvHero{position:relative;isolation:isolate;overflow:hidden;box-shadow:0 18px 46px -26px rgba(0,87,141,.72)}
-  .fpInvHero:before,.fpInvHero:after{content:'';position:absolute;border-radius:50%;pointer-events:none;z-index:-1}
-  .fpInvHero:before{width:230px;height:230px;right:-65px;top:-135px;background:rgba(255,255,255,.13)}
-  .fpInvHero:after{width:150px;height:150px;right:160px;bottom:-115px;background:rgba(95,176,247,.25)}
-  .fpInvKpis{display:grid;grid-template-columns:repeat(5,minmax(150px,1fr));gap:12px;margin-bottom:15px}
-  .fpInvKpi{position:relative;overflow:hidden;background:#fff;border:1px solid #e5edf5;border-radius:17px;padding:16px 17px 15px;box-shadow:0 9px 26px -22px rgba(15,23,42,.6);transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease}
-  .fpInvKpi:hover{transform:translateY(-2px);box-shadow:0 15px 34px -22px rgba(15,23,42,.5);border-color:#c9dfed}
-  .fpInvKpi:before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--fp-kpi,#008ece)}
-  .fpInvKpi:after{content:'';position:absolute;width:72px;height:72px;border-radius:50%;right:-28px;top:-30px;background:var(--fp-kpi-soft,#e9f3fe)}
-  .fpInvKpiCount{--fp-kpi:#008ece;--fp-kpi-soft:#e9f3fe}.fpInvKpiTotal{--fp-kpi:#7c3aed;--fp-kpi-soft:#f3e8ff}.fpInvKpiPaid{--fp-kpi:#16a34a;--fp-kpi-soft:#dcfce7}.fpInvKpiBalance{--fp-kpi:#e11d48;--fp-kpi-soft:#ffe4e6}.fpInvKpiMix{--fp-kpi:#d97706;--fp-kpi-soft:#fef3c7}
-  .fpInvToolbar{background:rgba(255,255,255,.84)!important;border-color:#dfeaf2!important;box-shadow:0 8px 24px -24px rgba(15,23,42,.6);backdrop-filter:blur(10px)}
-  .fpInvStatusBar{padding:2px 2px 0}
-  .fpInvTableWrap{background:#fff!important;border-color:#dfe8f1!important;border-radius:18px!important;overflow:auto!important;box-shadow:0 16px 42px -32px rgba(15,23,42,.65)!important}
-  .fpInvTable{min-width:1050px}
-  .fpInvTable thead{position:sticky;top:0;z-index:4;box-shadow:0 1px 0 #e8eef4}
-  .fpInvTable thead tr{background:#f5f9fc!important}
-  .fpInvTable th{color:#60738b!important;font-size:10px!important;padding-top:13px!important;padding-bottom:13px!important}
-  .fpInvTable tbody tr{transition:background .14s ease,transform .14s ease}
-  .fpInvTable tbody tr:nth-child(even){background:#fbfdff}
-  .fpInvTable tbody tr:hover{background:#eef8fd!important}
-  .fpInvCustomer{display:flex;align-items:center;gap:10px;min-width:180px}
-  .fpInvAvatar{width:34px;height:34px;border-radius:11px;display:flex;align-items:center;justify-content:center;flex:none;background:linear-gradient(145deg,#dff3fc,#cceaff);color:#006998;font-size:11px;font-weight:850;letter-spacing:.02em;border:1px solid #b9dfef}
-  .fpInvActions{display:flex;align-items:center;justify-content:center;gap:6px;opacity:.72;transition:opacity .14s ease}
-  .fpInvTable tbody tr:hover .fpInvActions{opacity:1}
-  .fpInvMore{box-shadow:0 7px 20px -16px rgba(0,87,141,.7);transition:transform .15s ease,background .15s ease}
-  .fpInvMore:hover{transform:translateY(-1px);background:#edf8fd!important}
-  html.fp-dark .fpInvKpi,html.fp-dark .fpInvTableWrap{background:#13213a!important;border-color:#243754!important}
-  html.fp-dark .fpInvToolbar{background:rgba(19,33,58,.88)!important;border-color:#263a58!important}
-  html.fp-dark .fpInvTable thead tr{background:#172943!important}
-  html.fp-dark .fpInvTable tbody tr:nth-child(even){background:#14243d}
-  html.fp-dark .fpInvTable tbody tr:hover{background:#193453!important}
-  html.fp-dark .fpInvAvatar{background:linear-gradient(145deg,#183c5a,#145075);color:#83d7ff;border-color:#26688f}
-  @media(max-width:1180px){.fpInvKpis{grid-template-columns:repeat(3,1fr)}.fpInvKpiMix{grid-column:span 2}}
-  @media(max-width:760px){.fpInvWorkspace{padding-bottom:20px}.fpInvHero{padding:15px!important}.fpInvKpis{grid-template-columns:1fr 1fr;gap:9px}.fpInvKpi{padding:14px}.fpInvKpiMix{grid-column:span 2}.fpInvTableWrap{border-radius:14px!important}.fpInvStatusBar>div[style*="margin-left:auto"]{margin-left:0!important;width:100%}}
+  /* ===== FEMMAS professional forms + Sales Invoice working desk ===== */
+  body input,body select,body textarea{transition:border-color .16s ease,box-shadow .16s ease,background .16s ease}
+  body input:focus,body select:focus,body textarea:focus{border-color:#008ece!important;box-shadow:0 0 0 4px rgba(0,142,206,.12)!important;background:#fff!important}
+  body label{letter-spacing:.01em}
+  .fpInvWorkspace{position:relative;max-width:1480px;margin:0 auto;padding-bottom:34px;color:#142033}
+  .fpInvTop{display:flex;align-items:center;gap:13px;flex-wrap:wrap;margin-bottom:18px}
+  .fpInvBack{width:40px;height:40px;border:1px solid #dce6ef;border-radius:12px;background:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 5px 18px -14px rgba(15,23,42,.65)}
+  .fpInvTitle{flex:1;min-width:230px}.fpInvTitle h1{margin:0;font-size:25px;line-height:1.15;font-weight:850;letter-spacing:-.035em;color:#10223a}.fpInvTitle p{margin:5px 0 0;font-size:12.5px;color:#718096;font-weight:600}
+  .fpInvTopBtn{height:42px;padding:0 16px;border:1px solid #dce6ef;border-radius:12px;background:#fff;color:#2f4962;font-size:12.5px;font-weight:800;font-family:inherit;cursor:pointer;display:flex;align-items:center;gap:7px}
+  .fpInvCreate{height:44px;padding:0 19px;border:0;border-radius:12px;background:linear-gradient(135deg,#008ece,#056aa2);color:#fff;font-size:13px;font-weight:850;font-family:inherit;cursor:pointer;display:flex;align-items:center;gap:8px;box-shadow:0 12px 25px -14px rgba(0,110,166,.85)}
+  .fpInvMetrics{display:grid;grid-template-columns:1.05fr 1fr 1fr 1.15fr;gap:12px;margin-bottom:16px}
+  .fpInvMetric{background:#fff;border:1px solid #e3ebf2;border-radius:16px;padding:16px 17px;min-height:91px;box-shadow:0 10px 26px -25px rgba(15,23,42,.75)}
+  .fpInvMetricLabel{font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.065em;color:#8292a6;margin-bottom:9px}.fpInvMetricValue{font-size:21px;font-weight:850;color:#132238;letter-spacing:-.025em}.fpInvMetricSub{font-size:10.5px;color:#8493a6;margin-top:4px;font-weight:600}
+  .fpInvRateTrack{height:7px;background:#e9eef3;border-radius:999px;overflow:hidden;margin-top:10px}.fpInvRateFill{height:100%;border-radius:999px;background:linear-gradient(90deg,#11a861,#36c77b)}
+  .fpInvTools{display:flex;align-items:center;gap:9px;flex-wrap:wrap;background:#fff;border:1px solid #e3ebf2;border-radius:15px;padding:10px;margin-bottom:12px}
+  .fpInvSearch{flex:1;min-width:230px;position:relative}.fpInvSearch input{width:100%;height:40px;padding:0 13px 0 38px;border:1px solid #dce6ef;border-radius:11px;background:#f8fafc;font-size:12.5px;font-family:inherit;outline:none}
+  .fpInvPills{display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin:0 0 14px}
+  .fpInvDesk{display:grid;grid-template-columns:minmax(470px,1.25fr) minmax(330px,.75fr);gap:15px;align-items:start}
+  .fpInvList{background:#fff;border:1px solid #e1eaf1;border-radius:18px;overflow:hidden;box-shadow:0 15px 38px -32px rgba(15,23,42,.75)}
+  .fpInvListHead{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:15px 17px;border-bottom:1px solid #edf1f5}.fpInvListHead strong{font-size:13.5px;color:#1b2b41}.fpInvListHead span{font-size:11px;color:#7f8fa3;font-weight:700}
+  .fpInvCard{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(112px,.7fr) minmax(108px,.65fr);gap:14px;align-items:center;padding:15px 17px;border-bottom:1px solid #edf1f5;cursor:pointer;transition:background .15s ease,box-shadow .15s ease,border-color .15s ease;position:relative}
+  .fpInvCard:before{content:'';position:absolute;left:0;top:8px;bottom:8px;width:3px;border-radius:0 5px 5px 0;background:transparent}.fpInvCard:hover{background:#f7fbfe}.fpInvCard.is-active{background:#f0f9fe;box-shadow:inset 0 0 0 1px #c4e7f6}.fpInvCard.is-active:before{background:#008ece}
+  .fpInvParty{display:flex;align-items:center;gap:11px;min-width:0}.fpInvAvatar{width:39px;height:39px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex:none;background:linear-gradient(145deg,#dff3fc,#cceaff);color:#006998;font-size:11px;font-weight:850;border:1px solid #b9dfef}.fpInvPartyText{min-width:0}.fpInvPartyName{font-size:13px;font-weight:800;color:#17263a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.fpInvPartyMeta{font-size:10.5px;color:#8493a6;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .fpInvMoney{text-align:right}.fpInvMoney strong{display:block;font-size:13px;color:#17263a}.fpInvMoney span{display:block;font-size:10.5px;color:#8a98aa;margin-top:4px}.fpInvBalance{text-align:right}.fpInvBalance strong{display:block;font-size:13px;color:#d9294d}.fpInvBalance span{display:block;font-size:10.5px;color:#8a98aa;margin-top:4px}
+  .fpInvFocus{position:sticky;top:14px;background:#fff;border:1px solid #dfe9f0;border-radius:19px;overflow:hidden;box-shadow:0 20px 48px -34px rgba(10,37,64,.85)}
+  .fpInvFocusTop{padding:20px;background:linear-gradient(145deg,#102d4c,#123f69);color:#fff;position:relative;overflow:hidden}.fpInvFocusTop:after{content:'';position:absolute;width:150px;height:150px;border-radius:50%;right:-55px;top:-75px;background:rgba(255,255,255,.07)}
+  .fpInvFocusNo{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:#a9cae2;font-weight:800}.fpInvFocusCustomer{display:flex;align-items:center;gap:12px;margin-top:13px}.fpInvFocusAvatar{width:46px;height:46px;border-radius:14px;background:#fff;color:#087caf;display:flex;align-items:center;justify-content:center;font-weight:850}.fpInvFocusCustomer h3{font-size:16px;margin:0;color:#fff}.fpInvFocusCustomer p{font-size:11px;margin:4px 0 0;color:#b9cee0}
+  .fpInvFocusBody{padding:18px}.fpInvDue{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:15px}.fpInvDueBox{background:#f7f9fb;border:1px solid #e7edf2;border-radius:12px;padding:11px}.fpInvDueBox span{display:block;font-size:9.5px;text-transform:uppercase;letter-spacing:.05em;color:#8796a9;font-weight:800}.fpInvDueBox strong{display:block;font-size:12.5px;color:#25384d;margin-top:5px}
+  .fpInvAmountBox{padding:16px;border:1px solid #e4ebf1;border-radius:14px;background:#fbfcfd;margin-bottom:14px}.fpInvAmountLine{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:#728196;padding:5px 0}.fpInvAmountLine strong{font-size:12.5px;color:#203249}.fpInvAmountLine.total{border-top:1px solid #e2e9ef;margin-top:6px;padding-top:12px;color:#d9294d;font-weight:800}.fpInvAmountLine.total strong{font-size:18px;color:#d9294d}
+  .fpInvActionsGrid{display:grid;grid-template-columns:1fr 1fr;gap:9px}.fpInvActionPrimary,.fpInvActionWa,.fpInvActionSoft{height:42px;border-radius:11px;font-family:inherit;font-weight:800;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;text-decoration:none}.fpInvActionPrimary{border:0;background:#008ece;color:#fff}.fpInvActionWa{border:0;background:#20b85a;color:#fff}.fpInvActionSoft{border:1px solid #dbe6ee;background:#fff;color:#38516a}.fpInvActionWide{grid-column:1/-1}
+  .fpInvEmpty{padding:58px 20px;text-align:center;color:#8290a2}.fpInvMore{box-shadow:0 7px 20px -16px rgba(0,87,141,.7)}
+  html.fp-dark .fpInvMetric,html.fp-dark .fpInvTools,html.fp-dark .fpInvList,html.fp-dark .fpInvFocus{background:#13213a;border-color:#243754}html.fp-dark .fpInvCard{border-color:#243754}html.fp-dark .fpInvCard:hover,html.fp-dark .fpInvCard.is-active{background:#193453}html.fp-dark .fpInvPartyName,html.fp-dark .fpInvMetricValue,html.fp-dark .fpInvListHead strong{color:#e7edf6}html.fp-dark .fpInvFocusBody{background:#13213a}
+  @media(max-width:1120px){.fpInvMetrics{grid-template-columns:1fr 1fr}.fpInvDesk{grid-template-columns:1fr}.fpInvFocus{position:relative;top:0}}
+  @media(max-width:680px){.fpInvWorkspace{padding-bottom:20px}.fpInvTitle h1{font-size:21px}.fpInvTopBtn{display:none}.fpInvMetrics{grid-template-columns:1fr 1fr;gap:8px}.fpInvMetric{padding:13px;min-height:82px}.fpInvMetricValue{font-size:17px}.fpInvCard{grid-template-columns:minmax(0,1fr) 105px;padding:13px}.fpInvMoney{display:none}.fpInvActionsGrid{grid-template-columns:1fr}.fpInvActionWide{grid-column:auto}}
   @media print{
     @page{size:A4 portrait;margin:10mm}
     body *{visibility:hidden !important}
@@ -1215,20 +1213,18 @@ window.addEventListener('load', function () {
       <!-- ============ SALE INVOICES ============ -->
       <sc-if value="{{ isSale }}" hint-placeholder-val="{{ false }}">
         <div class="fpInvWorkspace">
-        <div class="fpInvHero" style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:linear-gradient(120deg,#008ece 0%,#1d4a86 55%,#13315a 100%);border-radius:18px;padding:17px 19px;margin-bottom:16px">
-          <button onClick="{{ navHome.click }}" title="Rudi Nyumbani" style="width:36px;height:36px;border:none;border-radius:50%;background:rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none" style-hover="background:rgba(255,255,255,.28)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6"><path d="M15 18l-6-6 6-6"></path></svg></button>
-          <div style="width:40px;height:40px;border-radius:50%;overflow:hidden;flex:none;background:#fff;display:flex;align-items:center;justify-content:center"><img src="./femmas-logo-03-mqrt99vq.png" alt="Femmas Print" style="width:100%;height:100%;object-fit:contain"></div>
-          <div style="flex:1;min-width:190px"><div style="font-size:20px;font-weight:850;color:#fff;letter-spacing:-.025em">Sale Invoices</div><div style="font-size:11.5px;color:rgba(255,255,255,.8);font-weight:600;margin-top:2px">Invoices · Malipo · Salio · Follow-up za wateja</div></div>
+        <div class="fpInvTop">
+          <button class="fpInvBack" onClick="{{ navHome.click }}" title="Rudi Nyumbani"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#50657b" stroke-width="2.5"><path d="M15 18l-6-6 6-6"></path></svg></button>
+          <div class="fpInvTitle"><h1>Sales Invoice Workspace</h1><p>Dhibiti invoice, malipo, salio na follow-up za wateja sehemu moja.</p></div>
           <div style="position:relative;flex:none">
-            <button onClick="{{ toggleInvDrop }}" style="display:flex;align-items:center;gap:7px;padding:9px 14px;border:none;border-radius:11px;background:rgba(255,255,255,.16);color:#fff;font-weight:700;font-size:12.5px;font-family:inherit;cursor:pointer" style-hover="background:rgba(255,255,255,.28)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M3 9h18M8 3v4M16 3v4"></path></svg>{{ invPresetLabel }}<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4"><path d="M6 9l6 6 6-6"></path></svg></button>
+            <button class="fpInvTopBtn" onClick="{{ toggleInvDrop }}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M3 9h18M8 3v4M16 3v4"></path></svg>{{ invPresetLabel }}</button>
             <sc-if value="{{ invDropOpen }}" hint-placeholder-val="{{ false }}">
               <div style="position:absolute;right:0;top:44px;z-index:30;background:#fff;border:1px solid #ebedf1;border-radius:12px;box-shadow:0 12px 30px rgba(15,23,42,.18);padding:6px;min-width:150px">
                 <sc-for list="{{ invPresetChips }}" as="c" hint-placeholder-count="5"><div onClick="{{ c.pick }}" style="{{ c.style }}">{{ c.label }}</div></sc-for>
               </div>
             </sc-if>
           </div>
-          <div style="position:relative;flex:none">
-            <button onClick="{{ toggleInvCal }}" title="Custom date range" style="width:38px;height:38px;border:none;border-radius:11px;background:rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="background:rgba(255,255,255,.28)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"></rect><path d="M3 9h18M8 2v4M16 2v4M8 14h3"></path></svg></button>
+          <div style="position:relative;flex:none"><button class="fpInvTopBtn" onClick="{{ toggleInvCal }}" title="Custom date range">Tarehe maalumu</button>
             <sc-if value="{{ invCalOpen }}" hint-placeholder-val="{{ false }}">
               <div style="position:absolute;right:0;top:44px;z-index:30;background:#fff;border:1px solid #ebedf1;border-radius:12px;box-shadow:0 12px 30px rgba(15,23,42,.18);padding:14px;min-width:220px">
                 <label style="display:block;font-size:11px;font-weight:700;color:#94a3b8;margin-bottom:4px">Start Date</label>
@@ -1239,82 +1235,38 @@ window.addEventListener('load', function () {
               </div>
             </sc-if>
           </div>
-          <div style="position:relative;flex:none">
-            <button onClick="{{ toggleInvStatusDrop }}" style="display:flex;align-items:center;gap:7px;padding:9px 14px;border:none;border-radius:11px;background:rgba(255,255,255,.16);color:#fff;font-weight:700;font-size:12.5px;font-family:inherit;cursor:pointer" style-hover="background:rgba(255,255,255,.28)">{{ invStatusFilter }}<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4"><path d="M6 9l6 6 6-6"></path></svg></button>
-            <sc-if value="{{ invStatusDropOpen }}" hint-placeholder-val="{{ false }}">
-              <div style="position:absolute;right:0;top:44px;z-index:30;background:#fff;border:1px solid #ebedf1;border-radius:12px;box-shadow:0 12px 30px rgba(15,23,42,.18);padding:6px;min-width:140px">
-                <sc-for list="{{ invStatusOptions }}" as="c" hint-placeholder-count="6"><div onClick="{{ c.pick }}" style="{{ c.style }}">{{ c.label }}</div></sc-for>
-              </div>
-            </sc-if>
-          </div>
-          <button onClick="{{ openInvoiceForm }}" style="display:flex;align-items:center;gap:7px;padding:10px 17px;border:1px solid rgba(255,255,255,.35);border-radius:11px;background:#fff;color:#075f8c;font-weight:800;font-size:13px;font-family:inherit;cursor:pointer;flex:none;box-shadow:0 8px 20px -12px rgba(0,0,0,.65)" style-hover="background:#eff9fe;transform:translateY(-1px)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#008ece" stroke-width="2.6"><path d="M12 5v14M5 12h14"></path></svg>Invoice Mpya</button>
+          <button class="fpInvCreate" onClick="{{ openInvoiceForm }}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6"><path d="M12 5v14M5 12h14"></path></svg>Invoice Mpya</button>
         </div>
-        <div class="fpInvKpis">
-          <div class="fpInvKpi fpInvKpiCount"><div style="font-size:11px;color:#718399;font-weight:750;margin-bottom:7px;text-transform:uppercase;letter-spacing:.045em">Invoice zote</div><div style="font-size:23px;font-weight:850;color:#0f172a">{{ invCount }}</div><div style="font-size:10.5px;color:#94a3b8;margin-top:3px">Rekodi kwenye kipindi</div></div>
-          <div class="fpInvKpi fpInvKpiTotal"><div style="font-size:11px;color:#718399;font-weight:750;margin-bottom:7px;text-transform:uppercase;letter-spacing:.045em">Thamani ya mauzo</div><div style="font-size:21px;font-weight:850;color:#0f172a"><span style="font-size:11px;color:#94a3b8;margin-right:3px">Sh</span>{{ invTotal }}</div><div style="font-size:10.5px;color:#94a3b8;margin-top:3px">Jumla ya invoice</div></div>
-          <div class="fpInvKpi fpInvKpiPaid"><div style="font-size:11px;color:#718399;font-weight:750;margin-bottom:7px;text-transform:uppercase;letter-spacing:.045em">Tumepokea</div><div style="font-size:21px;font-weight:850;color:#16a34a"><span style="font-size:11px;color:#94a3b8;margin-right:3px">Sh</span>{{ invPaid }}</div><div style="font-size:10.5px;color:#16a34a;margin-top:3px">Malipo yaliyothibitishwa</div></div>
-          <div class="fpInvKpi fpInvKpiBalance"><div style="font-size:11px;color:#718399;font-weight:750;margin-bottom:7px;text-transform:uppercase;letter-spacing:.045em">Salio la kufuatilia</div><div style="font-size:21px;font-weight:850;color:#e11d48"><span style="font-size:11px;color:#94a3b8;margin-right:3px">Sh</span>{{ invBalance }}</div><div style="font-size:10.5px;color:#e11d48;margin-top:3px">Bado halijalipwa</div></div>
-          <div class="fpInvKpi fpInvKpiMix"><div style="font-size:11px;color:#718399;font-weight:750;margin-bottom:7px;text-transform:uppercase;letter-spacing:.045em">Hali ya malipo</div><div style="font-size:18px;font-weight:850;color:#0f172a">{{ invUnpaidCnt }} · {{ invPartialCnt }} · {{ invPaidCnt }}</div><div style="font-size:10.5px;color:#94a3b8;margin-top:3px">Unpaid · Partial · Paid</div></div>
+        <div class="fpInvMetrics">
+          <div class="fpInvMetric"><div class="fpInvMetricLabel">Thamani ya invoice</div><div class="fpInvMetricValue">Sh {{ invTotal }}</div><div class="fpInvMetricSub">Invoice {{ invCount }} kwenye kipindi</div></div>
+          <div class="fpInvMetric"><div class="fpInvMetricLabel">Tumekusanya</div><div class="fpInvMetricValue" style="color:#159357">Sh {{ invPaid }}</div><div class="fpInvMetricSub">Malipo yaliyothibitishwa</div></div>
+          <div class="fpInvMetric"><div class="fpInvMetricLabel">Bado kukusanya</div><div class="fpInvMetricValue" style="color:#d9294d">Sh {{ invBalance }}</div><div class="fpInvMetricSub">Salio linalohitaji follow-up</div></div>
+          <div class="fpInvMetric"><div class="fpInvMetricLabel">Collection rate</div><div class="fpInvMetricValue">{{ invCollectionRate }}%</div><div class="fpInvRateTrack"><div class="fpInvRateFill" style="{{ invCollectionStyle }}"></div></div><div class="fpInvMetricSub">Paid {{ invPaidCnt }} · Partial {{ invPartialCnt }}</div></div>
         </div>
-        <div class="fpInvToolbar" style="background:rgba(255,255,255,.7);border:1px solid #ebedf1;border-radius:14px;padding:11px 14px;margin-bottom:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-          <div style="flex:1;min-width:160px;position:relative">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2.2" style="position:absolute;left:11px;top:50%;transform:translateY(-50%)"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3-3"></path></svg>
-            <input value="{{ invSearchV }}" onChange="{{ onInvSearch }}" placeholder="Search customer, invoice no. or phone" style="width:100%;padding:8px 11px 8px 32px;border:1px solid rgba(0,87,141,.2);border-radius:9px;font-size:12.5px;font-family:inherit;outline:none;background:rgba(255,255,255,.8)" style-focus="border-color:#008ece;box-shadow:0 0 0 3px rgba(0,142,206,.14)">
-          </div>
+        <div class="fpInvTools"><div class="fpInvSearch"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8291a3" stroke-width="2.2" style="position:absolute;left:13px;top:50%;transform:translateY(-50%)"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3-3"></path></svg><input value="{{ invSearchV }}" onChange="{{ onInvSearch }}" placeholder="Tafuta mteja, invoice au simu..."></div><button class="fpInvTopBtn" onClick="{{ refreshInvoices }}">{{ invRefreshLabel }}</button>
         </div>
-        <div class="fpInvStatusBar" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px">
+        <div class="fpInvPills">
           <sc-for list="{{ invPills }}" as="c" hint-placeholder-count="4"><div onClick="{{ c.pick }}" style="{{ c.style }}">{{ c.label }}</div></sc-for>
           <sc-if value="{{ invHasOverdue }}" hint-placeholder-val="{{ false }}"><div style="padding:7px 14px;border-radius:999px;font-size:12.5px;font-weight:800;border:1px solid #fecaca;background:#fff1f2;color:#e11d48;display:inline-flex;align-items:center;gap:5px">⚠ Overdue · {{ invOverdueCnt }}</div></sc-if>
           <div style="margin-left:auto;font-size:11.5px;font-weight:700;color:#64748b">{{ invShowingLabel }}</div>
-          <button onClick="{{ refreshInvoices }}" style="padding:7px 12px;border:1px solid #cfe3ef;border-radius:9px;background:#fff;color:#00578d;font-size:11.5px;font-weight:800;font-family:inherit;cursor:pointer">{{ invRefreshLabel }}</button>
         </div>
         <sc-if value="{{ invHasLoadError }}" hint-placeholder-val="{{ false }}"><div style="padding:9px 12px;margin-bottom:12px;border:1px solid #fde68a;border-radius:10px;background:#fffbeb;color:#92400e;font-size:11.5px;font-weight:700">{{ invLoadError }}</div></sc-if>
-        <div class="fpInvTableWrap" style="background:#fff;border:1px solid #ebedf1;border-radius:16px;overflow:hidden;box-shadow:0 1px 2px rgba(15,23,42,.04)">
+        <div class="fpInvDesk">
+          <div class="fpInvList">
+            <div class="fpInvListHead"><strong>Invoice za wateja</strong><span>Chagua kuona taarifa na hatua</span></div>
           <sc-if value="{{ invHasRows }}" hint-placeholder-val="{{ false }}">
-            <table class="fpInvTable" style="width:100%;border-collapse:collapse">
-              <thead><tr style="background:#fafbfc">
-                <th style="padding:12px 14px;font-size:10.5px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.04em;text-align:left;padding-left:18px">Invoice No.</th>
-                <th style="padding:12px 14px;font-size:10.5px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.04em;text-align:left">Customer</th>
-                <th style="padding:12px 14px;font-size:10.5px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.04em;text-align:left">Date</th>
-                <th style="padding:12px 14px;font-size:10.5px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.04em;text-align:left">Due Date</th>
-                <th style="padding:12px 14px;font-size:10.5px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.04em;text-align:right">Total</th>
-                <th style="padding:12px 14px;font-size:10.5px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.04em;text-align:right">Paid</th>
-                <th style="padding:12px 14px;font-size:10.5px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.04em;text-align:right">Balance</th>
-                <th style="padding:12px 14px;font-size:10.5px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.04em;text-align:center">Status</th>
-                <th style="padding:12px 14px;font-size:10.5px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.04em;text-align:center;padding-right:18px">Actions</th>
-              </tr></thead>
-              <tbody>
-                <sc-for list="{{ invRows }}" as="r" hint-placeholder-count="6">
-                  <tr style="border-top:1px solid #f1f2f5;{{ r.rowBg }}" style-hover="background:#fafbff">
-                    <td style="padding:12px 14px 12px 18px"><div style="font-size:13px;font-weight:800;color:#0f172a">{{ r.no }}</div><div style="font-size:9px;font-weight:800;color:#c0392b;letter-spacing:.05em;margin-top:1px">{{ r.taxLabel }}</div></td>
-                    <td style="padding:12px 14px"><div class="fpInvCustomer"><span class="fpInvAvatar">{{ r.initials }}</span><div style="min-width:0"><div style="font-size:13px;font-weight:750;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:210px">{{ r.customer }}</div><div style="font-size:10.5px;color:#94a3b8;font-weight:550;margin-top:2px">{{ r.phone }}</div></div></div></td>
-                    <td style="padding:12px 14px;font-size:12.5px;color:#64748b">{{ r.date }}</td>
-                    <td style="padding:12px 14px;font-size:12.5px;color:#64748b;white-space:nowrap">{{ r.dueDate }}<span style="{{ r.odStyle }}">{{ r.overdue }}</span></td>
-                    <td style="padding:12px 14px;font-size:13px;font-weight:700;text-align:right;color:#0f172a">{{ r.amount }}</td>
-                    <td style="padding:12px 14px;font-size:13px;text-align:right;color:#16a34a;font-weight:600">{{ r.paid }}</td>
-                    <td style="padding:12px 14px;font-size:13px;font-weight:800;text-align:right;color:{{ r.balColor }}">{{ r.balance }}</td>
-                    <td style="padding:12px 14px;text-align:center"><span style="{{ r.statusStyle }}">{{ r.status }}</span></td>
-                    <td style="padding:12px 14px 12px 14px;padding-right:18px"><div class="fpInvActions">
-                      <button onClick="{{ doPrint }}" title="Print / PDF" style="width:32px;height:32px;border:1px solid #e6eaf0;border-radius:9px;background:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="background:#f4f7fb"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2"><path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-3a2 2 0 012-2h16a2 2 0 012 2v3a2 2 0 01-2 2h-2M6 14h12v8H6z"></path></svg></button>
-                      <button onClick="{{ openInvoiceForm }}" title="Hariri invoice" style="width:32px;height:32px;border:1px solid #e6eaf0;border-radius:9px;background:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="background:#f4f7fb"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#008ece" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"></path></svg></button>
-                      <a href="{{ r.waHref }}" target="_blank" title="Tuma kumbukumbu WhatsApp" style="width:32px;height:32px;border:none;border-radius:9px;background:#25D366;display:flex;align-items:center;justify-content:center;cursor:pointer;text-decoration:none"><svg width="16" height="16" viewBox="0 0 24 24" fill="#fff"><path d="M12 2a10 10 0 00-8.6 15l-1.3 4.7 4.8-1.3A10 10 0 1012 2zm5.8 14.2c-.2.7-1.4 1.3-2 1.4-.5.1-1.2.1-1.9-.1-.4-.1-1-.3-1.8-.6-3-1.3-5-4.3-5.1-4.5-.2-.2-1.3-1.7-1.3-3.2s.8-2.3 1.1-2.6c.3-.3.6-.4.8-.4h.6c.2 0 .4 0 .7.5l.9 2c.1.2.1.4 0 .6l-.4.6-.4.4c-.2.2-.3.4-.1.7.2.3.9 1.4 1.9 2.3 1.3 1.1 2.3 1.5 2.6 1.6.3.1.5.1.7-.1l.9-1c.2-.2.4-.2.7-.1l2 .9c.3.2.5.3.6.4.1.3.1.9-.1 1.6z"></path></svg></a>
-                    </div></td>
-                  </tr>
-                </sc-for>
-              </tbody>
-            </table>
+            <sc-for list="{{ invRows }}" as="r" hint-placeholder-count="6"><div class="fpInvCard {{ r.activeClass }}" onClick="{{ r.select }}"><div class="fpInvParty"><span class="fpInvAvatar">{{ r.initials }}</span><div class="fpInvPartyText"><div class="fpInvPartyName">{{ r.customer }}</div><div class="fpInvPartyMeta">{{ r.no }} · {{ r.date }} · <span style="{{ r.statusStyle }}">{{ r.status }}</span></div></div></div><div class="fpInvMoney"><strong>{{ r.amount }}</strong><span>Invoice total</span></div><div class="fpInvBalance"><strong>{{ r.balance }}</strong><span>{{ r.dueLabel }}</span></div></div></sc-for>
           </sc-if>
           <sc-if value="{{ invEmpty }}" hint-placeholder-val="{{ true }}">
-            <div style="padding:56px 20px;display:flex;flex-direction:column;align-items:center;gap:13px">
+            <div class="fpInvEmpty">
               <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="#dbe0e7" stroke-width="1.3"><path d="M6 2h9l5 5v15H6z"></path><path d="M14 2v6h6M9 13h6M9 17h6"></path></svg>
-              <div style="text-align:center"><div style="font-size:14px;font-weight:700;color:#64748b">No invoices found for this filter.</div><div style="font-size:12.5px;color:#94a3b8;margin-top:3px">Add an invoice or change the filters above.</div></div>
-              <button onClick="{{ openInvoiceForm }}" style="margin-top:2px;padding:9px 18px;border:1px solid #aed4f8;border-radius:10px;background:#e9f3fe;color:#008ece;font-size:12.5px;font-weight:700;font-family:inherit;cursor:pointer">+ Add Invoice</button>
+              <div style="font-size:14px;font-weight:750;margin-top:10px">Hakuna invoice kwenye filter hii.</div><button class="fpInvTopBtn" onClick="{{ openInvoiceForm }}" style="margin:14px auto 0">+ Invoice Mpya</button>
             </div>
           </sc-if>
+            <sc-if value="{{ invHasMore }}" hint-placeholder-val="{{ false }}"><div style="display:flex;justify-content:center;padding:14px"><button class="fpInvTopBtn fpInvMore" onClick="{{ invLoadMore }}">Onyesha invoice 50 zaidi</button></div></sc-if>
+          </div>
+          <sc-if value="{{ invHasSelected }}" hint-placeholder-val="{{ true }}"><aside class="fpInvFocus"><div class="fpInvFocusTop"><div class="fpInvFocusNo">Payment focus · {{ invSelNo }}</div><div class="fpInvFocusCustomer"><span class="fpInvFocusAvatar">{{ invSelInitials }}</span><div><h3>{{ invSelCustomer }}</h3><p>{{ invSelPhone }}</p></div></div></div><div class="fpInvFocusBody"><div class="fpInvDue"><div class="fpInvDueBox"><span>Invoice date</span><strong>{{ invSelDate }}</strong></div><div class="fpInvDueBox"><span>Due date</span><strong>{{ invSelDueDate }}</strong></div></div><div class="fpInvAmountBox"><div class="fpInvAmountLine"><span>Invoice total</span><strong>{{ invSelAmount }}</strong></div><div class="fpInvAmountLine"><span>Tumepokea</span><strong style="color:#159357">{{ invSelPaid }}</strong></div><div class="fpInvAmountLine total"><span>Salio</span><strong>{{ invSelBalance }}</strong></div></div><div style="display:flex;align-items:center;justify-content:space-between;margin:0 1px 14px"><span style="font-size:11px;color:#7d8da1;font-weight:700">Hali ya invoice</span><span style="{{ invSelStatusStyle }}">{{ invSelStatus }}</span></div><div class="fpInvActionsGrid"><button class="fpInvActionPrimary fpInvActionWide" onClick="{{ invSelRecordPayment }}">+ Rekodi malipo</button><a class="fpInvActionWa" href="{{ invSelWaHref }}" target="_blank">WhatsApp</a><button class="fpInvActionSoft" onClick="{{ openInvoiceForm }}">Hariri</button><button class="fpInvActionSoft fpInvActionWide" onClick="{{ doPrint }}">Chapa / Pakua PDF</button></div></div></aside></sc-if>
         </div>
-        <sc-if value="{{ invHasMore }}" hint-placeholder-val="{{ false }}">
-          <div style="display:flex;justify-content:center;padding:16px"><button class="fpInvMore" onClick="{{ invLoadMore }}" style="padding:10px 20px;border:1px solid #b9d8e8;border-radius:11px;background:#fff;color:#00578d;font-size:12.5px;font-weight:800;font-family:inherit;cursor:pointer">Onyesha invoice 50 zaidi</button></div>
-        </sc-if>
         </div>
       </sc-if>
 
@@ -8519,7 +8471,7 @@ class Component extends DCLogic {
         const initialsOf = (name) => String(name || '').replace(/[^A-Za-z0-9 ]/g, ' ').trim().split(/\s+/).filter(Boolean).slice(0, 2).map(x => x.charAt(0)).join('').toUpperCase() || '?';
         // include sales created via the "Add Sale" form (stored in savedDocs) so they show here too
         const sdList = (screen === 'sale' ? (this.state.savedDocs || []) : []).filter(d => d.typeKey === 'sale' && (statF === 'All' || (d.status || 'Unpaid') === statF) && (!sq || String(d.customer || '').toLowerCase().includes(sq) || String('FP/INV/' + d.no).toLowerCase().includes(sq)));
-        const sdRows = sdList.map(d => { const balTxt = fmtI(d.balance); const cust = d.customer || '—'; return { date: d.date, no: 'FP/INV/' + d.no, taxLabel: 'TAX INVOICE', customer: cust, initials: initialsOf(cust), phone: '', dueDate: '—', overdue: '', overdueDays: 0, odStyle: odStyle, waHref: waLink2('', d.customer, 'FP/INV/'+d.no, balTxt), rowBg: '', amount: 'Sh ' + fmtI(d.amount), paid: 'Sh ' + fmtI((d.amount || 0) - (d.balance || 0)), balance: (d.balance||0)>0 ? 'Sh ' + balTxt : '—', balColor: (d.balance || 0) > 0 ? '#e11d48' : '#94a3b8', status: (d.status || 'Unpaid').toUpperCase()==='PAID'?'Paid':(d.status||'Unpaid'), statusStyle: stStyle(d.status || 'Unpaid') }; });
+        const sdRows = sdList.map(d => { const amountNum = Number(d.amount || 0), balanceNum = Number(d.balance || 0), paidNum = amountNum - balanceNum; const balTxt = fmtI(balanceNum); const cust = d.customer || '—'; return { date: d.date, no: 'FP/INV/' + d.no, taxLabel: 'TAX INVOICE', customer: cust, initials: initialsOf(cust), phone: '', dueDate: '—', overdue: '', overdueDays: 0, odStyle: odStyle, waHref: waLink2('', d.customer, 'FP/INV/'+d.no, balTxt), rowBg: '', amountNum, paidNum, balanceNum, amount: 'Sh ' + fmtI(amountNum), paid: 'Sh ' + fmtI(paidNum), balance: balanceNum>0 ? 'Sh ' + balTxt : 'Sh 0', balColor: balanceNum > 0 ? '#e11d48' : '#159357', status: (d.status || 'Unpaid').toUpperCase()==='PAID'?'Paid':(d.status||'Unpaid'), statusStyle: stStyle(d.status || 'Unpaid') }; });
         const visibleLimit = Math.max(50, Number(this.state.invoiceVisibleLimit || 50));
         const localRows = sdRows.slice(0, visibleLimit);
         const remoteLimit = Math.max(0, visibleLimit - localRows.length);
@@ -8531,9 +8483,13 @@ class Component extends DCLogic {
           const st = p.Status || 'Unpaid';
           const od = overdueOf(p.DueDate, bal); const balTxt = fmtI(bal);
           const cust = p.CustomerName || '—';
-          return { date: dateStr, no: p.InvoiceNo || '—', taxLabel: (p.TaxInvoice===false?'INVOICE':'TAX INVOICE'), customer: cust, initials: initialsOf(cust), phone: p.Phone || '', dueDate: fmtDate2(p.DueDate), overdue: od.label, overdueDays: od.days, odStyle: odStyle, waHref: waLink2(p.Phone, p.CustomerName, p.InvoiceNo, balTxt), rowBg: od.days>0 ? 'background:#fff5f5' : '', amount: 'Sh ' + fmtI(p.TotalAmount), paid: 'Sh ' + fmtI(p.PaidAmount), balance: bal>0 ? 'Sh ' + balTxt : '—', balColor: bal > 0 ? '#e11d48' : '#94a3b8', status: st, statusStyle: stStyle(st) };
+          const amountNum = Number(p.TotalAmount || 0), paidNum = Number(p.PaidAmount || 0);
+          return { date: dateStr, no: p.InvoiceNo || '—', taxLabel: (p.TaxInvoice===false?'INVOICE':'TAX INVOICE'), customer: cust, initials: initialsOf(cust), phone: p.Phone || '', dueDate: fmtDate2(p.DueDate), overdue: od.label, overdueDays: od.days, odStyle: odStyle, waHref: waLink2(p.Phone, p.CustomerName, p.InvoiceNo, balTxt), rowBg: od.days>0 ? 'background:#fff5f5' : '', amountNum, paidNum, balanceNum: bal, amount: 'Sh ' + fmtI(amountNum), paid: 'Sh ' + fmtI(paidNum), balance: bal>0 ? 'Sh ' + balTxt : 'Sh 0', balColor: bal > 0 ? '#e11d48' : '#159357', status: st, statusStyle: stStyle(st) };
         });
-        const rows = localRows.concat(remoteRows);
+        const rawRows = localRows.concat(remoteRows);
+        const selectedNo = this.state.siSelectedNo || (rawRows[0] && rawRows[0].no) || '';
+        const selected = rawRows.find(r => r.no === selectedNo) || rawRows[0] || null;
+        const rows = rawRows.map(r => Object.assign({}, r, { activeClass: selected && r.no === selected.no ? 'is-active' : '', dueLabel: r.overdue || (r.balanceNum > 0 ? ('Due ' + r.dueDate) : 'Paid in full'), select: () => this.setState({ siSelectedNo: r.no }) }));
         const allRowsCount = sdList.length + all.length;
         const overdueCount = all.reduce((n, p) => { const bal = Number(p.Balance != null ? p.Balance : (Number(p.TotalAmount || 0) - Number(p.PaidAmount || 0))); return n + (overdueOf(p.DueDate, bal).days > 0 ? 1 : 0); }, 0);
         const tot = all.reduce((a, p) => a + Number(p.TotalAmount || 0), 0) + sdList.reduce((a, d) => a + Number(d.amount || 0), 0);
@@ -8545,9 +8501,13 @@ class Component extends DCLogic {
         const invCustChips = ['Draft', 'Unpaid', 'Partial', 'Paid', 'Cancelled'].map(t => ({ label: t, pick: this.setInvoiceStatus(t), style: 'padding:9px 14px;border-radius:11px;font-size:12.5px;font-weight:700;cursor:pointer;border:1px solid ' + ((this.state.invoiceForm || {}).status === t ? '#008ece;background:linear-gradient(135deg,#008ece,#00578d);color:#fff' : 'rgba(0,87,141,.2);background:rgba(255,255,255,.6);color:#475569') }));
         const f = this.state.invoiceForm || {};
         const nF = (v) => { const x = parseFloat(String(v).replace(/,/g, '')); return isNaN(x) ? 0 : x; };
+        const collectionRate = tot > 0 ? Math.max(0, Math.min(100, Math.round((paidT / tot) * 100))) : 0;
+        const recordSelectedPayment = () => { if (!selected) return; this.setState({ payInOpen: true, payInErr: '', payInForm: { customer: selected.customer, amount: '', payMode: '', relType: 'Invoice', relId: selected.no, ref: selected.no, notes: 'Payment for ' + selected.no } }); };
         return {
           invRows: rows, invHasRows: rows.length > 0, invEmpty: allRowsCount === 0,
           invCount: allRowsCount, invTotal: fmtI(tot), invPaid: fmtI(paidT), invBalance: fmtI(balT),
+          invCollectionRate: collectionRate, invCollectionStyle: 'width:' + collectionRate + '%',
+          invHasSelected: !!selected, invSelNo: selected ? selected.no : '', invSelCustomer: selected ? selected.customer : '', invSelInitials: selected ? selected.initials : '', invSelPhone: selected ? (selected.phone || 'Namba haijahifadhiwa') : '', invSelDate: selected ? selected.date : '—', invSelDueDate: selected ? selected.dueDate : '—', invSelAmount: selected ? selected.amount : 'Sh 0', invSelPaid: selected ? selected.paid : 'Sh 0', invSelBalance: selected ? selected.balance : 'Sh 0', invSelStatus: selected ? selected.status : '', invSelStatusStyle: selected ? selected.statusStyle : '', invSelWaHref: selected ? selected.waHref : '', invSelRecordPayment: recordSelectedPayment,
           invUnpaidCnt: cnt('Unpaid'), invPartialCnt: cnt('Partial'), invPaidCnt: cnt('Paid'), invOverdueCnt: overdueCount, invHasOverdue: overdueCount > 0,
           invPills: [{k:'All',label:'All',n:allRowsCount},{k:'Paid',label:'Paid',n:cnt('Paid')},{k:'Partial',label:'Partial',n:cnt('Partial')},{k:'Unpaid',label:'Unpaid',n:cnt('Unpaid')}].map(x=>({label:x.label+' · '+x.n, pick:()=>this.setState({siStatusFilter:x.k,invoiceVisibleLimit:50}), style:'padding:7px 14px;border-radius:999px;font-size:12.5px;font-weight:700;cursor:pointer;border:1px solid '+(statF===x.k?'transparent;background:#008ece;color:#fff':'rgba(0,87,141,.18);background:#fff;color:#475569')})),
           invShowingLabel: allRowsCount ? ('Inaonyesha ' + Math.min(rows.length, allRowsCount) + ' kati ya ' + allRowsCount) : 'Hakuna invoice',
