@@ -9508,7 +9508,10 @@ class Component extends DCLogic {
     btn.onclick=function(){ var nl=fpCur()==='sw'?'en':'sw'; setLang(nl); btn.textContent=nl.toUpperCase(); };
     themeBtn.parentNode.insertBefore(btn, themeBtn);
   }
-  setInterval(function(){ injectToggle(); apply(); }, 2500);
+  // Do not rescan the entire application every 2.5 seconds. On large invoice
+  // histories that permanent translation loop monopolised the browser thread.
+  // Translation still runs on startup and whenever the user changes language.
+  setInterval(function(){ injectToggle(); }, 2500);
   setTimeout(function(){ injectToggle(); apply(); }, 1000);
 })();
 </script>
