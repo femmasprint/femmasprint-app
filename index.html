@@ -8056,7 +8056,7 @@ class Component extends DCLogic {
         const recentText = incoming.slice(-14).join(' ').toLowerCase();
         const hasPay = /\b(paid|nimelipa|amelipa|payment|muamala|transaction|receipt|risiti)\b/.test(recentText);
         const hasAccept = /\b(nakubali|accepted|confirmed|fanya|endelea|tengeneza|order|sawa)\b/.test(recentText);
-        const hasQuote = /\b(bei|price|quotation|quote|gharama|tsh|sh\.?|/=)\b/.test(recentText);
+        const hasQuote = /\b(bei|price|quotation|quote|gharama|tsh|sh\.?)\b/.test(recentText) || recentText.indexOf('/=')>-1;
         const stage = hasPay ? 'Malipo yametajwa — hakiki na urekodi' : hasAccept ? 'Amekubali / order inawezekana' : hasQuote ? 'Bei au quotation inajadiliwa' : 'Inquiry — anahitaji kufuatiliwa';
         const signals = [hasAccept?'✓ acceptance':'',hasQuote?'✓ price/quote':'',hasPay?'✓ payment':''].filter(Boolean).join(' · ') || 'Bado hakuna commitment iliyothibitishwa';
         const amountMatches = recentText.match(/(?:tsh|sh\.?|=)\s*([0-9][0-9,\.]{2,})/g) || [];
