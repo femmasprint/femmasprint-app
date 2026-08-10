@@ -1,3 +1,102 @@
+/* FEMMAS PRINT — one-time Quick Sale Nauli cleanup.
+ * Keeps only the full staff names and removes the old short aliases from browser cache.
+ */
+(function () {
+  try {
+    var legacy = { stive:1, kwedy:1, sedekia:1, imma:1, hasan:1, ismo:1, suma:1, fadhil:1, shaibu:1 };
+    var canonical = [
+      { name: 'Ismail Issa', price: '7000' },
+      { name: 'Hassan Mwesiumo', price: '7000' },
+      { name: 'Ismar Salim Hussein (Suma)', price: '7000' },
+      { name: 'Steven Mkope', price: '5000' },
+      { name: 'Fadhili Ally', price: '7000' },
+      { name: 'Emanuel W. Sese (Ima)', price: '7000' },
+      { name: 'Sedekia Johnson Laurent', price: '7000' },
+      { name: 'Henry Charles Kwedi', price: '7000' },
+      { name: 'Shaibu Frank Malekela', price: '7000' }
+    ];
+
+    function isLegacyNauli(r) {
+      if (!r) return false;
+      var nm = String(r.client || r.name || '').trim().toLowerCase();
+      var rs = String(r.goods || r.reason || '').trim().toLowerCase();
+      return !!(legacy[nm] && rs.indexOf('nauli') > -1);
+    }
+
+    function cleanRows(rows) {
+      if (!Array.isArray(rows)) return { rows: rows, changed: false };
+      var out = rows.filter(function (r) { return !isLegacyNauli(r); });
+      return { rows: out, changed: out.length !== rows.length };
+    }
+
+    var changed = false;
+
+    try {
+      var tplRaw = localStorage.getItem('fp_daily_exp_tpl');
+      var tpl = tplRaw ? JSON.parse(tplRaw) : [];
+      var filtered = Array.isArray(tpl) ? tpl.filter(function (x) {
+        var k = String((x && x.name) || '').trim().toLowerCase();
+        return !legacy[k];
+      }) : [];
+      var needCanonical = filtered.length !== canonical.length || canonical.some(function (x) {
+        return !filtered.some(function (y) { return String(y && y.name || '').trim().toLowerCase() === x.name.toLowerCase(); });
+      });
+      if (needCanonical || (Array.isArray(tpl) && filtered.length !== tpl.length)) {
+        localStorage.setItem('fp_daily_exp_tpl', JSON.stringify(canonical));
+        changed = true;
+      }
+    } catch (e) {
+      try { localStorage.setItem('fp_daily_exp_tpl', JSON.stringify(canonical)); changed = true; } catch (e2) {}
+    }
+
+    function cleanCacheKey(key) {
+      try {
+        var raw = localStorage.getItem(key);
+        if (!raw) return;
+        var c = JSON.parse(raw);
+        if (!c || typeof c !== 'object') return;
+        var localChanged = false;
+        if (Array.isArray(c.qsExpenses)) {
+          var a = cleanRows(c.qsExpenses);
+          if (a.changed) { c.qsExpenses = a.rows; localChanged = true; }
+        }
+        if (c.qsStore && typeof c.qsStore === 'object') {
+          Object.keys(c.qsStore).forEach(function (d) {
+            var day = c.qsStore[d];
+            if (day && Array.isArray(day.expenses)) {
+              var b = cleanRows(day.expenses);
+              if (b.changed) { day.expenses = b.rows; localChanged = true; }
+            }
+          });
+        }
+        if (localChanged) {
+          localStorage.setItem(key, JSON.stringify(c));
+          changed = true;
+        }
+      } catch (e) {}
+    }
+
+    cleanCacheKey('fp_local_cache');
+    try {
+      for (var i = 0; i < localStorage.length; i++) {
+        var key = localStorage.key(i) || '';
+        if (key.indexOf('fp_local_cache_') === 0) cleanCacheKey(key);
+      }
+    } catch (e) {}
+
+    if (changed) {
+      try {
+        if (sessionStorage.getItem('fp_nauli_cleanup_reload') !== '1') {
+          sessionStorage.setItem('fp_nauli_cleanup_reload', '1');
+          setTimeout(function () { location.reload(); }, 50);
+        }
+      } catch (e) {}
+    } else {
+      try { sessionStorage.removeItem('fp_nauli_cleanup_reload'); } catch (e) {}
+    }
+  } catch (e) {}
+})();
+
 /* FEMMAS PRINT — sidebar v10 (safe minimal, no duplicate hamburger).
  *
  * Never moves/removes an app node (that crashes React). It adds: tooltips, a fallback
