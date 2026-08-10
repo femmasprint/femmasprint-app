@@ -5048,7 +5048,7 @@ class Component extends DCLogic {
             r.expenses=out;
           })();
           const le = r.expenses.map(x => ({ client: x.Name || '', goods: x.Reason || '', qty: String(x.Qty || ''), price: String(x.UnitPrice || ''), payMode: x.PayMode || 'Cash', _eid: x.ExpenseID || '' }));
-          le.forEach(rw => { if (rw._eid) expDone[rw._eid] = rw.client + '|' + rw.goods + '|' + rw.qty + '|' + rw.price; });
+          le.forEach(rw => { if (rw._eid) expDone[rw._eid] = rw.client + '|' + rw.goods + '|' + rw.qty + '|' + rw.price + '|' + (rw.payMode || 'Cash'); });
           if (le.length) { var _tpl = []; try { _tpl = (this.fpDailyExpTpl_() || []).map(function(x){ return { client: x.name, goods: 'Nauli', qty: '1', price: String(x.price==null?'':x.price) }; }); } catch(e){} var _have = {}; le.forEach(function(rw){ _have[String(rw.client||'').trim().toLowerCase()] = 1; }); var _miss = _tpl.filter(function(rw){ return rw.client && !_have[String(rw.client||'').trim().toLowerCase()]; }); expRows = [...le, ..._miss, { client: '', goods: '', qty: '', price: '' }]; }
         }
         this.setState({ qsSales: rows, qsSyncedIds: done, qsExpenses: expRows, qsExpSyncedIds: expDone, qsStatus: 'synced' });
@@ -6238,7 +6238,7 @@ class Component extends DCLogic {
     const amount = num(r.qty) * num(r.price);
     const key = (r._eid) || ('EXP-' + iso.replace(/-/g, '') + '-' + Date.now() + '-' + i);
     if (!r._eid) this.updateQsExpense(i, '_eid', key);
-    const signature = name + '|' + reason + '|' + r.qty + '|' + r.price;
+    const signature = name + '|' + reason + '|' + r.qty + '|' + r.price + '|' + (r.payMode || 'Cash');
     const done = this.state.qsExpSyncedIds || {};
     if (done[key] === signature) return;
     if (this._expInFlight && this._expInFlight[key]) return;
