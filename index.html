@@ -5047,7 +5047,7 @@ class Component extends DCLogic {
             });
             r.expenses=out;
           })();
-          const le = r.expenses.map(x => ({ client: x.Name || '', goods: x.Reason || '', qty: String(x.Qty || ''), price: String(x.UnitPrice || ''), payMode: x.PayMode || 'Cash', _eid: x.ExpenseID || '' }));
+          const le = r.expenses.map(x => { const row = { client: x.Name || '', goods: x.Reason || '', qty: String(x.Qty || ''), price: String(x.UnitPrice || ''), payMode: x.PayMode || 'Cash', _eid: x.ExpenseID || '' }; try { const m = JSON.parse(localStorage.getItem('fp_exp_paymode_overrides') || '{}'); const k = row._eid || [iso, row.client, row.goods, row.qty, row.price].join('|'); if (m[k]) row.payMode = m[k]; } catch(e) {} return row; });
           le.forEach(rw => { if (rw._eid) expDone[rw._eid] = rw.client + '|' + rw.goods + '|' + rw.qty + '|' + rw.price + '|' + (rw.payMode || 'Cash'); });
           if (le.length) { var _tpl = []; try { _tpl = (this.fpDailyExpTpl_() || []).map(function(x){ return { client: x.name, goods: 'Nauli', qty: '1', price: String(x.price==null?'':x.price) }; }); } catch(e){} var _have = {}; le.forEach(function(rw){ _have[String(rw.client||'').trim().toLowerCase()] = 1; }); var _miss = _tpl.filter(function(rw){ return rw.client && !_have[String(rw.client||'').trim().toLowerCase()]; }); expRows = [...le, ..._miss, { client: '', goods: '', qty: '', price: '' }]; }
         }
@@ -6336,7 +6336,7 @@ class Component extends DCLogic {
     }, () => this.showToast('✓ Customer ' + name + ' saved'));
   };
   qsPickMode = (i, mode) => this.setState(s => ({ qsSales: s.qsSales.map((r, j) => j === i ? { ...r, payMode: mode } : r), qsDD: null }), () => this.autoSaveQsRow(i));
-  qsPickExpMode = (i, mode) => this.setState(s => ({ qsExpenses: s.qsExpenses.map((r, j) => j === i ? { ...r, payMode: mode } : r), qsDD: null }), () => this.autoSaveQsExpense(i));
+  qsPickExpMode = (i, mode) => this.setState(s => ({ qsExpenses: s.qsExpenses.map((r, j) => { if (j !== i) return r; const nr = { ...r, payMode: mode }; try { const k = nr._eid || [s.qsDateISO || this.qsTodayISO(), nr.client || '', nr.goods || '', nr.qty || '', nr.price || ''].join('|'); const m = JSON.parse(localStorage.getItem('fp_exp_paymode_overrides') || '{}'); m[k] = mode; localStorage.setItem('fp_exp_paymode_overrides', JSON.stringify(m)); } catch(e) {} return nr; }), qsDD: null }), () => this.autoSaveQsExpense(i));
   // ===== custom Apple-style calendar =====
   calToISO = (d) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
   openCal = (key, baseISO) => {
