@@ -129,3 +129,126 @@
     setInterval(enhance, 2500);
   });
 })();
+
+/* FEMMAS PRINT — Employee Payroll profile phone hydrator.
+ * The Employees sheet already stores these numbers. The current payroll profile form
+ * renders an empty PHONE NUMBER field, so this bridge supplies the matching employee
+ * number to the visible profile without overwriting anything the user has typed.
+ */
+(function () {
+  'use strict';
+
+  var STAFF = {
+    'ismail issa': { phone: '+255711888798' },
+    'hassan mwesiumo': { phone: '+255789276255' },
+    'ismar salim hussein (suma)': { phone: '+255748727077' },
+    'ismail salmu': { phone: '+255748727077' },
+    'steven mkope': { phone: '+255713279556' },
+    'fadhili ally': { phone: '+255621875988' },
+    'fadhil ally': { phone: '+255621875988' },
+    'emanuel w. sese (ima)': { phone: '+255692307562' },
+    'emanuel w. sese': { phone: '+255692307562' },
+    'sedekia johnson laurent': { phone: '+255613130661' },
+    'sedekia johnson': { phone: '+255613130661' },
+    'henry charles kwedi': { phone: '+255626605858' },
+    'henry kwedi': { phone: '+255626605858' },
+    'shaibu frank malekela': { phone: '+255792871472' },
+    'shaibu frank': { phone: '+255792871472' }
+  };
+
+  function n(s) {
+    return String(s || '').toLowerCase().replace(/\s+/g, ' ').trim();
+  }
+
+  function visible(el) {
+    if (!el) return false;
+    var r = el.getBoundingClientRect();
+    return r.width > 0 && r.height > 0;
+  }
+
+  function findProfileRoot() {
+    var nodes = document.querySelectorAll('div,section,article,form');
+    for (var i = 0; i < nodes.length; i++) {
+      if (!visible(nodes[i])) continue;
+      var tx = n(nodes[i].textContent);
+      if (tx.indexOf('employee profile') < 0 && tx.indexOf('taarifa binafsi') < 0) continue;
+      if (nodes[i].querySelectorAll('input').length < 3) continue;
+      var p = nodes[i];
+      while (p.parentElement && p.parentElement.querySelectorAll('input').length < 18) {
+        var pt = n(p.parentElement.textContent);
+        if (pt.indexOf('employee profile') < 0 && pt.indexOf('taarifa binafsi') < 0) break;
+        p = p.parentElement;
+      }
+      return p;
+    }
+    return null;
+  }
+
+  function employeeFor(root) {
+    if (!root) return null;
+    var els = root.querySelectorAll('h1,h2,h3,h4,strong,b,span,div');
+    for (var i = 0; i < els.length; i++) {
+      if (!visible(els[i])) continue;
+      var t = n(els[i].textContent);
+      if (STAFF[t]) return STAFF[t];
+    }
+    return null;
+  }
+
+  function inputFromLabel(root, wanted) {
+    var els = root.querySelectorAll('label,span,div,p');
+    for (var i = 0; i < els.length; i++) {
+      if (!visible(els[i])) continue;
+      var t = n(els[i].textContent);
+      if (wanted.indexOf(t) < 0) continue;
+      var box = els[i];
+      for (var up = 0; up < 4 && box; up++, box = box.parentElement) {
+        var inp = box.querySelector && box.querySelector('input');
+        if (inp && visible(inp)) return inp;
+      }
+    }
+    return null;
+  }
+
+  function nativeSet(input, value) {
+    if (!input || !value) return;
+    if (String(input.value || '').trim()) return;
+    try {
+      var setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+      setter.call(input, value);
+    } catch (e) {
+      input.value = value;
+    }
+    input.setAttribute('value', value);
+    input.setAttribute('data-fp-employee-phone', '1');
+    try { input.dispatchEvent(new Event('input', { bubbles: true })); } catch (e1) {}
+    try { input.dispatchEvent(new Event('change', { bubbles: true })); } catch (e2) {}
+  }
+
+  function hydrate() {
+    var root = findProfileRoot();
+    if (!root) return;
+    var staff = employeeFor(root);
+    if (!staff || !staff.phone) return;
+
+    var phone = inputFromLabel(root, ['phone number', 'namba ya simu', 'simu']);
+    if (!phone) {
+      var candidates = root.querySelectorAll('input[placeholder*="07"],input[type="tel"]');
+      if (candidates.length) phone = candidates[0];
+    }
+    nativeSet(phone, staff.phone);
+  }
+
+  function boot() {
+    hydrate();
+    var t = null;
+    new MutationObserver(function () {
+      clearTimeout(t);
+      t = setTimeout(hydrate, 80);
+    }).observe(document.body, { childList: true, subtree: true });
+    setInterval(hydrate, 900);
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
+})();
