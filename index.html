@@ -5874,7 +5874,7 @@ class Component extends DCLogic {
       if (r && r.ok) {
         const live = (r.customers || []).map(c => ({
           id: c.CustomerID || c.id || ('CUST-' + (c.Phone || c.phone || Math.random())),
-          name: this.capWords(c.Name || c.name || ''),
+          name: this.capWords(c.Name || c.CustomerName || c.name || c.customerName || ''),
           phone: c.Phone || c.phone || '',
           phoneNorm: String(c.Phone || c.phone || '').replace(/[^0-9]/g, '').replace(/^0/, '255'),
           email: c.Email || c.email || '', address: c.Address || c.address || '',
