@@ -1,0 +1,80 @@
+name: Remove current short Nauli rows
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/remove-current-nauli-short-rows.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Clean cached current-day Nauli rows
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+
+          old="""          } else {
+            ['qsSales', 'qsExpenses', 'qsStore', 'qsDateISO'].forEach(k => { if (c[k] != null) patch[k] = c[k]; });
+          }"""
+          new="""          } else {
+            ['qsSales', 'qsStore', 'qsDateISO'].forEach(k => { if (c[k] != null) patch[k] = c[k]; });
+            if (c.qsExpenses != null) {
+              const legacyNauli = { stive:1, kwedy:1, sedekia:1, imma:1, hasan:1, ismo:1, suma:1, fadhil:1, shaibu:1 };
+              const cleaned = (Array.isArray(c.qsExpenses) ? c.qsExpenses : []).filter(function (r) {
+                const nm = String((r && r.client) || '').trim().toLowerCase();
+                const rs = String((r && r.goods) || '').trim().toLowerCase();
+                return !(legacyNauli[nm] && rs.indexOf('nauli') > -1);
+              });
+              patch.qsExpenses = cleaned;
+              try { c.qsExpenses = cleaned; localStorage.setItem('fp_local_cache', JSON.stringify(c)); } catch (e3) {}
+            }
+          }"""
+          if old not in s:
+              if "const legacyNauli = { stive:1" in s:
+                  print('current-day cache cleanup already patched')
+              else:
+                  raise SystemExit('local cache restore anchor not found')
+          else:
+              s=s.replace(old,new,1)
+
+          # Also prevent any current in-memory Quick Sale list from keeping legacy short Nauli names.
+          old2="""        this.setState({ qsSales: rows, qsSyncedIds: done, qsExpenses: expRows, qsExpSyncedIds: expDone, qsStatus: 'synced' });"""
+          new2="""        const legacyNauli = { stive:1, kwedy:1, sedekia:1, imma:1, hasan:1, ismo:1, suma:1, fadhil:1, shaibu:1 };
+        expRows = (expRows || []).filter(function (rw) {
+          const nm = String((rw && rw.client) || '').trim().toLowerCase();
+          const rs = String((rw && rw.goods) || '').trim().toLowerCase();
+          return !(legacyNauli[nm] && rs.indexOf('nauli') > -1);
+        });
+        this.setState({ qsSales: rows, qsSyncedIds: done, qsExpenses: expRows, qsExpSyncedIds: expDone, qsStatus: 'synced' });"""
+          if old2 not in s:
+              if "expRows = (expRows || []).filter" in s:
+                  print('cloud-load cleanup already patched')
+              else:
+                  raise SystemExit('expense load setState anchor not found')
+          else:
+              s=s.replace(old2,new2,1)
+
+          p.write_text(s)
+          print('short Nauli rows will be removed, full names retained')
+          PY
+      - name: Commit patch
+        run: |
+          if git diff --quiet -- index.html; then
+            echo "No changes needed"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "remove cached short Nauli rows from Quick Sale"
+          git push
