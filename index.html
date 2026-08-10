@@ -5861,7 +5861,7 @@ class Component extends DCLogic {
     const total = (this.state.saleRows || []).reduce((a, r) => a + num(r.qty) * num(r.price), 0);
     const td = new Date();
     const date = String(td.getDate()).padStart(2, '0') + '/' + String(td.getMonth() + 1).padStart(2, '0') + '/' + td.getFullYear();
-    const seq = (this.state.savedDocs || []).filter(d => d.typeKey === typeKey).length + 1;
+    const seq = typeKey === 'sale' ? (Math.max(0, ...(this.state.savedInvoices || []).map(r => { const m = String(r.InvoiceNo || '').match(/(\d+)$/); return m ? parseInt(m[1], 10) : 0; }), ...(this.state.savedDocs || []).filter(d => d.typeKey === 'sale').map(d => { const m = String(d.no || '').match(/(\d+)$/); return m ? parseInt(m[1], 10) : 0; })) + 1) : ((this.state.savedDocs || []).filter(d => d.typeKey === typeKey).length + 1);
     const custName = (this.state.customer || '').trim() || 'Walk-in Customer';
     // Duplicate guard: same type + customer + total already saved -> ask before saving again
     const dupSig = typeKey + '|' + custName.toLowerCase() + '|' + total;
@@ -6962,7 +6962,7 @@ class Component extends DCLogic {
       ['14/05/2026','769','KNK',465000,0,true],
       ['30/04/2026','742','ST MOSES SCHOOL',800000,800000,false]
     ];
-    const nextInvSeq = Math.max(...inv.map(r => parseInt(r[1], 10))) + 1;
+    const nextInvSeq = Math.max(0, ...inv.map(r => parseInt(r[1], 10) || 0), ...(this.state.savedInvoices || []).map(r => { const m = String(r.InvoiceNo || '').match(/(\d+)$/); return m ? parseInt(m[1], 10) : 0; }), ...(this.state.savedDocs || []).filter(d => d.typeKey === 'sale').map(d => { const m = String(d.no || '').match(/(\d+)$/); return m ? parseInt(m[1], 10) : 0; })) + 1;
     // ===== document kind + number format (shared by form header & document) =====
     const docKind = this.state.saleTitle === 'Estimate / Quotation' ? 'Quotation'
       : this.state.saleTitle === 'Proforma Invoice' ? 'Proforma Invoice'
