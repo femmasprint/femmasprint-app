@@ -1,0 +1,46 @@
+name: Fix Quick Expense mode durable persistence
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/fix-expense-mode-durable.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Patch expense mode local persistence and load overlay
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+
+          old = "qsPickExpMode = (i, mode) => this.setState(s => ({ qsExpenses: s.qsExpenses.map((r, j) => j === i ? { ...r, payMode: mode } : r), qsDD: null }), () => this.autoSaveQsExpense(i));"
+          new = "qsPickExpMode = (i, mode) => this.setState(s => ({ qsExpenses: s.qsExpenses.map((r, j) => { if (j !== i) return r; const nr = { ...r, payMode: mode }; try { const k = nr._eid || [s.qsDateISO || this.qsTodayISO(), nr.client || '', nr.goods || '', nr.qty || '', nr.price || ''].join('|'); const m = JSON.parse(localStorage.getItem('fp_exp_paymode_overrides') || '{}'); m[k] = mode; localStorage.setItem('fp_exp_paymode_overrides', JSON.stringify(m)); } catch(e) {} return nr; }), qsDD: null }), () => this.autoSaveQsExpense(i));"
+          if old not in s:
+              raise SystemExit('qsPickExpMode anchor not found')
+          s=s.replace(old,new,1)
+
+          old2 = "const le = r.expenses.map(x => ({ client: x.Name || '', goods: x.Reason || '', qty: String(x.Qty || ''), price: String(x.UnitPrice || ''), payMode: x.PayMode || 'Cash', _eid: x.ExpenseID || '' }));"
+          new2 = "const le = r.expenses.map(x => { const row = { client: x.Name || '', goods: x.Reason || '', qty: String(x.Qty || ''), price: String(x.UnitPrice || ''), payMode: x.PayMode || 'Cash', _eid: x.ExpenseID || '' }; try { const m = JSON.parse(localStorage.getItem('fp_exp_paymode_overrides') || '{}'); const k = row._eid || [iso, row.client, row.goods, row.qty, row.price].join('|'); if (m[k]) row.payMode = m[k]; } catch(e) {} return row; });"
+          if old2 not in s:
+              raise SystemExit('expense load anchor not found')
+          s=s.replace(old2,new2,1)
+
+          p.write_text(s)
+          PY
+      - name: Commit fix
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "fix Quick Sale expense mode persistence across refresh"
+          git push
