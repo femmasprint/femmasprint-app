@@ -1,0 +1,59 @@
+name: Fix Quick Expense payment mode persistence
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/fix-quick-expense-payment-mode.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Patch Quick Sale expense payment mode persistence
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('index.html')
+          text = path.read_text()
+          changed = 0
+
+          old1 = "const signature = name + '|' + reason + '|' + r.qty + '|' + r.price;"
+          new1 = "const signature = name + '|' + reason + '|' + r.qty + '|' + r.price + '|' + (r.payMode || 'Cash');"
+          if old1 in text:
+              text = text.replace(old1, new1, 1)
+              changed += 1
+          elif new1 not in text:
+              raise SystemExit('Expense autosave signature anchor not found')
+
+          old2 = "le.forEach(rw => { if (rw._eid) expDone[rw._eid] = rw.client + '|' + rw.goods + '|' + rw.qty + '|' + rw.price; });"
+          new2 = "le.forEach(rw => { if (rw._eid) expDone[rw._eid] = rw.client + '|' + rw.goods + '|' + rw.qty + '|' + rw.price + '|' + (rw.payMode || 'Cash'); });"
+          if old2 in text:
+              text = text.replace(old2, new2, 1)
+              changed += 1
+          elif new2 not in text:
+              raise SystemExit('Loaded expense signature anchor not found')
+
+          path.write_text(text)
+          print(f'Patched {changed} Quick Expense persistence points')
+          PY
+
+      - name: Commit fix
+        run: |
+          if git diff --quiet -- index.html; then
+            echo "No changes needed"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "fix Quick Sale expense payment mode persistence"
+          git push
