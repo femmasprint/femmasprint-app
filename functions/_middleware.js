@@ -437,6 +437,7 @@ export async function onRequest(context) {
           el.append('<script id="fpEdgeFix">' + FIX_JS + '</scr' + 'ipt>', { html: true });
           el.append('<script id="fpMoreActions">' + MORE_JS + '</scr' + 'ipt>', { html: true });
           el.append('<script id="fpTheme" src="/fp-theme.js" defer></scr' + 'ipt>', { html: true });
+          el.append('<script id="fpAvatars" src="/fp-avatars.js" defer></scr' + 'ipt>', { html: true });
           el.append('<script id="fpInvSkin" src="/fp-invoice-skin.js" defer></scr' + 'ipt>', { html: true });
         }
       })
