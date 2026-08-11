@@ -62,7 +62,7 @@ rows = r'''  function rowsHTML() {
     return '<table style="table-layout:fixed;width:100%;min-width:980px;border-collapse:collapse;font-size:12px"><thead>'+head+'</thead><tbody>'+body+'</tbody></table><div style="padding:8px 2px;font-size:12px;color:#9ca3af">'+view.length+' record'+(view.length===1?'':'s')+'</div>';
   }
 
-  function chip(t)'''
+'''
 s = replace_between(s, '  function rowsHTML() {', '  function chip(t)', rows)
 
 tot = r'''  function totCardInner() {
@@ -96,19 +96,23 @@ s = replace_between(s, '  function build() {', '  function wire(el)', build)
 search_wire = "    if (s) s.oninput = function () { q = this.value.trim().toLowerCase(); refresh(); };"
 status_wire = search_wire + "\n    el.querySelectorAll('.fpStatus').forEach(function (b) { b.onclick = function () { statusF = b.getAttribute('data-status') || 'All'; applyFilter(); build(); }; });"
 if status_wire not in s:
-    if search_wire not in s: raise SystemExit('search wire missing')
+    if search_wire not in s:
+        raise SystemExit('search wire missing')
     s = s.replace(search_wire, status_wire, 1)
 
 old_period = "var pc = el.querySelector('.fpPeriod'); if (pc) pc.onclick = function (e) { e.stopPropagation(); miniMenu(pc, [['Leo (Today)', function () { setPeriod('Leo', todayStr(), todayStr()); }], ['This Month', function () { setPeriod('This Month', monthStart(), monthEnd()); }], ['Last Month', function () { var r = lastMonthRange(); setPeriod('Last Month', r[0], r[1]); }], ['This Quarter', function () { setPeriod('This Quarter', quarterStart(), todayStr()); }], ['This Year', function () { setPeriod('This Year', yearStart(), todayStr()); }], ['All Sale Invoices', function () { setPeriod('All', '', ''); }]]); };"
 new_period = "var pc = el.querySelector('.fpPeriod'); if (pc) pc.onclick = function (e) { e.stopPropagation(); miniMenu(pc, [['This Month', function () { setPeriod('This Month', monthStart(), monthEnd()); build(); }], ['Last Month', function () { var r = lastMonthRange(); setPeriod('Last Month', r[0], r[1]); build(); }], ['This Year', function () { setPeriod('This Year', yearStart(), todayStr()); build(); }], ['All Time', function () { setPeriod('All Time', '', ''); build(); }], ['Custom Range', function () { periodLabel = 'Custom'; fromISO = ''; toISO = ''; build(); }]]); };"
-if old_period in s: s = s.replace(old_period, new_period, 1)
-elif new_period not in s: raise SystemExit('period wire missing')
+if old_period in s:
+    s = s.replace(old_period, new_period, 1)
+elif new_period not in s:
+    raise SystemExit('period wire missing')
 
 p.write_text(s, encoding='utf-8')
 
 mw = Path('functions/_middleware.js')
 m = mw.read_text(encoding='utf-8')
-m, n = re.subn(r'src="/fp-invoice-skin\.js(?:\?v=[^"]+)?"', 'src="/fp-invoice-skin.js?v=base44-exact-20260811-1955"', m, count=1)
-if n != 1: raise SystemExit('middleware loader missing')
+m, n = re.subn(r'src="/fp-invoice-skin\.js(?:\?v=[^"]+)?"', 'src="/fp-invoice-skin.js?v=base44-exact-20260811-1958"', m, count=1)
+if n != 1:
+    raise SystemExit('middleware loader missing')
 mw.write_text(m, encoding='utf-8')
 print('Base44 exact Sale Invoices patch applied')
