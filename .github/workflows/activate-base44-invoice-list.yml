@@ -1,0 +1,48 @@
+name: Activate Base44 invoice list
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/activate-base44-invoice-list.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Make Base44 invoice skin detect the current workspace
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          p = Path('fp-invoice-skin.js')
+          s = p.read_text(encoding='utf-8')
+          old = "return t.indexOf('Total Invoices') > -1 && /Sale Invoices/.test(t);"
+          new = "return !!document.querySelector('.fpInvWorkspace') || /Sales Invoice Workspace/i.test(t) || (t.indexOf('Total Invoices') > -1 && /Sale Invoices/.test(t));"
+          if old not in s:
+              if new in s:
+                  print('Already activated')
+              else:
+                  raise SystemExit('Invoice page detector not found')
+          else:
+              s = s.replace(old, new, 1)
+              p.write_text(s, encoding='utf-8')
+              print('Base44 invoice list activated for current workspace')
+          PY
+      - name: Commit activation
+        run: |
+          if git diff --quiet -- fp-invoice-skin.js; then
+            echo "No changes needed"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add fp-invoice-skin.js
+          git commit -m "activate Base44 invoice skin on Sales Invoice Workspace"
+          git push
