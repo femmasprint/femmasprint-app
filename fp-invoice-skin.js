@@ -144,7 +144,7 @@
 
   function build() {
     var el = document.getElementById('fpSkin'); if (!el) { el = document.createElement('div'); el.id = 'fpSkin'; document.documentElement.appendChild(el); }
-    var L = window.innerWidth < 1024 ? 0 : 208;
+    var aside = document.querySelector('aside'); var L = window.innerWidth < 1024 ? 0 : (aside ? Math.round(aside.getBoundingClientRect().width) : 248);
     el.style.cssText = 'position:fixed;left:' + L + 'px;top:0;right:0;bottom:0;z-index:900000;background:#fff;overflow:auto;font-family:-apple-system,Segoe UI,Roboto,sans-serif;color:#1f2733';
     el.innerHTML = ''
       + '<div style="display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid #eef2f7">'
@@ -357,7 +357,7 @@
   function modal(title, body, foot) {
     closeOv();
     ov = document.createElement('div'); ov.id = 'fpOverlay';
-    var L = window.innerWidth < 1024 ? 0 : 208;
+    var aside = document.querySelector('aside'); var L = window.innerWidth < 1024 ? 0 : (aside ? Math.round(aside.getBoundingClientRect().width) : 248);
     ov.style.cssText = 'position:fixed;left:' + L + 'px;top:0;right:0;bottom:0;z-index:2147483400;background:#f4f7fb;overflow:auto;font-family:-apple-system,Segoe UI,Roboto,sans-serif;color:#1f2733';
     ov.innerHTML = '<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 22px;background:#fff;border-bottom:1px solid #e6ebf2;position:sticky;top:0;z-index:4"><div style="font-size:18px;font-weight:700">' + title + '</div><span class="fpx" style="cursor:pointer;display:inline-flex;align-items:center;gap:6px;color:#64748b;font-size:13px;font-weight:600"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 6l12 12M18 6L6 18"/></svg>Funga</span></div>'
       + '<div style="max-width:900px;margin:0 auto;padding:20px 20px 96px">' + body + '</div>'
@@ -427,7 +427,7 @@
     var el = document.getElementById('fpSkin');
     if (!el) {
       el = document.createElement('div'); el.id = 'fpSkin'; document.documentElement.appendChild(el);
-      var L = window.innerWidth < 1024 ? 0 : 208;
+      var aside = document.querySelector('aside'); var L = window.innerWidth < 1024 ? 0 : (aside ? Math.round(aside.getBoundingClientRect().width) : 248);
       el.style.cssText = 'position:fixed;left:' + L + 'px;top:0;right:0;bottom:0;z-index:900000;background:#fff;overflow:auto;font-family:-apple-system,Segoe UI,Roboto,sans-serif;color:#1f2733';
       el.innerHTML = '<div style="padding:16px"><div style="height:40px;background:#f4f6f9;border-radius:18px;max-width:340px;margin-bottom:16px"></div><div style="height:26px;width:200px;background:#eef2f7;border-radius:8px;margin:6px 0 14px"></div><div style="height:96px;max-width:410px;background:#f7f9fc;border:1px solid #eef2f7;border-radius:10px;margin-bottom:16px"></div><div style="color:#94a3b8;font-size:13px">Inapakia Sale Invoices…</div></div>';
     }
