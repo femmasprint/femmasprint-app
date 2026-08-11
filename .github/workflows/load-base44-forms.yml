@@ -1,0 +1,46 @@
+name: Load Base44 form parity engine
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/load-base44-forms.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Load Base44 form engine
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+          if '/fp-base44-forms.js' in s:
+              print('already loaded')
+          else:
+              needle = '<script src="./support.js"></script><script src="/fp-sidebar.js" defer></script><script src="/fp-dash.js" defer></script><script src="/fp-theme.js" defer></script>'
+              repl = needle + '<script src="/fp-base44-forms.js" defer></script>'
+              if needle not in s:
+                  raise SystemExit('script loader anchor not found')
+              s = s.replace(needle, repl, 1)
+              p.write_text(s, encoding='utf-8')
+              print('Base44 form engine loaded')
+          PY
+      - name: Commit loader
+        run: |
+          if git diff --quiet -- index.html; then
+            echo "No changes needed"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "load Base44 form parity engine"
+          git push
