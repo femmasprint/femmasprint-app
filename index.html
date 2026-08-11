@@ -5085,7 +5085,13 @@ class Component extends DCLogic {
             });
             r.expenses=out;
           })();
-          const le = r.expenses.map(x => { const row = { client: x.Name || '', goods: x.Reason || '', qty: String(x.Qty || ''), price: String(x.UnitPrice || ''), payMode: x.PayMode || 'Cash', _eid: x.ExpenseID || '' }; try { const m = JSON.parse(localStorage.getItem('fp_exp_paymode_overrides') || '{}'); const k = row._eid || [iso, row.client, row.goods, row.qty, row.price].join('|'); if (m[k]) row.payMode = m[k]; } catch(e) {} return row; });
+          let le = r.expenses.map(x => { const row = { client: x.Name || '', goods: x.Reason || '', qty: String(x.Qty || ''), price: String(x.UnitPrice || ''), payMode: x.PayMode || 'Cash', _eid: x.ExpenseID || '' }; try { const m = JSON.parse(localStorage.getItem('fp_exp_paymode_overrides') || '{}'); const k = row._eid || [iso, row.client, row.goods, row.qty, row.price].join('|'); if (m[k]) row.payMode = m[k]; } catch(e) {} return row; });
+          const _legacyNauliCloud = { stive:1, kwedy:1, sedekia:1, imma:1, hasan:1, ismo:1, suma:1, fadhil:1, shaibu:1 };
+          le = le.filter(function (rw) {
+            const nm = String((rw && rw.client) || '').trim().toLowerCase();
+            const rs = String((rw && rw.goods) || '').trim().toLowerCase();
+            return !(_legacyNauliCloud[nm] && rs.indexOf('nauli') > -1);
+          });
           le.forEach(rw => { if (rw._eid) expDone[rw._eid] = rw.client + '|' + rw.goods + '|' + rw.qty + '|' + rw.price + '|' + (rw.payMode || 'Cash'); });
           if (le.length) { var _tpl = []; try { _tpl = (this.fpDailyExpTpl_() || []).map(function(x){ return { client: x.name, goods: 'Nauli', qty: '1', price: String(x.price==null?'':x.price) }; }); } catch(e){} var _have = {}; le.forEach(function(rw){ _have[String(rw.client||'').trim().toLowerCase()] = 1; }); var _miss = _tpl.filter(function(rw){ return rw.client && !_have[String(rw.client||'').trim().toLowerCase()]; }); expRows = [...le, ..._miss, { client: '', goods: '', qty: '', price: '' }]; }
         }
@@ -5254,7 +5260,15 @@ class Component extends DCLogic {
             patch.qsStore = store;
             try { patch.qsExpenses = this.fpFreshExpenses_(); } catch (eF) {}
           } else {
-            ['qsSales', 'qsExpenses', 'qsStore', 'qsDateISO'].forEach(k => { if (c[k] != null) patch[k] = c[k]; });
+            ['qsSales', 'qsStore', 'qsDateISO'].forEach(k => { if (c[k] != null) patch[k] = c[k]; });
+            if (c.qsExpenses != null) {
+              const _legacyNauliCache = { stive:1, kwedy:1, sedekia:1, imma:1, hasan:1, ismo:1, suma:1, fadhil:1, shaibu:1 };
+              patch.qsExpenses = (Array.isArray(c.qsExpenses) ? c.qsExpenses : []).filter(function (rw) {
+                const nm = String((rw && rw.client) || '').trim().toLowerCase();
+                const rs = String((rw && rw.goods) || '').trim().toLowerCase();
+                return !(_legacyNauliCache[nm] && rs.indexOf('nauli') > -1);
+              });
+            }
           }
           try {
             const st = (patch.qsStore && typeof patch.qsStore === 'object') ? patch.qsStore : ((c.qsStore && typeof c.qsStore === 'object') ? { ...c.qsStore } : {});
@@ -5348,21 +5362,22 @@ class Component extends DCLogic {
     } catch (e) {}
   };
   fpDailyExpTpl_ = () => {
-    try { const t = JSON.parse(localStorage.getItem('fp_daily_exp_tpl') || 'null'); if (Array.isArray(t) && t.length) {
-      const seen = {}, out = [];
-      t.forEach(function (x) { if (!x || !x.name) return; const k = String(x.name).trim().toLowerCase(); if (!k || seen[k]) return; seen[k] = 1; out.push({ name: String(x.name).trim(), price: x.price }); });
-      if (out.length) return out;
-    } } catch (e) {}
-    return [{ name: 'Stive', price: '5000' }, { name: 'Kwedy', price: '7000' }, { name: 'Sedekia', price: '7000' }, { name: 'Imma', price: '7000' }, { name: 'Hasan', price: '7000' }, { name: 'Ismo', price: '7000' }, { name: 'Suma', price: '7000' }, { name: 'Fadhil', price: '7000' }];
+    const full = [
+      { name: 'Ismail Issa', price: '7000' },
+      { name: 'Hassan Mwesiumo', price: '7000' },
+      { name: 'Ismar Salim Hussein (Suma)', price: '7000' },
+      { name: 'Steven Mkope', price: '5000' },
+      { name: 'Fadhili Ally', price: '7000' },
+      { name: 'Emanuel W. Sese (Ima)', price: '7000' },
+      { name: 'Sedekia Johnson Laurent', price: '7000' },
+      { name: 'Henry Charles Kwedi', price: '7000' },
+      { name: 'Shaibu Frank Malekela', price: '7000' }
+    ];
+    try { localStorage.setItem('fp_daily_exp_tpl', JSON.stringify(full)); } catch (e) {}
+    return full;
   };
   fpSaveDailyExpTpl_ = () => {
-    try {
-      const map = {};
-      try { (JSON.parse(localStorage.getItem('fp_daily_exp_tpl') || '[]') || []).forEach(function (x) { if (x && x.name) map[String(x.name).toLowerCase()] = { name: x.name, price: x.price }; }); } catch (e) {}
-      (this.state.qsExpenses || []).forEach(function (r) { if (!r) return; const g = String(r.goods == null ? '' : r.goods).toLowerCase(); const nm = String(r.client == null ? '' : r.client).trim(); if (nm && g.indexOf('nauli') > -1) { map[nm.toLowerCase()] = { name: nm, price: String(r.price == null ? '' : r.price).replace(/[^0-9.]/g, '') }; } });
-      const out = Object.keys(map).map(function (k) { return map[k]; });
-      if (out.length) localStorage.setItem('fp_daily_exp_tpl', JSON.stringify(out));
-    } catch (e) {}
+    try { localStorage.setItem('fp_daily_exp_tpl', JSON.stringify(this.fpDailyExpTpl_() || [])); } catch (e) {}
   };
   fpFreshExpenses_ = () => {
     let tpl = []; try { tpl = this.fpDailyExpTpl_() || []; } catch (e) {}
@@ -6434,7 +6449,15 @@ class Component extends DCLogic {
     const store = { ...(s.qsStore || {}) };
     store[cur] = { sales: s.qsSales, expenses: s.qsExpenses };
     const loaded = store[newISO];
-    if (loaded) return { qsDateISO: newISO, qsStore: store, qsSales: loaded.sales, qsExpenses: loaded.expenses };
+    if (loaded) {
+      const _legacyNauliStore = { stive:1, kwedy:1, sedekia:1, imma:1, hasan:1, ismo:1, suma:1, fadhil:1, shaibu:1 };
+      const _cleanStoredExpenses = (Array.isArray(loaded.expenses) ? loaded.expenses : []).filter(function (rw) {
+        const nm = String((rw && rw.client) || '').trim().toLowerCase();
+        const rs = String((rw && rw.goods) || '').trim().toLowerCase();
+        return !(_legacyNauliStore[nm] && rs.indexOf('nauli') > -1);
+      });
+      return { qsDateISO: newISO, qsStore: store, qsSales: loaded.sales, qsExpenses: _cleanStoredExpenses };
+    }
     return {
       qsDateISO: newISO, qsStore: store,
       qsSales: [{ client: '', goods: '', qty: '', price: '', paid: '', payMode: 'Cash' }, { client: '', goods: '', qty: '', price: '', paid: '', payMode: 'Cash' }],
