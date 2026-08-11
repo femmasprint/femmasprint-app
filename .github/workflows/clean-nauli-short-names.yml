@@ -16,67 +16,102 @@ jobs:
       - uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Remove legacy short names from Nauli template
+      - name: Permanently remove legacy short Nauli rows
         run: |
-          python - <<'PY'
+          python3 - <<'PY'
           from pathlib import Path
-          p=Path('index.html')
-          s=p.read_text()
+          import re
 
-          old="""  fpDailyExpTpl_ = () => {
-    try { const t = JSON.parse(localStorage.getItem('fp_daily_exp_tpl') || 'null'); if (Array.isArray(t) && t.length) {
-      const seen = {}, out = [];
-      t.forEach(function (x) { if (!x || !x.name) return; const k = String(x.name).trim().toLowerCase(); if (!k || seen[k]) return; seen[k] = 1; out.push({ name: String(x.name).trim(), price: x.price }); });
-      if (out.length) return out;
-    } } catch (e) {}
-    return [{ name: 'Stive', price: '5000' }, { name: 'Kwedy', price: '7000' }, { name: 'Sedekia', price: '7000' }, { name: 'Imma', price: '7000' }, { name: 'Hasan', price: '7000' }, { name: 'Ismo', price: '7000' }, { name: 'Suma', price: '7000' }, { name: 'Fadhil', price: '7000' }];
-  };"""
-          new="""  fpDailyExpTpl_ = () => {
-    const legacy = { stive:1, kwedy:1, sedekia:1, imma:1, hasan:1, ismo:1, suma:1, fadhil:1, shaibu:1 };
-    try { const t = JSON.parse(localStorage.getItem('fp_daily_exp_tpl') || 'null'); if (Array.isArray(t) && t.length) {
-      const seen = {}, out = [];
-      t.forEach(function (x) { if (!x || !x.name) return; const k = String(x.name).trim().toLowerCase(); if (!k || legacy[k] || seen[k]) return; seen[k] = 1; out.push({ name: String(x.name).trim(), price: x.price }); });
-      if (out.length) { try { localStorage.setItem('fp_daily_exp_tpl', JSON.stringify(out)); } catch (e) {} return out; }
-    } } catch (e) {}
-    const full = [
-      { name: 'Ismail Issa', price: '7000' },
-      { name: 'Hassan Mwesiumo', price: '7000' },
-      { name: 'Ismar Salim Hussein (Suma)', price: '7000' },
-      { name: 'Steven Mkope', price: '5000' },
-      { name: 'Fadhili Ally', price: '7000' },
-      { name: 'Emanuel W. Sese (Ima)', price: '7000' },
-      { name: 'Sedekia Johnson Laurent', price: '7000' },
-      { name: 'Henry Charles Kwedi', price: '7000' },
-      { name: 'Shaibu Frank Malekela', price: '7000' }
-    ];
-    try { localStorage.setItem('fp_daily_exp_tpl', JSON.stringify(full)); } catch (e) {}
-    return full;
-  };"""
-          if old not in s:
-              if "Hassan Mwesiumo" in s and "const legacy = { stive:1" in s:
-                  print('daily template already patched')
-              else:
-                  raise SystemExit('fpDailyExpTpl_ anchor not found')
-          else:
-              s=s.replace(old,new,1)
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
 
-          old2="""      try { (JSON.parse(localStorage.getItem('fp_daily_exp_tpl') || '[]') || []).forEach(function (x) { if (x && x.name) map[String(x.name).toLowerCase()] = { name: x.name, price: x.price }; }); } catch (e) {}
-      (this.state.qsExpenses || []).forEach(function (r) { if (!r) return; const g = String(r.goods == null ? '' : r.goods).toLowerCase(); const nm = String(r.client == null ? '' : r.client).trim(); if (nm && g.indexOf('nauli') > -1) { map[nm.toLowerCase()] = { name: nm, price: String(r.price == null ? '' : r.price).replace(/[^0-9.]/g, '') }; } });"""
-          new2="""      const legacy = { stive:1, kwedy:1, sedekia:1, imma:1, hasan:1, ismo:1, suma:1, fadhil:1, shaibu:1 };
-      try { (JSON.parse(localStorage.getItem('fp_daily_exp_tpl') || '[]') || []).forEach(function (x) { if (x && x.name) { const k=String(x.name).trim().toLowerCase(); if (!legacy[k]) map[k] = { name: x.name, price: x.price }; } }); } catch (e) {}
-      (this.state.qsExpenses || []).forEach(function (r) { if (!r) return; const g = String(r.goods == null ? '' : r.goods).toLowerCase(); const nm = String(r.client == null ? '' : r.client).trim(); const k = nm.toLowerCase(); if (nm && g.indexOf('nauli') > -1 && !legacy[k]) { map[k] = { name: nm, price: String(r.price == null ? '' : r.price).replace(/[^0-9.]/g, '') }; } });"""
-          if old2 not in s:
-              if "const legacy = { stive:1, kwedy:1, sedekia:1" in s and "fpSaveDailyExpTpl_" in s:
-                  print('save template already patched')
-              else:
-                  raise SystemExit('fpSaveDailyExpTpl_ anchor not found')
-          else:
-              s=s.replace(old2,new2,1)
+          daily = "\n".join([
+              "  fpDailyExpTpl_ = () => {",
+              "    const full = [",
+              "      { name: 'Ismail Issa', price: '7000' },",
+              "      { name: 'Hassan Mwesiumo', price: '7000' },",
+              "      { name: 'Ismar Salim Hussein (Suma)', price: '7000' },",
+              "      { name: 'Steven Mkope', price: '5000' },",
+              "      { name: 'Fadhili Ally', price: '7000' },",
+              "      { name: 'Emanuel W. Sese (Ima)', price: '7000' },",
+              "      { name: 'Sedekia Johnson Laurent', price: '7000' },",
+              "      { name: 'Henry Charles Kwedi', price: '7000' },",
+              "      { name: 'Shaibu Frank Malekela', price: '7000' }",
+              "    ];",
+              "    try { localStorage.setItem('fp_daily_exp_tpl', JSON.stringify(full)); } catch (e) {}",
+              "    return full;",
+              "  };",
+          ])
+          s, n = re.subn(r"  fpDailyExpTpl_ = \(\) => \{\n.*?\n  \};", daily, s, count=1, flags=re.S)
+          if n != 1:
+              raise SystemExit('fpDailyExpTpl_ not found')
 
-          p.write_text(s)
-          print('Nauli short-name cleanup patched')
+          save_tpl = "\n".join([
+              "  fpSaveDailyExpTpl_ = () => {",
+              "    try { localStorage.setItem('fp_daily_exp_tpl', JSON.stringify(this.fpDailyExpTpl_() || [])); } catch (e) {}",
+              "  };",
+          ])
+          s, n = re.subn(r"  fpSaveDailyExpTpl_ = \(\) => \{\n.*?\n  \};", save_tpl, s, count=1, flags=re.S)
+          if n != 1:
+              raise SystemExit('fpSaveDailyExpTpl_ not found')
+
+          if '_legacyNauliCloud' not in s:
+              m = re.search(r"^          const le = r\.expenses\.map\(x => \{.*?return row; \}\);$", s, flags=re.M)
+              if not m:
+                  raise SystemExit('cloud expense line not found')
+              cloud = m.group(0).replace('const le =', 'let le =', 1) + "\n" + "\n".join([
+                  "          const _legacyNauliCloud = { stive:1, kwedy:1, sedekia:1, imma:1, hasan:1, ismo:1, suma:1, fadhil:1, shaibu:1 };",
+                  "          le = le.filter(function (rw) {",
+                  "            const nm = String((rw && rw.client) || '').trim().toLowerCase();",
+                  "            const rs = String((rw && rw.goods) || '').trim().toLowerCase();",
+                  "            return !(_legacyNauliCloud[nm] && rs.indexOf('nauli') > -1);",
+                  "          });",
+              ])
+              s = s[:m.start()] + cloud + s[m.end():]
+
+          old_cache = "            ['qsSales', 'qsExpenses', 'qsStore', 'qsDateISO'].forEach(k => { if (c[k] != null) patch[k] = c[k]; });"
+          if '_legacyNauliCache' not in s:
+              if old_cache not in s:
+                  raise SystemExit('local cache restore line not found')
+              new_cache = "\n".join([
+                  "            ['qsSales', 'qsStore', 'qsDateISO'].forEach(k => { if (c[k] != null) patch[k] = c[k]; });",
+                  "            if (c.qsExpenses != null) {",
+                  "              const _legacyNauliCache = { stive:1, kwedy:1, sedekia:1, imma:1, hasan:1, ismo:1, suma:1, fadhil:1, shaibu:1 };",
+                  "              patch.qsExpenses = (Array.isArray(c.qsExpenses) ? c.qsExpenses : []).filter(function (rw) {",
+                  "                const nm = String((rw && rw.client) || '').trim().toLowerCase();",
+                  "                const rs = String((rw && rw.goods) || '').trim().toLowerCase();",
+                  "                return !(_legacyNauliCache[nm] && rs.indexOf('nauli') > -1);",
+                  "              });",
+                  "            }",
+              ])
+              s = s.replace(old_cache, new_cache, 1)
+
+          old_store = "    if (loaded) return { qsDateISO: newISO, qsStore: store, qsSales: loaded.sales, qsExpenses: loaded.expenses };"
+          if '_legacyNauliStore' not in s:
+              if old_store not in s:
+                  raise SystemExit('stored-date expense line not found')
+              new_store = "\n".join([
+                  "    if (loaded) {",
+                  "      const _legacyNauliStore = { stive:1, kwedy:1, sedekia:1, imma:1, hasan:1, ismo:1, suma:1, fadhil:1, shaibu:1 };",
+                  "      const _cleanStoredExpenses = (Array.isArray(loaded.expenses) ? loaded.expenses : []).filter(function (rw) {",
+                  "        const nm = String((rw && rw.client) || '').trim().toLowerCase();",
+                  "        const rs = String((rw && rw.goods) || '').trim().toLowerCase();",
+                  "        return !(_legacyNauliStore[nm] && rs.indexOf('nauli') > -1);",
+                  "      });",
+                  "      return { qsDateISO: newISO, qsStore: store, qsSales: loaded.sales, qsExpenses: _cleanStoredExpenses };",
+                  "    }",
+              ])
+              s = s.replace(old_store, new_store, 1)
+
+          required = ['Ismail Issa', 'Shaibu Frank Malekela', '_legacyNauliCloud', '_legacyNauliCache', '_legacyNauliStore']
+          missing = [x for x in required if x not in s]
+          if missing:
+              raise SystemExit('validation failed: ' + ', '.join(missing))
+
+          p.write_text(s, encoding='utf-8')
+          print('Permanent Nauli cleanup applied')
           PY
-      - name: Commit patch
+      - name: Commit permanent fix
         run: |
           if git diff --quiet -- index.html; then
             echo "No changes needed"
@@ -85,5 +120,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add index.html
-          git commit -m "remove short duplicate names from Nauli template"
+          git commit -m "permanently remove duplicate short Nauli rows"
           git push
