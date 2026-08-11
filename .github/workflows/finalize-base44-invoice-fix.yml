@@ -1,0 +1,65 @@
+name: Finalize Base44 invoice fix
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/finalize-base44-invoice-fix.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Align overlay with real sidebar and force fresh Base44 skin
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          skin = Path('fp-invoice-skin.js')
+          s = skin.read_text(encoding='utf-8')
+
+          old_left = "var L = window.innerWidth < 1024 ? 0 : 208;"
+          new_left = "var aside = document.querySelector('aside'); var L = window.innerWidth < 1024 ? 0 : (aside ? Math.round(aside.getBoundingClientRect().width) : 248);"
+          count = s.count(old_left)
+          if count:
+              s = s.replace(old_left, new_left)
+              print('Updated sidebar alignment occurrences:', count)
+          elif new_left not in s:
+              raise SystemExit('sidebar alignment target not found')
+
+          detector = "return !!document.querySelector('.fpInvWorkspace') || /Sales Invoice Workspace/i.test(t) || (t.indexOf('Total Invoices') > -1 && /Sale Invoices/.test(t));"
+          if detector not in s:
+              raise SystemExit('current Sales Invoice Workspace detector missing')
+
+          skin.write_text(s, encoding='utf-8')
+
+          mw = Path('functions/_middleware.js')
+          m = mw.read_text(encoding='utf-8')
+          old = '<script id="fpInvSkin" src="/fp-invoice-skin.js" defer></scr' + "' + 'ipt>"
+          # Work on the JS source literal safely using the unique src fragment.
+          if 'src="/fp-invoice-skin.js?v=base44-20260811-1607"' not in m:
+              if 'src="/fp-invoice-skin.js"' not in m:
+                  raise SystemExit('middleware invoice skin loader not found')
+              m = m.replace('src="/fp-invoice-skin.js"', 'src="/fp-invoice-skin.js?v=base44-20260811-1607"', 1)
+              print('Added cache-busting version to invoice skin loader')
+          mw.write_text(m, encoding='utf-8')
+          PY
+
+      - name: Commit final fix
+        run: |
+          if git diff --quiet -- fp-invoice-skin.js functions/_middleware.js; then
+            echo "No changes needed"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add fp-invoice-skin.js functions/_middleware.js
+          git commit -m "force Base44 Sales Invoice workspace and align overlay"
+          git push
