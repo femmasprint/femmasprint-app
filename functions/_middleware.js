@@ -171,7 +171,7 @@ export async function onRequest(context) {
           el.append('<script id="fpTheme" src="/fp-theme.js" defer></scr' + 'ipt>', { html: true });
           el.append('<script id="fpAvatars" src="/fp-avatars.js" defer></scr' + 'ipt>', { html: true });
           el.append('<script id="fpPayroll" src="/fp-payroll.js" defer></scr' + 'ipt>', { html: true });
-          el.append('<script id="fpInvSkin" src="/fp-invoice-skin.js?v=base44-20260811-1607" defer></scr' + 'ipt>', { html: true });
+          el.append('<script id="fpInvSkin" src="/fp-invoice-skin.js?v=base44-exact-20260811-1958" defer></scr' + 'ipt>', { html: true });
         }
       })
       .transform(response);

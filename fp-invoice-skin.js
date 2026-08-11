@@ -8,7 +8,7 @@
   if (window.__fpSkin) return; window.__fpSkin = true;
 
   function backend() { try { return (localStorage.getItem('fp_backend_url') || '').trim(); } catch (e) { return ''; } }
-  var DATA = null, view = [], q = '', tot = 0, paid = 0, bal = 0, curDoc = null, fromISO = '', toISO = '', periodLabel = 'Custom', sortKey = 'Date', sortDir = 'desc';
+  var DATA = null, view = [], q = '', tot = 0, paid = 0, bal = 0, curDoc = null, fromISO = '', toISO = '', periodLabel = 'Custom', sortKey = 'Date', sortDir = 'desc', statusF = 'All';
 
   function num(n) { return +String(n == null ? '' : n).replace(/[^0-9.-]/g, '') || 0; }
   function money(n) { return 'Sh ' + Math.round(num(n)).toLocaleString('en-US'); }
@@ -62,6 +62,7 @@
     view = (DATA || []).filter(function (r) {
       if (q) { var s = ((r.InvoiceNo || '') + ' ' + (r.CustomerName || '')).toLowerCase(); if (s.indexOf(q) < 0) return false; }
       if (fromISO || toISO) { var dd = toISODate(r.Date); if (!dd) return true; if (fromISO && dd < fromISO) return false; if (toISO && dd > toISO) return false; }
+      if (statusF !== 'All' && String(r.Status || '').toLowerCase() !== statusF.toLowerCase()) return false;
       return true;
     });
     sortView();
@@ -85,8 +86,8 @@
   function refresh() {
     applyFilter();
     var c = document.getElementById('fpTotInner'); if (c) c.innerHTML = totCardInner();
-    var w = document.getElementById('fpTableWrap'); if (w) { var el = document.getElementById('fpSkin'); w.innerHTML = rowsHTML(); if (el) attachRows(el); }
-    var pc = document.getElementById('fpPeriodChip'); if (pc) pc.innerHTML = periodLabel + ' &#9662;';
+    var w = document.getElementById('fpTableWrap'); if (w) { var el = document.getElementById('fpSkin'); w.innerHTML = rowsHTML(); if (el) wire(el); }
+    var pc = document.getElementById('fpPeriodChip'); if (pc) pc.textContent = periodLabel;
   }
   function setPeriod(label, f, t) { periodLabel = label; fromISO = f || ''; toISO = t || ''; var a = document.getElementById('fpFrom'), b = document.getElementById('fpTo'); if (a) a.value = fromISO; if (b) b.value = toISO; refresh(); }
   function ymd(d) { return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
@@ -116,67 +117,58 @@
   var ACT = [['eye', 'View / Edit', 'edit', 0], ['ret', 'Convert To Return', 'return', 0], ['truck', 'Preview Delivery Challan', 'challan', 0], ['clock', 'Payment History', 'payhist', 0], ['ban', 'Cancel Invoice', 'cancel', 1], ['trash', 'Delete', 'delete', 1], ['copy', 'Duplicate', 'dup', 0], ['pdf', 'Open PDF', 'openpdf', 0], ['eye', 'Preview', 'preview', 0], ['printer', 'Print', 'print', 0], ['list', 'View History', 'hist', 0]];
 
   function rowsHTML() {
-    var cols = ['Date', 'Invoice no', 'Party Name', 'Transaction', 'Payment Type', 'Amount', 'Balance', 'Status'];
+    var cols = ['Date', 'Invoice No', 'Party Name', 'Transaction', 'Payment Type', 'Amount', 'Balance', 'Status'];
     var kmap = ['Date', 'InvoiceNo', 'CustomerName', 'Transaction', 'PayType', 'TotalAmount', 'Balance', 'Status'];
-    var head = '<tr style="text-align:left;color:#64748b;border-top:1px solid #eef2f7;border-bottom:1px solid #eef2f7;background:#fafbfc">' + cols.map(function (c, i) { var k = kmap[i]; var arrow = (sortKey === k) ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''; return '<th class="fpSort" data-key="' + k + '" title="Panga (sort)" style="padding:11px 12px;font-weight:600;font-size:12px;white-space:nowrap;cursor:pointer;' + ((i === 5 || i === 6) ? 'text-align:right' : '') + (sortKey === k ? 'color:#185fa5;' : '') + '">' + c + FN + '<span style="font-size:10px">' + arrow + '</span></th>'; }).join('') + '<th style="padding:11px 12px;font-weight:600;font-size:12px;text-align:center">Actions</th></tr>';
-    var body = view.slice(0, 100).map(function (r, i) {
-      var st = String(r.Status || ''); var sc = /paid|imelipwa/i.test(st) && !/unpaid|haija/i.test(st) ? '#0f6e56' : '#e2483d'; var b = num(r.Balance);
-      return '<tr class="fpr" data-no="' + esc(r.InvoiceNo || '') + '" style="border-bottom:1px solid #eef2f7;cursor:pointer' + (i === 0 ? ';background:#dcecfb' : '') + '">'
-        + '<td style="padding:12px;font-size:12.5px;white-space:nowrap">' + esc(fmtDate(r.Date)) + '</td>'
-        + '<td style="padding:12px;font-size:12.5px;font-weight:600;white-space:nowrap">' + esc(r.InvoiceNo || '') + '</td>'
-        + '<td style="padding:12px;font-size:12.5px">' + esc(r.CustomerName || '—') + '</td>'
-        + '<td style="padding:12px;font-size:12.5px">Sale</td>'
-        + '<td style="padding:12px;font-size:12.5px;color:#94a3b8">' + (b <= 0 ? 'Cash' : 'FP BANK') + '</td>'
-        + '<td style="padding:12px;font-size:12.5px;text-align:right;font-weight:600;white-space:nowrap">' + money(r.TotalAmount) + '</td>'
-        + '<td style="padding:12px;font-size:12.5px;text-align:right;white-space:nowrap;' + (b <= 0 ? 'color:#94a3b8' : '') + '">' + money(r.Balance) + '</td>'
-        + '<td style="padding:12px;font-size:12.5px;font-weight:600;color:' + sc + '">' + esc(st) + '</td>'
-        + '<td style="padding:12px"><div style="display:flex;gap:13px;justify-content:center;color:#64748b">'
-        + '<span class="fpa" data-a="print" title="Print">' + IC_PR + '</span>'
-        + '<span class="fpa" data-a="share" title="Share">' + IC_SH + '</span>'
-        + '<span class="fpa" data-a="menu" title="More Actions">' + IC_DOTS + '</span>'
-        + '</div></td></tr>';
+    var head = '<tr style="border-bottom:1px solid #e5e7eb;background:#f9fafb">' + cols.map(function (c, i) {
+      var k = kmap[i], active = sortKey === k, arrow = active ? (sortDir === 'asc' ? ' ▲' : ' ▼') : '';
+      return '<th class="fpSort" data-key="' + k + '" style="text-align:left;padding:10px 16px;font-size:11px;font-weight:600;color:' + (active ? '#3694df' : '#6b7280') + ';white-space:nowrap;border-right:1px solid #e5e7eb;cursor:pointer">' + c + '<span style="margin-left:4px;font-size:9px;color:#9ca3af">⌄</span>' + (arrow ? '<span style="font-size:9px">' + arrow + '</span>' : '') + '</th>';
+    }).join('') + '<th style="width:110px;text-align:left;padding:10px 16px;font-size:11px;font-weight:600;color:#6b7280;white-space:nowrap">Actions</th></tr>';
+    if (!view.length) return '<table style="table-layout:fixed;width:100%;min-width:980px;border-collapse:collapse;font-size:12px"><thead>' + head + '</thead><tbody><tr><td colspan="9" style="text-align:center;padding:64px 16px;color:#9ca3af"><div style="font-size:30px;margin-bottom:8px">▧</div><div style="font-size:14px">No transactions to show</div><button class="fpAdd" style="margin-top:8px;border:0;background:transparent;color:#c90000;font-size:12px;cursor:pointer">+ Add Sale Invoice</button></td></tr></tbody></table>';
+    var body = view.slice(0,100).map(function(r,i){
+      var st=String(r.Status||'Unpaid'), paidSt=/^paid$/i.test(st), partialSt=/partial/i.test(st), sc=paidSt?'#059669':(partialSt?'#ca8a04':'#ef4444');
+      var b=num(r.Balance), method=b<=0?'Cash':'FP BANK', ms=/cash/i.test(method)?'background:#ecfdf5;color:#047857;border:1px solid #d1fae5':'background:#eff6ff;color:#2563eb;border:1px solid #dbeafe';
+      var bg=i===0?'#f9fafb':(i===1?'#f7fbff':'#fff');
+      return '<tr class="fpr" data-no="'+esc(r.InvoiceNo||'')+'" title="Double-click to edit · Right-click for options" style="background:'+bg+';border-bottom:1px solid #e5e7eb;cursor:pointer">'
+      +'<td style="padding:10px 16px;color:#6b7280;white-space:nowrap;border-right:1px solid #e5e7eb">'+esc(fmtDate(r.Date))+'</td>'
+      +'<td style="padding:10px 16px;font-weight:700;color:#1f2937;white-space:nowrap;border-right:1px solid #e5e7eb">'+esc(r.InvoiceNo||'')+'</td>'
+      +'<td style="padding:10px 16px;font-weight:600;color:#1f2937;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border-right:1px solid #e5e7eb">'+esc(r.CustomerName||'—')+'</td>'
+      +'<td style="padding:10px 16px;color:#6b7280;border-right:1px solid #e5e7eb">Sale</td>'
+      +'<td style="padding:10px 16px;border-right:1px solid #e5e7eb"><span style="display:inline-flex;padding:3px 8px;border-radius:999px;font-size:11px;font-weight:600;'+ms+'">'+method+'</span></td>'
+      +'<td style="padding:10px 16px;font-weight:700;color:#1f2937;white-space:nowrap;border-right:1px solid #e5e7eb">'+money(r.TotalAmount)+'</td>'
+      +'<td style="padding:10px 16px;font-weight:500;color:#6b7280;white-space:nowrap;border-right:1px solid #e5e7eb">'+money(r.Balance)+'</td>'
+      +'<td style="padding:10px 16px;border-right:1px solid #e5e7eb"><span style="font-size:12px;font-weight:600;color:'+sc+'">'+esc(st)+'</span></td>'
+      +'<td style="padding:10px 16px"><div style="display:flex;align-items:center;gap:4px"><button class="fpa" data-a="print" title="Print" style="border:0;background:transparent;padding:6px;color:#6b7280;cursor:pointer">'+IC_PR+'</button><button class="fpa" data-a="share" title="Share" style="border:0;background:transparent;padding:6px;color:#6b7280;cursor:pointer">'+IC_SH+'</button><button class="fpa" data-a="menu" title="More" style="border:0;background:transparent;padding:6px;color:#6b7280;cursor:pointer">'+IC_DOTS+'</button></div></td></tr>';
     }).join('');
-    return '<table style="width:100%;border-collapse:collapse;min-width:760px"><thead>' + head + '</thead><tbody>' + body + '</tbody></table><div style="text-align:center;color:#94a3b8;font-size:12px;padding:14px">Zimeonyeshwa invoice ' + Math.min(100, view.length) + ' kati ya jumla ' + view.length + ' &middot; bonyeza kichwa cha safu kupanga (sort)</div>';
+    return '<table style="table-layout:fixed;width:100%;min-width:980px;border-collapse:collapse;font-size:12px"><thead>'+head+'</thead><tbody>'+body+'</tbody></table><div style="padding:8px 2px;font-size:12px;color:#9ca3af">'+view.length+' record'+(view.length===1?'':'s')+'</div>';
   }
 
   function chip(t) { return '<span style="background:#eef2f7;padding:6px 12px;border-radius:16px;color:#334155;font-size:12px;cursor:pointer">' + t + '</span>'; }
-  function totCardInner() { return '<div style="font-size:12px;color:#64748b">Total Sales Amount</div><div style="font-size:24px;font-weight:600;margin:3px 0">' + money(tot) + '</div><div style="font-size:12px;color:#64748b">Received: <span style="color:#0f6e56">' + money(paid) + '</span> &nbsp;|&nbsp; Balance: <span style="color:#993c1d">' + money(bal) + '</span></div>'; }
+  function totCardInner() {
+    var rate=tot>0?Math.round((paid/tot)*100):0;
+    return '<div style="display:flex;align-items:center;justify-content:space-between;gap:16px"><div><div style="font-size:12px;font-weight:500;color:#6b7280">Total Sales Amount</div><div style="font-size:24px;line-height:32px;font-weight:700;color:#1f2937;margin-top:2px">'+money(tot)+'</div></div><span style="display:inline-flex;font-size:12px;font-weight:600;padding:4px 8px;border-radius:999px;background:rgba(54,148,223,.10);color:#3694df">'+rate+'% received</span></div><div style="margin-top:8px;padding-top:8px;border-top:1px solid #f3f4f6;display:flex;gap:16px;font-size:12px"><span style="color:#6b7280">Received: <span style="font-weight:600;color:#059669">'+money(paid)+'</span></span><span style="color:#d1d5db">|</span><span style="color:#6b7280">Balance: <span style="font-weight:600;color:#ef4444">'+money(bal)+'</span></span></div>';
+  }
 
   function build() {
-    var el = document.getElementById('fpSkin'); if (!el) { el = document.createElement('div'); el.id = 'fpSkin'; document.documentElement.appendChild(el); }
-    var aside = document.querySelector('aside'); var L = window.innerWidth < 1024 ? 0 : (aside ? Math.round(aside.getBoundingClientRect().width) : 248);
-    el.style.cssText = 'position:fixed;left:' + L + 'px;top:0;right:0;bottom:0;z-index:900000;background:#fff;overflow:auto;font-family:-apple-system,Segoe UI,Roboto,sans-serif;color:#1f2733';
-    el.innerHTML = ''
-      + '<div style="display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid #eef2f7">'
-      + '<div style="flex:1;display:flex;align-items:center;gap:8px;background:#f4f6f9;border-radius:18px;padding:7px 13px;max-width:340px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><input id="fpSearch" placeholder="Search Transactions" style="border:none;background:transparent;outline:none;font-size:13px;width:100%;color:#1f2733"></div>'
-      + '<div style="flex:1"></div>'
-      + '<span class="fpAdd" style="border:1px solid #f0997b;color:#d85a30;font-size:12px;font-weight:600;padding:6px 13px;border-radius:18px;cursor:pointer">+ Add Sale</span>'
-      + '<span class="fpAddP" style="border:1px solid #85b7eb;color:#185fa5;font-size:12px;font-weight:600;padding:6px 13px;border-radius:18px;cursor:pointer">+ Add Purchase</span>'
-      + '<span class="fpAddPlus" title="Add More" style="width:28px;height:28px;border-radius:8px;background:#e6f1fb;display:inline-flex;align-items:center;justify-content:center;color:#378add;font-size:18px;cursor:pointer">+</span>'
-      + '<span class="fpPrintList" title="Chapa orodha" style="color:#64748b;cursor:pointer">' + IC_PR + '</span>'
-      + '<span class="fpTopMenu" title="Zaidi" style="position:relative;cursor:pointer"><svg width="17" height="17" viewBox="0 0 24 24" fill="#64748b"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg><span style="position:absolute;top:-1px;right:-1px;width:7px;height:7px;background:#e2483d;border-radius:50%"></span></span>'
-      + '</div>'
-      + '<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px 6px"><div class="fpTitleSwitch" title="Badilisha aina" style="font-size:20px;font-weight:600;display:flex;align-items:center;gap:6px;cursor:pointer">Sale Invoices <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></div><div style="display:flex;align-items:center;gap:10px"><span class="fpAdd" style="background:#e2483d;color:#fff;font-size:13px;font-weight:600;padding:8px 16px;border-radius:8px;cursor:pointer">+ Add Sale</span><span class="fpTopMenu" title="Zaidi" style="width:32px;height:32px;border-radius:50%;background:#f1f5f9;display:inline-flex;align-items:center;justify-content:center;color:#64748b;cursor:pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg></span></div></div>'
-      + '<div style="display:flex;align-items:center;gap:10px;padding:4px 16px 12px;font-size:12px;flex-wrap:wrap"><span style="color:#64748b">Filter by :</span>'
-      +   '<span style="display:inline-flex;align-items:center;background:#e9eefc;border-radius:22px;overflow:hidden;color:#39476a">'
-      +     '<span class="fpPeriod" id="fpPeriodChip" title="Chagua kipindi" style="padding:7px 15px;cursor:pointer;font-weight:500">' + periodLabel + ' &#9662;</span>'
-      +     '<span style="width:1px;align-self:stretch;background:#c6d2ef"></span>'
-      +     '<span style="padding:6px 15px;display:inline-flex;align-items:center;gap:6px"><span class="fpCal" title="Fungua kalenda" style="cursor:pointer">&#128197;</span> <input type="date" id="fpFrom" value="' + fromISO + '" style="border:none;background:transparent;font:inherit;color:#39476a;cursor:pointer;width:118px"> To <input type="date" id="fpTo" value="' + toISO + '" style="border:none;background:transparent;font:inherit;color:#39476a;cursor:pointer;width:118px"></span>'
-      +   '</span>'
-      +   '<span class="fpFirms" title="Chuja kwa duka" style="background:#e9eefc;padding:7px 16px;border-radius:22px;color:#39476a;cursor:pointer;font-weight:500">All Firms &#9662;</span>'
-      +   '<span class="fpUsers" title="Chuja kwa mtumiaji" style="background:#e9eefc;padding:7px 16px;border-radius:22px;color:#39476a;cursor:pointer;font-weight:500">All Users &#9662;</span>'
-      +   (fromISO || toISO || q ? '<span class="fpClear" title="Ondoa vichujio" style="color:#e2483d;cursor:pointer;padding:7px 4px">&#10005; Futa</span>' : '')
-      + '</div>'
-      + '<div style="padding:0 16px 14px"><div style="border:1px solid #dbe3ec;border-radius:10px;padding:14px 18px;background:#fbfcfe;max-width:410px" id="fpTotInner">' + totCardInner() + '</div></div>'
-      + '<div style="display:flex;align-items:center;justify-content:space-between;padding:2px 16px 8px"><div style="font-size:15px;font-weight:600">Transactions</div><div style="display:flex;align-items:center;gap:14px;color:#64748b"><svg class="fpFocusSearch" title="Tafuta" style="cursor:pointer" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><svg class="fpChart" title="Muhtasari" style="cursor:pointer" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18M8 16V9M13 16V6M18 16v-4"/></svg><span class="fpXls" title="Pakua Excel (CSV)" style="background:#1d9e75;color:#fff;font-size:10px;font-weight:600;padding:2px 5px;border-radius:4px;cursor:pointer">xls</span><span class="fpPrintList" title="Chapa orodha" style="cursor:pointer">' + IC_PR + '</span></div></div>'
-      + '<div id="fpTableWrap" style="padding:0 16px 40px;overflow-x:auto">' + rowsHTML() + '</div>';
-    el.setAttribute('data-built', '1');
-    wire(el);
+    var el=document.getElementById('fpSkin'); if(!el){el=document.createElement('div');el.id='fpSkin';document.documentElement.appendChild(el);}
+    var aside=document.querySelector('aside'); var L=window.innerWidth<1024?0:(aside?Math.round(aside.getBoundingClientRect().width):248);
+    var all=DATA||[], cnt=function(st){return all.filter(function(r){return String(r.Status||'').toLowerCase()===st.toLowerCase();}).length;};
+    var dateBox=periodLabel==='Custom'?'<div style="display:flex;align-items:center;gap:6px"><input type="date" id="fpFrom" value="'+fromISO+'" style="height:32px;border:1px solid #e5e7eb;border-radius:4px;padding:0 8px;background:#f9fafb;color:#374151;font:inherit;font-size:12px"><span style="font-size:12px;color:#9ca3af">To</span><input type="date" id="fpTo" value="'+toISO+'" style="height:32px;border:1px solid #e5e7eb;border-radius:4px;padding:0 8px;background:#f9fafb;color:#374151;font:inherit;font-size:12px"></div>':'<span style="font-size:12px;color:#9ca3af;padding:4px 8px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:4px">'+esc(periodLabel)+'</span>';
+    var statuses=[['All',all.length],['Paid',cnt('Paid')],['Unpaid',cnt('Unpaid')],['Partial',cnt('Partial')]].map(function(x){var active=statusF===x[0];return '<button class="fpStatus" data-status="'+x[0]+'" style="display:inline-flex;align-items:center;gap:4px;border:0;background:'+(active?'#f3f4f6':'transparent')+';color:'+(active?'#1f2937':'#9ca3af')+';font-size:12px;padding:4px 12px;border-radius:6px;font-weight:500;cursor:pointer">'+x[0]+'<span style="font-size:10px;padding:1px 4px;border-radius:999px;background:#f3f4f6;color:'+(active?'#374151':'#9ca3af')+'">'+x[1]+'</span></button>';}).join('');
+    el.style.cssText='position:fixed;left:'+L+'px;top:0;right:0;bottom:0;z-index:900000;background:#f5f8fb;overflow:auto;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;color:#17263a';
+    el.innerHTML='<div style="display:flex;flex-direction:column;min-height:100%">'
+      +'<div style="background:#fff;border-bottom:1px solid #e5e7eb;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px"><h1 style="margin:0;font-size:16px;line-height:24px;font-weight:700;color:#1f2937">Sale Invoices</h1><button class="fpAdd" style="display:flex;align-items:center;gap:4px;color:#fff;font-size:12px;padding:8px 16px;border-radius:8px;font-weight:600;border:0;background:#c90000;cursor:pointer"><span style="font-size:14px">＋</span> Add Sale</button></div>'
+      +'<div style="background:#fff;border-bottom:1px solid #e5e7eb;padding:10px 20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap"><span style="font-size:12px;font-weight:500;color:#6b7280">Filter by :</span><button class="fpPeriod" id="fpPeriodChip" style="height:32px;min-width:128px;border:1px solid #e5e7eb;border-radius:6px;background:#f9fafb;color:#374151;padding:0 10px;font-size:12px;text-align:left;cursor:pointer">'+esc(periodLabel)+' <span style="float:right;color:#9ca3af">⌄</span></button>'+dateBox+'</div>'
+      +'<div style="padding:16px 16px 0"><div id="fpTotInner" style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:16px;box-shadow:0 1px 2px rgba(0,0,0,.05)">'+totCardInner()+'</div></div>'
+      +'<div style="flex:1;overflow:auto;padding:16px"><div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,.05)">'
+      +'<div style="padding:10px 16px;border-bottom:1px solid #e5e7eb;display:flex;align-items:center;justify-content:space-between;gap:12px"><h3 style="margin:0;font-size:14px;font-weight:700;color:#1f2937">Transactions</h3><div style="display:flex;align-items:center;gap:6px"><div style="position:relative"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2" style="position:absolute;left:8px;top:50%;transform:translateY(-50%)"><circle cx="11" cy="11" r="7"></circle><path d="M21 21l-4-4"></path></svg><input id="fpSearch" value="'+esc(q)+'" placeholder="Search Transactions" style="width:176px;padding:6px 12px 6px 28px;font-size:12px;border:1px solid #e5e7eb;border-radius:8px;background:#f9fafb;color:#374151;outline:none"></div><button class="fpXls" title="Excel" style="padding:6px;border:1px solid #e5e7eb;border-radius:8px;background:#fff;color:#16a34a;cursor:pointer;font-size:11px;font-weight:700">xls</button><button class="fpPrintList" title="Print" style="padding:6px;border:1px solid #e5e7eb;border-radius:8px;background:#fff;color:#9ca3af;cursor:pointer">'+IC_PR+'</button></div></div>'
+      +'<div style="padding:8px 16px;border-bottom:1px solid #f3f4f6;display:flex;align-items:center;gap:4px">'+statuses+'</div><div id="fpTableWrap" style="overflow:auto">'+rowsHTML()+'</div></div></div></div>';
+    el.setAttribute('data-built','1'); wire(el);
   }
 
   function wire(el) {
     var s = el.querySelector('#fpSearch');
     if (s) s.oninput = function () { q = this.value.trim().toLowerCase(); refresh(); };
+    el.querySelectorAll('.fpStatus').forEach(function (b) { b.onclick = function () { statusF = b.getAttribute('data-status') || 'All'; applyFilter(); build(); }; });
     el.querySelectorAll('.fpAdd').forEach(function (b) { b.onclick = function () { openInvoiceBuilder(); }; });
     el.querySelectorAll('.fpAddP').forEach(function (b) { b.onclick = function () { clickApp(/^\+?\s*Purchase$/i); }; });
     el.querySelectorAll('.fpAddPlus').forEach(function (b) { b.onclick = function (e) { e.stopPropagation(); miniMenu(b, addMoreItems()); }; });
@@ -186,7 +178,7 @@
     el.querySelectorAll('.fpChart').forEach(function (b) { b.onclick = function (e) { e.stopPropagation(); summaryModal(); }; });
     el.querySelectorAll('.fpFocusSearch').forEach(function (b) { b.onclick = function () { var i = document.getElementById('fpSearch'); if (i) i.focus(); }; });
     el.querySelectorAll('.fpTopMenu').forEach(function (b) { b.onclick = function (e) { e.stopPropagation(); miniMenu(b, [['Onyesha upya', function () { DATA = null; load().then(function () { applyFilter(); build(); }); }], ['Pakua Excel (CSV)', exportCSV], ['Chapa orodha', printList], ['Muhtasari', summaryModal]]); }; });
-    var pc = el.querySelector('.fpPeriod'); if (pc) pc.onclick = function (e) { e.stopPropagation(); miniMenu(pc, [['Leo (Today)', function () { setPeriod('Leo', todayStr(), todayStr()); }], ['This Month', function () { setPeriod('This Month', monthStart(), monthEnd()); }], ['Last Month', function () { var r = lastMonthRange(); setPeriod('Last Month', r[0], r[1]); }], ['This Quarter', function () { setPeriod('This Quarter', quarterStart(), todayStr()); }], ['This Year', function () { setPeriod('This Year', yearStart(), todayStr()); }], ['All Sale Invoices', function () { setPeriod('All', '', ''); }]]); };
+    var pc = el.querySelector('.fpPeriod'); if (pc) pc.onclick = function (e) { e.stopPropagation(); miniMenu(pc, [['This Month', function () { setPeriod('This Month', monthStart(), monthEnd()); build(); }], ['Last Month', function () { var r = lastMonthRange(); setPeriod('Last Month', r[0], r[1]); build(); }], ['This Year', function () { setPeriod('This Year', yearStart(), todayStr()); build(); }], ['All Time', function () { setPeriod('All Time', '', ''); build(); }], ['Custom Range', function () { periodLabel = 'Custom'; fromISO = ''; toISO = ''; build(); }]]); };
     var cal = el.querySelector('.fpCal'); if (cal) cal.onclick = function () { var f = document.getElementById('fpFrom'); if (f) { try { f.showPicker(); } catch (e) { f.focus(); f.click(); } } };
     var ff = el.querySelector('#fpFrom'); if (ff) ff.onchange = function () { fromISO = this.value || ''; periodLabel = 'Custom'; refresh(); };
     var ft = el.querySelector('#fpTo'); if (ft) ft.onchange = function () { toISO = this.value || ''; periodLabel = 'Custom'; refresh(); };
