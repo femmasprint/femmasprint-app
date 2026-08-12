@@ -97,23 +97,20 @@
   } catch (e) {}
 })();
 
-/* FEMMAS PRINT — sidebar v10 (safe minimal, no duplicate hamburger).
- *
- * Never moves/removes an app node (that crashes React). It adds: tooltips, a fallback
- * icon where the app left none, clear section headings, and full-width rows.
- *
- * NOTE (v10): the app's OWN header menu button already opens the sidebar as a drawer
- * (body.fp-drawer). Earlier versions ALSO added a separate floating hamburger, which
- * overlapped the native one and looked like two burgers. That floating button is now
- * removed — we rely on the app's native menu button only. */
+/* FEMMAS PRINT — sidebar v11.
+ * Desktop sidebar is permanently expanded. The legacy fp-rail auto-collapse mode is
+ * disabled and its saved preference is reset, while the native mobile drawer remains.
+ * Never moves/removes React-owned app nodes. */
 (function () {
   try {
     var css = document.createElement('style');
+    css.id = 'fpSidebarV11';
     css.textContent =
       ' .fp-sec{opacity:.62;font-size:11px !important;letter-spacing:.06em;text-transform:uppercase;font-weight:700;padding-top:9px !important;pointer-events:none;cursor:default;display:block !important}' +
       ' aside .fp-fallicon{display:inline-flex;align-items:center;flex:none;margin-right:2px}' +
       ' aside nav a{display:flex !important;align-items:center;width:100% !important;box-sizing:border-box}' +
-      ' aside > nav ~ * > div > div:nth-of-type(2){display:none !important}';
+      ' aside > nav ~ * > div > div:nth-of-type(2){display:none !important}' +
+      ' #fpRailBtn{display:none !important}';
     document.head.appendChild(css);
 
     var FALL = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8aa0c0" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="1.6" fill="#8aa0c0" stroke="none"/></svg>';
@@ -127,14 +124,24 @@
       return tx.length >= 2 && tx.length <= 26;
     }
 
-    // v10: clean up any floating hamburger/backdrop that an older cached sidebar may
-    // have added, so a stale version never leaves a duplicate burger behind.
+    function disableLegacyRail() {
+      try { localStorage.setItem('fp_rail2', '0'); } catch (e) {}
+      if (document.body && document.body.classList.contains('fp-rail')) {
+        document.body.classList.remove('fp-rail');
+      }
+      var railBtn = document.getElementById('fpRailBtn');
+      if (railBtn && railBtn.parentNode) railBtn.parentNode.removeChild(railBtn);
+    }
+
     function removeLegacyBurger() {
       var b = document.querySelectorAll('.fp-burger, .fp-nav-backdrop');
-      for (var i = 0; i < b.length; i++) { if (b[i] && b[i].parentNode) b[i].parentNode.removeChild(b[i]); }
+      for (var i = 0; i < b.length; i++) {
+        if (b[i] && b[i].parentNode) b[i].parentNode.removeChild(b[i]);
+      }
     }
 
     function enhance() {
+      disableLegacyRail();
       removeLegacyBurger();
       var aside = document.querySelector('aside');
       if (!aside) return;
@@ -146,7 +153,9 @@
           if (label) el.setAttribute('title', label.slice(0, 48));
         }
         if (!el.querySelector('svg') && !el.querySelector('img') && !el.querySelector('.fp-fallicon')) {
-          var s = document.createElement('span'); s.className = 'fp-fallicon'; s.innerHTML = FALL;
+          var s = document.createElement('span');
+          s.className = 'fp-fallicon';
+          s.innerHTML = FALL;
           el.insertBefore(s, el.firstChild);
         }
       }
@@ -165,7 +174,25 @@
       }
     }
 
-    function boot() { enhance(); setInterval(enhance, 2000); }
+    function boot() {
+      disableLegacyRail();
+      enhance();
+
+      if (window.MutationObserver && document.body) {
+        var observer = new MutationObserver(function (mutations) {
+          for (var i = 0; i < mutations.length; i++) {
+            if (mutations[i].type === 'attributes' && mutations[i].attributeName === 'class') {
+              disableLegacyRail();
+              break;
+            }
+          }
+        });
+        observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+      }
+
+      setInterval(enhance, 2000);
+    }
+
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
     else boot();
   } catch (e) { /* noop */ }
