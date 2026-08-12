@@ -314,7 +314,7 @@
       lastCell = hit.cell;
       lastTrigger = hit.trigger;
       setTimeout(function () { buildPortal(lastCell, lastTrigger, 0); }, 0);
-    }, false);
+    }, true);
 
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape') closePortal();
