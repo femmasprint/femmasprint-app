@@ -1,6 +1,4 @@
-/* FEMMAS PRINT — one-time Quick Sale Nauli cleanup.
- * Keeps only the full staff names and removes the old short aliases from browser cache.
- */
+/* FEMMAS PRINT — one-time Quick Sale Nauli cleanup. */
 (function () {
   try {
     var legacy = { stive:1, kwedy:1, sedekia:1, imma:1, hasan:1, ismo:1, suma:1, fadhil:1, shaibu:1 };
@@ -30,16 +28,16 @@
     }
 
     var changed = false;
-
     try {
-      var tplRaw = localStorage.getItem('fp_daily_exp_tpl');
-      var tpl = tplRaw ? JSON.parse(tplRaw) : [];
+      var rawTpl = localStorage.getItem('fp_daily_exp_tpl');
+      var tpl = rawTpl ? JSON.parse(rawTpl) : [];
       var filtered = Array.isArray(tpl) ? tpl.filter(function (x) {
-        var k = String((x && x.name) || '').trim().toLowerCase();
-        return !legacy[k];
+        return !legacy[String((x && x.name) || '').trim().toLowerCase()];
       }) : [];
       var needCanonical = filtered.length !== canonical.length || canonical.some(function (x) {
-        return !filtered.some(function (y) { return String(y && y.name || '').trim().toLowerCase() === x.name.toLowerCase(); });
+        return !filtered.some(function (y) {
+          return String((y && y.name) || '').trim().toLowerCase() === x.name.toLowerCase();
+        });
       });
       if (needCanonical || (Array.isArray(tpl) && filtered.length !== tpl.length)) {
         localStorage.setItem('fp_daily_exp_tpl', JSON.stringify(canonical));
@@ -49,7 +47,7 @@
       try { localStorage.setItem('fp_daily_exp_tpl', JSON.stringify(canonical)); changed = true; } catch (e2) {}
     }
 
-    function cleanCacheKey(key) {
+    function cleanCache(key) {
       try {
         var raw = localStorage.getItem(key);
         if (!raw) return;
@@ -76,11 +74,11 @@
       } catch (e) {}
     }
 
-    cleanCacheKey('fp_local_cache');
+    cleanCache('fp_local_cache');
     try {
       for (var i = 0; i < localStorage.length; i++) {
         var key = localStorage.key(i) || '';
-        if (key.indexOf('fp_local_cache_') === 0) cleanCacheKey(key);
+        if (key.indexOf('fp_local_cache_') === 0) cleanCache(key);
       }
     } catch (e) {}
 
@@ -97,55 +95,41 @@
   } catch (e) {}
 })();
 
-/* FEMMAS PRINT — sidebar v11.
- * Desktop sidebar is permanently expanded. The legacy fp-rail auto-collapse mode is
- * disabled and its saved preference is reset, while the native mobile drawer remains.
- * Never moves/removes React-owned app nodes. */
+/* FEMMAS PRINT — desktop sidebar stays expanded. */
 (function () {
   try {
     var css = document.createElement('style');
-    css.id = 'fpSidebarV11';
+    css.id = 'fpSidebarPermanent';
     css.textContent =
-      ' .fp-sec{opacity:.62;font-size:11px !important;letter-spacing:.06em;text-transform:uppercase;font-weight:700;padding-top:9px !important;pointer-events:none;cursor:default;display:block !important}' +
-      ' aside .fp-fallicon{display:inline-flex;align-items:center;flex:none;margin-right:2px}' +
-      ' aside nav a{display:flex !important;align-items:center;width:100% !important;box-sizing:border-box}' +
-      ' aside > nav ~ * > div > div:nth-of-type(2){display:none !important}' +
-      ' #fpRailBtn{display:none !important}';
+      '.fp-sec{opacity:.62;font-size:11px!important;letter-spacing:.06em;text-transform:uppercase;font-weight:700;padding-top:9px!important;pointer-events:none;cursor:default;display:block!important}' +
+      'aside .fp-fallicon{display:inline-flex;align-items:center;flex:none;margin-right:2px}' +
+      'aside nav a{display:flex!important;align-items:center;width:100%!important;box-sizing:border-box}' +
+      'aside>nav~*>div>div:nth-of-type(2){display:none!important}' +
+      '#fpRailBtn{display:none!important}';
     document.head.appendChild(css);
 
     var FALL = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8aa0c0" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="1.6" fill="#8aa0c0" stroke="none"/></svg>';
 
-    function looksLikeHeading(el) {
+    function heading(el) {
       if (!el || el.nodeType !== 1) return false;
-      var tag = el.tagName;
-      if (tag === 'A' || tag === 'BUTTON' || tag === 'INPUT') return false;
+      if (el.tagName === 'A' || el.tagName === 'BUTTON' || el.tagName === 'INPUT') return false;
       if (el.querySelector && el.querySelector('a,button,input,textarea,select,svg,img')) return false;
       var tx = (el.textContent || '').trim();
       return tx.length >= 2 && tx.length <= 26;
     }
 
-    function disableLegacyRail() {
+    function disableRail() {
       try { localStorage.setItem('fp_rail2', '0'); } catch (e) {}
-      if (document.body && document.body.classList.contains('fp-rail')) {
-        document.body.classList.remove('fp-rail');
-      }
-      var railBtn = document.getElementById('fpRailBtn');
-      if (railBtn && railBtn.parentNode) railBtn.parentNode.removeChild(railBtn);
-    }
-
-    function removeLegacyBurger() {
-      var b = document.querySelectorAll('.fp-burger, .fp-nav-backdrop');
-      for (var i = 0; i < b.length; i++) {
-        if (b[i] && b[i].parentNode) b[i].parentNode.removeChild(b[i]);
-      }
+      if (document.body) document.body.classList.remove('fp-rail');
+      var btn = document.getElementById('fpRailBtn');
+      if (btn && btn.parentNode) btn.parentNode.removeChild(btn);
     }
 
     function enhance() {
-      disableLegacyRail();
-      removeLegacyBurger();
+      disableRail();
       var aside = document.querySelector('aside');
       if (!aside) return;
-      var items = aside.querySelectorAll('nav a, nav button');
+      var items = aside.querySelectorAll('nav a,nav button');
       for (var i = 0; i < items.length; i++) {
         var el = items[i];
         if (!el.getAttribute('title')) {
@@ -160,161 +144,184 @@
         }
       }
       var nav = aside.querySelector('nav');
-      if (nav) {
-        var kids = nav.children;
-        for (var k = 0; k < kids.length; k++) {
-          var el2 = kids[k];
-          if (looksLikeHeading(el2)) { el2.classList.add('fp-sec'); continue; }
-          if (el2.tagName === 'DIV' && el2.querySelector && el2.querySelector('a,button')) {
-            for (var j = 0; j < el2.children.length; j++) {
-              if (looksLikeHeading(el2.children[j])) el2.children[j].classList.add('fp-sec');
-            }
-          }
-        }
+      if (!nav) return;
+      for (var k = 0; k < nav.children.length; k++) {
+        var child = nav.children[k];
+        if (heading(child)) child.classList.add('fp-sec');
       }
     }
 
     function boot() {
-      disableLegacyRail();
       enhance();
-
       if (window.MutationObserver && document.body) {
-        var observer = new MutationObserver(function (mutations) {
-          for (var i = 0; i < mutations.length; i++) {
-            if (mutations[i].type === 'attributes' && mutations[i].attributeName === 'class') {
-              disableLegacyRail();
-              break;
-            }
-          }
-        });
-        observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+        new MutationObserver(function () { disableRail(); }).observe(document.body, { attributes:true, attributeFilter:['class'] });
       }
-
       setInterval(enhance, 2000);
     }
 
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
     else boot();
-  } catch (e) { /* noop */ }
+  } catch (e) {}
 })();
 
-/* FEMMAS PRINT — Quick Sale payment-mode dropdown fix.
- * The sales/expenses tables use horizontal scrolling, which clips an absolutely
- * positioned payment menu near the bottom rows. Move the open menu to the viewport
- * layer and automatically open it above the field when there is not enough room below. */
+/* FEMMAS PRINT — Quick Sale Payment Mode popup v3.
+ * IMPORTANT: the visible payment menu is appended directly to document.body and is
+ * ALWAYS positioned ABOVE the clicked Payment Mode field. It is never rendered inside
+ * the table/scroll container, so bottom rows cannot clip Cash/Bank/Voda/Yas/Simu. */
 (function () {
   try {
     var MODES = ['Cash', 'Bank', 'Voda', 'Yas', 'Simu'];
-    var pending = false;
+    var COLORS = { Cash:'#16a34a', Bank:'#3496f3', Voda:'#e11d48', Yas:'#e0a400', Simu:'#8b5cf6' };
+    var portal = null;
+    var realMenu = null;
+    var lastCell = null;
+    var lastTrigger = null;
 
     function text(el) {
       return String((el && el.textContent) || '').replace(/\s+/g, ' ').trim();
     }
 
-    function isModeButton(el) {
-      if (!el || el.tagName !== 'DIV') return false;
-      var t = text(el);
-      return MODES.indexOf(t) !== -1 && !!el.querySelector('svg');
+    function closePortal() {
+      if (portal && portal.parentNode) portal.parentNode.removeChild(portal);
+      portal = null;
+      if (realMenu) {
+        try {
+          realMenu.style.removeProperty('visibility');
+          realMenu.style.removeProperty('pointer-events');
+          realMenu.style.removeProperty('opacity');
+        } catch (e) {}
+      }
+      realMenu = null;
+      lastCell = null;
+      lastTrigger = null;
     }
 
-    function findMenu(cell) {
-      var marked = cell.querySelector('[data-fp-qs-paymenu="1"]');
-      if (marked) return marked;
+    function paymentHit(target) {
+      if (!target || !target.closest) return null;
+      if (target.closest('#fpQsPaymentPortal')) return null;
+      var root = target.closest('[data-screen-label="Quick Sale"]');
+      if (!root) return null;
+      var cell = target.closest('td');
+      if (!cell || !cell.parentNode || !cell.parentNode.children) return null;
+      var index = Array.prototype.indexOf.call(cell.parentNode.children, cell);
+      if (index !== 6) return null;
+      var direct = cell.children && cell.children[0];
+      if (!direct || direct.tagName !== 'DIV' || !direct.querySelector('svg')) return null;
+      if (!direct.contains(target) && direct !== target) return null;
+      return { cell:cell, trigger:direct };
+    }
+
+    function realOptions(cell) {
+      var out = {};
       var divs = cell.querySelectorAll('div');
       for (var i = 0; i < divs.length; i++) {
         var d = divs[i];
-        var s = d.getAttribute('style') || '';
         var t = text(d);
-        if (((d.style && d.style.position === 'absolute') || (window.getComputedStyle && window.getComputedStyle(d).position === 'absolute')) && t.indexOf('Cash') !== -1 && t.indexOf('Bank') !== -1 && t.indexOf('Voda') !== -1) {
-          d.setAttribute('data-fp-qs-paymenu', '1');
-          return d;
+        if (MODES.indexOf(t) !== -1 && !d.querySelector('svg')) out[t] = d;
+      }
+      return out;
+    }
+
+    function commonMenu(options, cell) {
+      var first = null;
+      for (var i = 0; i < MODES.length; i++) {
+        if (options[MODES[i]]) { first = options[MODES[i]]; break; }
+      }
+      if (!first) return null;
+      var p = first.parentNode;
+      while (p && p !== cell) {
+        var all = true;
+        for (var j = 0; j < MODES.length; j++) {
+          if (options[MODES[j]] && !p.contains(options[MODES[j]])) { all = false; break; }
         }
+        if (all) return p;
+        p = p.parentNode;
       }
-      return null;
+      return first.parentNode;
     }
 
-    function findButton(cell, menu) {
-      var divs = cell.querySelectorAll('div');
-      for (var i = 0; i < divs.length; i++) {
-        var d = divs[i];
-        if (d === menu || (menu && menu.contains(d))) continue;
-        if (isModeButton(d)) return d;
+    function buildPortal(cell, trigger, attempt) {
+      if (!document.body || !document.documentElement.contains(trigger)) return;
+      var options = realOptions(cell);
+      var available = 0;
+      for (var i = 0; i < MODES.length; i++) if (options[MODES[i]]) available++;
+      if (available < 2) {
+        if ((attempt || 0) < 14) setTimeout(function () { buildPortal(cell, trigger, (attempt || 0) + 1); }, 20);
+        return;
       }
-      return null;
-    }
 
-    function place(cell) {
-      var menu = findMenu(cell);
-      if (!menu || !menu.getClientRects || menu.getClientRects().length === 0) return;
-      var btn = findButton(cell, menu);
-      if (!btn || !btn.getBoundingClientRect) return;
+      if (portal && portal.parentNode) portal.parentNode.removeChild(portal);
+      portal = null;
+      realMenu = commonMenu(options, cell);
+      if (realMenu) {
+        realMenu.style.setProperty('visibility', 'hidden', 'important');
+        realMenu.style.setProperty('pointer-events', 'none', 'important');
+        realMenu.style.setProperty('opacity', '0', 'important');
+      }
 
-      var r = btn.getBoundingClientRect();
-      var menuHeight = menu.offsetHeight || 190;
-      var width = Math.max(104, Math.round(r.width));
+      var r = trigger.getBoundingClientRect();
+      var width = Math.max(132, Math.round(r.width));
+      var itemH = 36;
+      var menuH = available * itemH + 10;
       var vw = window.innerWidth || document.documentElement.clientWidth || 1200;
-      var vh = window.innerHeight || document.documentElement.clientHeight || 800;
-      var left = Math.round(r.left);
-      if (left + width > vw - 8) left = Math.max(8, vw - width - 8);
-
-      var below = vh - r.bottom;
-      var openDown = below >= menuHeight + 10;
-      var top = openDown ? Math.round(r.bottom + 4) : Math.round(r.top - menuHeight - 4);
+      var left = Math.max(8, Math.min(Math.round(r.left), vw - width - 8));
+      var top = Math.round(r.top - menuH - 6);  // ALWAYS ABOVE THE FIELD
       if (top < 8) top = 8;
-      if (top + menuHeight > vh - 8) top = Math.max(8, vh - menuHeight - 8);
 
-      menu.style.setProperty('position', 'fixed', 'important');
-      menu.style.setProperty('left', left + 'px', 'important');
-      menu.style.setProperty('right', 'auto', 'important');
-      menu.style.setProperty('top', top + 'px', 'important');
-      menu.style.setProperty('bottom', 'auto', 'important');
-      menu.style.setProperty('margin-top', '0', 'important');
-      menu.style.setProperty('margin-bottom', '0', 'important');
-      menu.style.setProperty('width', width + 'px', 'important');
-      menu.style.setProperty('z-index', '2147482500', 'important');
-      menu.style.setProperty('max-height', Math.max(120, vh - 16) + 'px', 'important');
-      menu.style.setProperty('overflow-y', 'auto', 'important');
-    }
+      portal = document.createElement('div');
+      portal.id = 'fpQsPaymentPortal';
+      portal.setAttribute('role', 'menu');
+      portal.style.cssText = 'position:fixed;left:' + left + 'px;top:' + top + 'px;width:' + width + 'px;z-index:2147483640;background:#fff;border:1px solid rgba(46,144,240,.28);border-radius:12px;box-shadow:0 18px 46px rgba(19,49,90,.34);padding:5px;box-sizing:border-box;overflow:visible;';
 
-    function repair() {
-      pending = false;
-      var root = document.querySelector('[data-screen-label="Quick Sale"]');
-      if (!root) return;
-      var rows = root.querySelectorAll('table tbody tr');
-      for (var i = 0; i < rows.length; i++) {
-        var cells = rows[i].children;
-        if (!cells || cells.length < 7) continue;
-        place(cells[6]);
+      for (var m = 0; m < MODES.length; m++) {
+        (function (mode) {
+          var real = options[mode];
+          if (!real) return;
+          var item = document.createElement('button');
+          item.type = 'button';
+          item.setAttribute('role', 'menuitem');
+          item.style.cssText = 'display:flex;width:100%;height:' + itemH + 'px;align-items:center;gap:8px;border:0;border-radius:8px;background:#fff;padding:0 10px;font:700 12px Arial,sans-serif;color:' + COLORS[mode] + ';cursor:pointer;text-align:left;';
+          var dot = document.createElement('span');
+          dot.style.cssText = 'width:8px;height:8px;border-radius:50%;background:' + COLORS[mode] + ';flex:none;';
+          var label = document.createElement('span');
+          label.textContent = mode;
+          item.appendChild(dot);
+          item.appendChild(label);
+          item.onmouseenter = function () { item.style.background = '#eef5fd'; };
+          item.onmouseleave = function () { item.style.background = '#fff'; };
+          item.onmousedown = function (ev) {
+            ev.preventDefault();
+            ev.stopPropagation();
+            try { real.click(); }
+            catch (e) {
+              try { real.dispatchEvent(new MouseEvent('click', { bubbles:true, cancelable:true, view:window })); } catch (e2) {}
+            }
+            closePortal();
+          };
+          portal.appendChild(item);
+        })(MODES[m]);
       }
+      document.body.appendChild(portal);
     }
 
-    function schedule() {
-      if (pending) return;
-      pending = true;
-      var raf = window.requestAnimationFrame || function (fn) { return setTimeout(fn, 16); };
-      raf(repair);
-    }
-
-    function boot() {
-      document.addEventListener('click', function (e) {
-        var t = e && e.target;
-        if (!t || !t.closest || !t.closest('[data-screen-label="Quick Sale"]')) return;
-        setTimeout(schedule, 0);
-        setTimeout(schedule, 40);
-      }, true);
-
-      window.addEventListener('resize', schedule);
-      window.addEventListener('scroll', schedule, true);
-
-      if (window.MutationObserver && document.body) {
-        var observer = new MutationObserver(schedule);
-        observer.observe(document.body, { childList: true, subtree: true });
+    document.addEventListener('click', function (e) {
+      if (e.target && e.target.closest && e.target.closest('#fpQsPaymentPortal')) return;
+      var hit = paymentHit(e.target);
+      if (!hit) {
+        closePortal();
+        return;
       }
+      lastCell = hit.cell;
+      lastTrigger = hit.trigger;
+      setTimeout(function () { buildPortal(lastCell, lastTrigger, 0); }, 0);
+    }, false);
 
-      schedule();
-    }
-
-    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
-    else boot();
-  } catch (e) { /* noop */ }
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') closePortal();
+    });
+    window.addEventListener('resize', closePortal);
+    window.addEventListener('scroll', function () {
+      if (portal) closePortal();
+    }, true);
+  } catch (e) {}
 })();
