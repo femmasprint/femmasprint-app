@@ -1,0 +1,49 @@
+name: Fix Quick Sale payment dropdown overlay
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/fix-quick-sale-payment-dropdown-overlay.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Make Quick Sale payment dropdown detector robust
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('fp-sidebar.js')
+          text = path.read_text()
+          old = "s.indexOf('position:absolute') !== -1 && t.indexOf('Cash') !== -1 && t.indexOf('Bank') !== -1 && t.indexOf('Voda') !== -1"
+          new = "((d.style && d.style.position === 'absolute') || (window.getComputedStyle && window.getComputedStyle(d).position === 'absolute')) && t.indexOf('Cash') !== -1 && t.indexOf('Bank') !== -1 && t.indexOf('Voda') !== -1"
+
+          if old in text:
+              text = text.replace(old, new, 1)
+          elif new not in text:
+              raise SystemExit('Quick Sale dropdown detector anchor not found')
+
+          path.write_text(text)
+          print('Quick Sale payment dropdown detector patched')
+          PY
+
+      - name: Commit fix
+        run: |
+          if git diff --quiet -- fp-sidebar.js; then
+            echo "No changes needed"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add fp-sidebar.js
+          git commit -m "fix Quick Sale payment dropdown overlay detector"
+          git push
