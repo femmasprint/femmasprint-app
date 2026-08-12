@@ -17,155 +17,47 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Add body-level Quick Sale payment menu portal
+      - name: Force Quick Sale payment menus above rows
         run: |
           python - <<'PY'
           from pathlib import Path
 
-          path = Path('fp-sidebar.js')
-          text = path.read_text()
-          marker = 'FEMMAS PRINT — Quick Sale payment portal v2'
-          if marker in text:
-              print('Portal fix already present')
+          index = Path('index.html')
+          html = index.read_text()
+          old = 'position:absolute;left:3px;right:3px;top:100%;margin-top:3px;z-index:60;'
+          new = 'position:absolute;left:3px;right:3px;bottom:100%;margin-bottom:3px;z-index:9999;'
+          count = html.count(old)
+          if count:
+              html = html.replace(old, new)
+              index.write_text(html)
+              print(f'Changed {count} native payment dropdown(s) to open upward')
+          elif new in html:
+              print('Native payment dropdowns already open upward')
           else:
-              text += r'''
+              raise SystemExit('Payment dropdown style anchor not found in index.html')
 
-/* FEMMAS PRINT — Quick Sale payment portal v2.
- * Uses a body-level menu so Payment Mode never gets clipped by the sales/expenses
- * horizontal-scroll containers, including the last rows. The real app option is
- * clicked underneath so existing save/state logic remains unchanged. */
-(function () {
-  try {
-    var MODES = ['Cash', 'Bank', 'Voda', 'Yas', 'Simu'];
-    var COLORS = { Cash:'#16a34a', Bank:'#3496f3', Voda:'#e11d48', Yas:'#e0a400', Simu:'#8b5cf6' };
-    var portal = null;
-
-    function txt(el) {
-      return String((el && el.textContent) || '').replace(/\s+/g, ' ').trim();
-    }
-
-    function closePortal() {
-      if (portal && portal.parentNode) portal.parentNode.removeChild(portal);
-      portal = null;
-    }
-
-    function paymentCellFromClick(target) {
-      if (!target || !target.closest) return null;
-      var root = target.closest('[data-screen-label="Quick Sale"]');
-      if (!root) return null;
-      var cell = target.closest('td');
-      if (!cell) return null;
-      var row = cell.parentNode;
-      if (!row || !row.children) return null;
-      var idx = Array.prototype.indexOf.call(row.children, cell);
-      if (idx !== 6) return null;
-      var trigger = target.closest('div');
-      if (!trigger || trigger.closest('#fpQsPayPortal')) return null;
-      if (MODES.indexOf(txt(trigger)) === -1 || !trigger.querySelector('svg')) return null;
-      return { cell: cell, trigger: trigger };
-    }
-
-    function findRealOptions(cell) {
-      var found = {};
-      var divs = cell.querySelectorAll('div');
-      for (var i = 0; i < divs.length; i++) {
-        var d = divs[i];
-        var t = txt(d);
-        if (MODES.indexOf(t) !== -1 && !d.querySelector('svg')) {
-          found[t] = d;
-        }
-      }
-      return found;
-    }
-
-    function openPortal(cell, trigger, attempt) {
-      if (!document.body || !cell || !trigger || !document.documentElement.contains(trigger)) return;
-      var options = findRealOptions(cell);
-      var count = Object.keys(options).length;
-      if (count < 2) {
-        if ((attempt || 0) < 10) setTimeout(function () { openPortal(cell, trigger, (attempt || 0) + 1); }, 25);
-        return;
-      }
-
-      closePortal();
-      var r = trigger.getBoundingClientRect();
-      var menuW = Math.max(128, Math.round(r.width));
-      var itemH = 36;
-      var menuH = MODES.length * itemH + 10;
-      var vw = window.innerWidth || document.documentElement.clientWidth || 1200;
-      var vh = window.innerHeight || document.documentElement.clientHeight || 800;
-      var left = Math.max(8, Math.min(Math.round(r.left), vw - menuW - 8));
-      var below = vh - r.bottom;
-      var top = below >= menuH + 8 ? Math.round(r.bottom + 4) : Math.round(r.top - menuH - 4);
-      top = Math.max(8, Math.min(top, vh - menuH - 8));
-
-      portal = document.createElement('div');
-      portal.id = 'fpQsPayPortal';
-      portal.setAttribute('role', 'menu');
-      portal.style.cssText = 'position:fixed;left:' + left + 'px;top:' + top + 'px;width:' + menuW + 'px;z-index:2147483640;background:#fff;border:1px solid rgba(46,144,240,.28);border-radius:12px;box-shadow:0 18px 46px rgba(19,49,90,.30);padding:5px;box-sizing:border-box;overflow:hidden;';
-
-      for (var i = 0; i < MODES.length; i++) {
-        (function (mode) {
-          var real = options[mode];
-          if (!real) return;
-          var item = document.createElement('button');
-          item.type = 'button';
-          item.setAttribute('role', 'menuitem');
-          item.style.cssText = 'display:flex;width:100%;height:' + itemH + 'px;align-items:center;gap:8px;border:0;border-radius:8px;background:#fff;padding:0 10px;font:700 12px inherit;color:' + COLORS[mode] + ';cursor:pointer;text-align:left;';
-          var dot = document.createElement('span');
-          dot.style.cssText = 'width:8px;height:8px;border-radius:50%;background:' + COLORS[mode] + ';flex:none;';
-          var label = document.createElement('span');
-          label.textContent = mode;
-          item.appendChild(dot);
-          item.appendChild(label);
-          item.onmouseenter = function () { item.style.background = '#eef5fd'; };
-          item.onmouseleave = function () { item.style.background = '#fff'; };
-          item.onmousedown = function (ev) {
-            ev.preventDefault();
-            ev.stopPropagation();
-            try {
-              real.dispatchEvent(new MouseEvent('click', { bubbles:true, cancelable:true, view:window }));
-            } catch (e) {
-              try { real.click(); } catch (e2) {}
-            }
-            closePortal();
-          };
-          portal.appendChild(item);
-        })(MODES[i]);
-      }
-      document.body.appendChild(portal);
-    }
-
-    document.addEventListener('click', function (e) {
-      if (e.target && e.target.closest && e.target.closest('#fpQsPayPortal')) return;
-      var hit = paymentCellFromClick(e.target);
-      if (!hit) {
-        closePortal();
-        return;
-      }
-      setTimeout(function () { openPortal(hit.cell, hit.trigger, 0); }, 0);
-    }, false);
-
-    document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape') closePortal();
-    });
-    window.addEventListener('resize', closePortal);
-    window.addEventListener('scroll', closePortal, true);
-  } catch (e) { /* noop */ }
-})();
-'''
-              path.write_text(text)
-              print('Appended Quick Sale payment portal v2')
+          side = Path('fp-sidebar.js')
+          js = side.read_text()
+          old_listener = "    }, false);\n\n    document.addEventListener('keydown', function (e) {"
+          new_listener = "    }, true);\n\n    document.addEventListener('keydown', function (e) {"
+          if old_listener in js:
+              js = js.replace(old_listener, new_listener, 1)
+              side.write_text(js)
+              print('Changed payment portal listener to capture phase')
+          elif new_listener in js:
+              print('Payment portal listener already uses capture phase')
+          else:
+              raise SystemExit('Payment portal listener anchor not found in fp-sidebar.js')
           PY
 
       - name: Commit fix
         run: |
-          if git diff --quiet -- fp-sidebar.js; then
+          if git diff --quiet -- index.html fp-sidebar.js; then
             echo "No changes needed"
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add fp-sidebar.js
-          git commit -m "fix Quick Sale payment menu clipping on bottom rows"
+          git add index.html fp-sidebar.js
+          git commit -m "fix Quick Sale payment popup above lower rows"
           git push
