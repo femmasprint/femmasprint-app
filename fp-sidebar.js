@@ -225,7 +225,7 @@
         var d = divs[i];
         var s = d.getAttribute('style') || '';
         var t = text(d);
-        if (s.indexOf('position:absolute') !== -1 && t.indexOf('Cash') !== -1 && t.indexOf('Bank') !== -1 && t.indexOf('Voda') !== -1) {
+        if (((d.style && d.style.position === 'absolute') || (window.getComputedStyle && window.getComputedStyle(d).position === 'absolute')) && t.indexOf('Cash') !== -1 && t.indexOf('Bank') !== -1 && t.indexOf('Voda') !== -1) {
           d.setAttribute('data-fp-qs-paymenu', '1');
           return d;
         }
