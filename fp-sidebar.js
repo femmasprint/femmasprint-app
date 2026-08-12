@@ -197,3 +197,124 @@
     else boot();
   } catch (e) { /* noop */ }
 })();
+
+/* FEMMAS PRINT — Quick Sale payment-mode dropdown fix.
+ * The sales/expenses tables use horizontal scrolling, which clips an absolutely
+ * positioned payment menu near the bottom rows. Move the open menu to the viewport
+ * layer and automatically open it above the field when there is not enough room below. */
+(function () {
+  try {
+    var MODES = ['Cash', 'Bank', 'Voda', 'Yas', 'Simu'];
+    var pending = false;
+
+    function text(el) {
+      return String((el && el.textContent) || '').replace(/\s+/g, ' ').trim();
+    }
+
+    function isModeButton(el) {
+      if (!el || el.tagName !== 'DIV') return false;
+      var t = text(el);
+      return MODES.indexOf(t) !== -1 && !!el.querySelector('svg');
+    }
+
+    function findMenu(cell) {
+      var marked = cell.querySelector('[data-fp-qs-paymenu="1"]');
+      if (marked) return marked;
+      var divs = cell.querySelectorAll('div');
+      for (var i = 0; i < divs.length; i++) {
+        var d = divs[i];
+        var s = d.getAttribute('style') || '';
+        var t = text(d);
+        if (s.indexOf('position:absolute') !== -1 && t.indexOf('Cash') !== -1 && t.indexOf('Bank') !== -1 && t.indexOf('Voda') !== -1) {
+          d.setAttribute('data-fp-qs-paymenu', '1');
+          return d;
+        }
+      }
+      return null;
+    }
+
+    function findButton(cell, menu) {
+      var divs = cell.querySelectorAll('div');
+      for (var i = 0; i < divs.length; i++) {
+        var d = divs[i];
+        if (d === menu || (menu && menu.contains(d))) continue;
+        if (isModeButton(d)) return d;
+      }
+      return null;
+    }
+
+    function place(cell) {
+      var menu = findMenu(cell);
+      if (!menu || !menu.getClientRects || menu.getClientRects().length === 0) return;
+      var btn = findButton(cell, menu);
+      if (!btn || !btn.getBoundingClientRect) return;
+
+      var r = btn.getBoundingClientRect();
+      var menuHeight = menu.offsetHeight || 190;
+      var width = Math.max(104, Math.round(r.width));
+      var vw = window.innerWidth || document.documentElement.clientWidth || 1200;
+      var vh = window.innerHeight || document.documentElement.clientHeight || 800;
+      var left = Math.round(r.left);
+      if (left + width > vw - 8) left = Math.max(8, vw - width - 8);
+
+      var below = vh - r.bottom;
+      var openDown = below >= menuHeight + 10;
+      var top = openDown ? Math.round(r.bottom + 4) : Math.round(r.top - menuHeight - 4);
+      if (top < 8) top = 8;
+      if (top + menuHeight > vh - 8) top = Math.max(8, vh - menuHeight - 8);
+
+      menu.style.setProperty('position', 'fixed', 'important');
+      menu.style.setProperty('left', left + 'px', 'important');
+      menu.style.setProperty('right', 'auto', 'important');
+      menu.style.setProperty('top', top + 'px', 'important');
+      menu.style.setProperty('bottom', 'auto', 'important');
+      menu.style.setProperty('margin-top', '0', 'important');
+      menu.style.setProperty('margin-bottom', '0', 'important');
+      menu.style.setProperty('width', width + 'px', 'important');
+      menu.style.setProperty('z-index', '2147482500', 'important');
+      menu.style.setProperty('max-height', Math.max(120, vh - 16) + 'px', 'important');
+      menu.style.setProperty('overflow-y', 'auto', 'important');
+    }
+
+    function repair() {
+      pending = false;
+      var root = document.querySelector('[data-screen-label="Quick Sale"]');
+      if (!root) return;
+      var rows = root.querySelectorAll('table tbody tr');
+      for (var i = 0; i < rows.length; i++) {
+        var cells = rows[i].children;
+        if (!cells || cells.length < 7) continue;
+        place(cells[6]);
+      }
+    }
+
+    function schedule() {
+      if (pending) return;
+      pending = true;
+      var raf = window.requestAnimationFrame || function (fn) { return setTimeout(fn, 16); };
+      raf(repair);
+    }
+
+    function boot() {
+      document.addEventListener('click', function (e) {
+        var t = e && e.target;
+        if (!t || !t.closest || !t.closest('[data-screen-label="Quick Sale"]')) return;
+        setTimeout(schedule, 0);
+        setTimeout(schedule, 40);
+      }, true);
+
+      window.addEventListener('resize', schedule);
+      window.addEventListener('scroll', schedule, true);
+
+      if (window.MutationObserver && document.body) {
+        var observer = new MutationObserver(schedule);
+        observer.observe(document.body, { childList: true, subtree: true });
+      }
+
+      schedule();
+    }
+
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+    else boot();
+  } catch (e) { /* noop */ }
+})();
