@@ -5092,6 +5092,17 @@ class Component extends DCLogic {
             const rs = String((rw && rw.goods) || '').trim().toLowerCase();
             return !(_legacyNauliCloud[nm] && rs.indexOf('nauli') > -1);
           });
+          const _canonicalNauliCloudDedupe = { 'ismail issa':1, 'hassan mwesiumo':1, 'ismar salim hussein (suma)':1, 'steven mkope':1, 'fadhili ally':1, 'emanuel w. sese (ima)':1, 'sedekia johnson laurent':1, 'henry charles kwedi':1, 'shaibu frank malekela':1 };
+          const _seenCanonicalNauliCloud = {};
+          le = le.filter(function (rw) {
+            const nm = String((rw && rw.client) || '').trim().toLowerCase();
+            const rs = String((rw && rw.goods) || '').trim().toLowerCase();
+            if (_canonicalNauliCloudDedupe[nm] && rs.indexOf('nauli') > -1) {
+              if (_seenCanonicalNauliCloud[nm]) return false;
+              _seenCanonicalNauliCloud[nm] = 1;
+            }
+            return true;
+          });
           le.forEach(rw => { if (rw._eid) expDone[rw._eid] = rw.client + '|' + rw.goods + '|' + rw.qty + '|' + rw.price + '|' + (rw.payMode || 'Cash'); });
           if (le.length) { var _tpl = []; try { _tpl = (this.fpDailyExpTpl_() || []).map(function(x){ return { client: x.name, goods: 'Nauli', qty: '1', price: String(x.price==null?'':x.price) }; }); } catch(e){} var _have = {}; le.forEach(function(rw){ _have[String(rw.client||'').trim().toLowerCase()] = 1; }); var _miss = _tpl.filter(function(rw){ return rw.client && !_have[String(rw.client||'').trim().toLowerCase()]; }); expRows = [...le, ..._miss, { client: '', goods: '', qty: '', price: '' }]; }
         }
@@ -5267,6 +5278,17 @@ class Component extends DCLogic {
                 const nm = String((rw && rw.client) || '').trim().toLowerCase();
                 const rs = String((rw && rw.goods) || '').trim().toLowerCase();
                 return !(_legacyNauliCache[nm] && rs.indexOf('nauli') > -1);
+              });
+              const _canonicalNauliCacheDedupe = { 'ismail issa':1, 'hassan mwesiumo':1, 'ismar salim hussein (suma)':1, 'steven mkope':1, 'fadhili ally':1, 'emanuel w. sese (ima)':1, 'sedekia johnson laurent':1, 'henry charles kwedi':1, 'shaibu frank malekela':1 };
+              const _seenCanonicalNauliCache = {};
+              patch.qsExpenses = patch.qsExpenses.filter(function (rw) {
+                const nm = String((rw && rw.client) || '').trim().toLowerCase();
+                const rs = String((rw && rw.goods) || '').trim().toLowerCase();
+                if (_canonicalNauliCacheDedupe[nm] && rs.indexOf('nauli') > -1) {
+                  if (_seenCanonicalNauliCache[nm]) return false;
+                  _seenCanonicalNauliCache[nm] = 1;
+                }
+                return true;
               });
             }
           }
@@ -6305,7 +6327,10 @@ class Component extends DCLogic {
     if (!name || !reason || num(r.qty) <= 0 || num(r.price) <= 0) return;
     const iso = this.state.qsDateISO || this.qsTodayISO();
     const amount = num(r.qty) * num(r.price);
-    const key = (r._eid) || ('EXP-' + iso.replace(/-/g, '') + '-' + Date.now() + '-' + i);
+    const _canonicalNauliStableId = { 'ismail issa':1, 'hassan mwesiumo':1, 'ismar salim hussein (suma)':1, 'steven mkope':1, 'fadhili ally':1, 'emanuel w. sese (ima)':1, 'sedekia johnson laurent':1, 'henry charles kwedi':1, 'shaibu frank malekela':1 };
+    const _isCanonicalNauli = !!(_canonicalNauliStableId[String(name || '').trim().toLowerCase()] && String(reason || '').trim().toLowerCase().indexOf('nauli') > -1);
+    const _stableNauliSlug = String(name || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    const key = (r._eid) || (_isCanonicalNauli ? ('EXP-' + iso.replace(/-/g, '') + '-NAULI-' + _stableNauliSlug) : ('EXP-' + iso.replace(/-/g, '') + '-' + Date.now() + '-' + i));
     if (!r._eid) this.updateQsExpense(i, '_eid', key);
     const signature = name + '|' + reason + '|' + r.qty + '|' + r.price + '|' + (r.payMode || 'Cash');
     const done = this.state.qsExpSyncedIds || {};
@@ -6451,10 +6476,21 @@ class Component extends DCLogic {
     const loaded = store[newISO];
     if (loaded) {
       const _legacyNauliStore = { stive:1, kwedy:1, sedekia:1, imma:1, hasan:1, ismo:1, suma:1, fadhil:1, shaibu:1 };
-      const _cleanStoredExpenses = (Array.isArray(loaded.expenses) ? loaded.expenses : []).filter(function (rw) {
+      let _cleanStoredExpenses = (Array.isArray(loaded.expenses) ? loaded.expenses : []).filter(function (rw) {
         const nm = String((rw && rw.client) || '').trim().toLowerCase();
         const rs = String((rw && rw.goods) || '').trim().toLowerCase();
         return !(_legacyNauliStore[nm] && rs.indexOf('nauli') > -1);
+      });
+      const _canonicalNauliStoreDedupe = { 'ismail issa':1, 'hassan mwesiumo':1, 'ismar salim hussein (suma)':1, 'steven mkope':1, 'fadhili ally':1, 'emanuel w. sese (ima)':1, 'sedekia johnson laurent':1, 'henry charles kwedi':1, 'shaibu frank malekela':1 };
+      const _seenCanonicalNauliStore = {};
+      _cleanStoredExpenses = _cleanStoredExpenses.filter(function (rw) {
+        const nm = String((rw && rw.client) || '').trim().toLowerCase();
+        const rs = String((rw && rw.goods) || '').trim().toLowerCase();
+        if (_canonicalNauliStoreDedupe[nm] && rs.indexOf('nauli') > -1) {
+          if (_seenCanonicalNauliStore[nm]) return false;
+          _seenCanonicalNauliStore[nm] = 1;
+        }
+        return true;
       });
       return { qsDateISO: newISO, qsStore: store, qsSales: loaded.sales, qsExpenses: _cleanStoredExpenses };
     }
