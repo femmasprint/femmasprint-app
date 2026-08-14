@@ -1,43 +1,41 @@
-/* FEMMAS PRINT production UI fixes */
+/* FEMMAS PRINT production UI fixes — stable Quick Sale version */
 (function () {
   'use strict';
 
+  var CANONICAL_NAMES = {
+    'ismail issa':1,
+    'hassan mwesiumo':1,
+    'ismar salim hussein (suma)':1,
+    'steven mkope':1,
+    'fadhili ally':1,
+    'emanuel w. sese (ima)':1,
+    'sedekia johnson laurent':1,
+    'henry charles kwedi':1,
+    'shaibu frank malekela':1
+  };
   var LEGACY = { stive:1, kwedy:1, sedekia:1, imma:1, hasan:1, ismo:1, suma:1, fadhil:1, shaibu:1 };
-  var CANONICAL = [
-    { name:'Ismail Issa', price:'7000' },
-    { name:'Hassan Mwesiumo', price:'7000' },
-    { name:'Ismar Salim Hussein (Suma)', price:'7000' },
-    { name:'Steven Mkope', price:'5000' },
-    { name:'Fadhili Ally', price:'7000' },
-    { name:'Emanuel W. Sese (Ima)', price:'7000' },
-    { name:'Sedekia Johnson Laurent', price:'7000' },
-    { name:'Henry Charles Kwedi', price:'7000' },
-    { name:'Shaibu Frank Malekela', price:'7000' }
-  ];
-  var CANONICAL_NAMES = {};
-  CANONICAL.forEach(function (x) { CANONICAL_NAMES[x.name.toLowerCase()] = 1; });
 
-  function rowName(r) {
+  function nameOf(r) {
     return String((r && (r.client || r.name || r.Name)) || '').trim().toLowerCase();
   }
-  function rowReason(r) {
+  function reasonOf(r) {
     return String((r && (r.goods || r.reason || r.Reason || r.item)) || '').trim().toLowerCase();
   }
   function isNauli(r) {
-    return rowReason(r).indexOf('nauli') !== -1;
+    return reasonOf(r).indexOf('nauli') !== -1;
   }
 
-  function sanitizeExpenses(rows) {
+  function sanitizeRows(rows) {
     if (!Array.isArray(rows)) return { rows:rows, changed:false };
     var seen = {};
-    var changed = false;
     var out = [];
+    var changed = false;
 
     for (var i = 0; i < rows.length; i++) {
       var r = rows[i];
       if (!r || typeof r !== 'object') { out.push(r); continue; }
 
-      var nm = rowName(r);
+      var nm = nameOf(r);
       if (LEGACY[nm] && isNauli(r)) { changed = true; continue; }
 
       var pm = String(r.payMode || r.PayMode || '').trim().toLowerCase();
@@ -51,89 +49,66 @@
         if (seen[nm]) { changed = true; continue; }
         seen[nm] = 1;
       }
-
       out.push(r);
     }
+
     return { rows:out, changed:changed || out.length !== rows.length };
   }
 
-  function sanitizeQuickSaleStorage() {
-    var changed = false;
-
+  function repairStorageOnce() {
+    var marker = 'fp_qs_stable_repair_20260814_v1';
     try {
-      var tplRaw = localStorage.getItem('fp_daily_exp_tpl');
-      var tpl = tplRaw ? JSON.parse(tplRaw) : [];
-      var tplNames = {};
-      if (Array.isArray(tpl)) {
-        tpl.forEach(function (x) { tplNames[String((x && x.name) || '').trim().toLowerCase()] = 1; });
-      }
-      var templateWrong = !Array.isArray(tpl) || tpl.length !== CANONICAL.length || CANONICAL.some(function (x) {
-        return !tplNames[x.name.toLowerCase()];
-      });
-      if (templateWrong) {
-        localStorage.setItem('fp_daily_exp_tpl', JSON.stringify(CANONICAL));
-        changed = true;
-      }
-    } catch (e) {
-      try { localStorage.setItem('fp_daily_exp_tpl', JSON.stringify(CANONICAL)); changed = true; } catch (e2) {}
-    }
-
-    function cleanKey(key) {
-      try {
-        var raw = localStorage.getItem(key);
-        if (!raw) return;
-        var c = JSON.parse(raw);
-        if (!c || typeof c !== 'object') return;
-        var localChanged = false;
-
-        if (Array.isArray(c.qsExpenses)) {
-          var a = sanitizeExpenses(c.qsExpenses);
-          if (a.changed) { c.qsExpenses = a.rows; localChanged = true; }
-        }
-
-        if (c.qsStore && typeof c.qsStore === 'object') {
-          Object.keys(c.qsStore).forEach(function (d) {
-            var day = c.qsStore[d];
-            if (!day || typeof day !== 'object' || !Array.isArray(day.expenses)) return;
-            var b = sanitizeExpenses(day.expenses);
-            if (b.changed) { day.expenses = b.rows; localChanged = true; }
-          });
-        }
-
-        if (localChanged) {
-          localStorage.setItem(key, JSON.stringify(c));
-          changed = true;
-        }
-      } catch (e) {}
-    }
-
-    cleanKey('fp_local_cache');
-    try {
-      for (var i = 0; i < localStorage.length; i++) {
-        var key = localStorage.key(i) || '';
-        if (key.indexOf('fp_local_cache_') === 0) cleanKey(key);
-      }
+      if (sessionStorage.getItem(marker) === '1') return;
+      sessionStorage.setItem(marker, '1');
     } catch (e) {}
 
-    if (changed) {
+    setTimeout(function () {
+      var changed = false;
+
+      function cleanKey(key) {
+        try {
+          var raw = localStorage.getItem(key);
+          if (!raw) return;
+          var c = JSON.parse(raw);
+          if (!c || typeof c !== 'object') return;
+          var localChanged = false;
+
+          if (Array.isArray(c.qsExpenses)) {
+            var a = sanitizeRows(c.qsExpenses);
+            if (a.changed) { c.qsExpenses = a.rows; localChanged = true; }
+          }
+
+          if (c.qsStore && typeof c.qsStore === 'object') {
+            Object.keys(c.qsStore).forEach(function (d) {
+              var day = c.qsStore[d];
+              if (!day || typeof day !== 'object' || !Array.isArray(day.expenses)) return;
+              var b = sanitizeRows(day.expenses);
+              if (b.changed) { day.expenses = b.rows; localChanged = true; }
+            });
+          }
+
+          if (localChanged) {
+            localStorage.setItem(key, JSON.stringify(c));
+            changed = true;
+          }
+        } catch (e) {}
+      }
+
+      cleanKey('fp_local_cache');
       try {
-        if (sessionStorage.getItem('fp_qs_dedupe_reload_v1') !== '1') {
-          sessionStorage.setItem('fp_qs_dedupe_reload_v1', '1');
-          setTimeout(function () { location.reload(); }, 80);
+        for (var i = 0; i < localStorage.length; i++) {
+          var key = localStorage.key(i) || '';
+          if (key.indexOf('fp_local_cache_') === 0) cleanKey(key);
         }
       } catch (e) {}
-    } else {
-      try { sessionStorage.removeItem('fp_qs_dedupe_reload_v1'); } catch (e) {}
-    }
-    return changed;
-  }
 
-  sanitizeQuickSaleStorage();
+      if (changed) setTimeout(function () { location.reload(); }, 120);
+    }, 1200);
+  }
 
   var style = document.createElement('style');
   style.id = 'fpProductionUiFixes';
   style.textContent =
-    '.fp-sec{opacity:.62;font-size:11px!important;letter-spacing:.06em;text-transform:uppercase;font-weight:700;padding-top:9px!important;pointer-events:none;cursor:default;display:block!important}' +
     '#fpRailBtn{display:none!important}' +
     '[data-screen-label="Quick Sale"] tr.fp-qs-empty-row td:nth-child(7)>div:first-child{visibility:hidden!important}' +
     '[data-screen-label="Quick Sale"] tr.fp-qs-exp-empty-row td:nth-child(7)>div:first-child{visibility:hidden!important}' +
@@ -144,7 +119,6 @@
       '[data-screen-label="Quick Sale"] table.fp-qs-sales-fit td{overflow:hidden}' +
       '[data-screen-label="Quick Sale"] table.fp-qs-sales-fit td:nth-child(2),[data-screen-label="Quick Sale"] table.fp-qs-sales-fit td:nth-child(3),[data-screen-label="Quick Sale"] table.fp-qs-sales-fit td:nth-child(7){overflow:visible!important}' +
       '[data-screen-label="Quick Sale"] table.fp-qs-sales-fit input{width:100%!important;min-width:0!important;box-sizing:border-box!important;padding-left:5px!important;padding-right:5px!important;font-size:10.5px!important}' +
-      '[data-screen-label="Quick Sale"] table.fp-qs-sales-fit th{padding-left:4px!important;padding-right:4px!important;white-space:normal!important;line-height:1.1!important}' +
       '[data-screen-label="Quick Sale"] table.fp-qs-sales-fit td:nth-child(1),[data-screen-label="Quick Sale"] table.fp-qs-sales-fit th:nth-child(1){width:4%!important}' +
       '[data-screen-label="Quick Sale"] table.fp-qs-sales-fit td:nth-child(2),[data-screen-label="Quick Sale"] table.fp-qs-sales-fit th:nth-child(2){width:14%!important}' +
       '[data-screen-label="Quick Sale"] table.fp-qs-sales-fit td:nth-child(3),[data-screen-label="Quick Sale"] table.fp-qs-sales-fit th:nth-child(3){width:18%!important}' +
@@ -351,6 +325,7 @@
 
   function boot() {
     applyQuickSaleUi();
+    repairStorageOnce();
 
     document.addEventListener('click', function (e) {
       if (e.target && e.target.closest && e.target.closest('#fpQsPaymentPortal')) return;
@@ -377,10 +352,10 @@
       }).observe(document.body, { childList:true, subtree:true, attributes:true, attributeFilter:['class'] });
     }
 
+    /* UI-only refresh. No periodic localStorage mutation here. */
     setInterval(function () {
       disableRail();
       applyQuickSaleUi();
-      sanitizeQuickSaleStorage();
     }, 2000);
   }
 
