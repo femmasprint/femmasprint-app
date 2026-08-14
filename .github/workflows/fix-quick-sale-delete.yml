@@ -1,0 +1,109 @@
+name: Fix Quick Sale durable delete
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/fix-quick-sale-delete.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Make deleted Quick Sale rows stay deleted
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+
+          old_remove = "  removeQsSale = (i) => window.confirm('Una uhakika unataka kufuta safu hii?') && this.setState(s => ({ qsSales: s.qsSales.filter((_, j) => j !== i) }));"
+
+          if 'fp_qs_deleted_sales' not in s:
+              if old_remove not in s:
+                  raise SystemExit('removeQsSale anchor not found')
+
+              new_remove = """  qsDeletedSales_ = () => {
+    try {
+      const x = JSON.parse(localStorage.getItem('fp_qs_deleted_sales') || '{}');
+      return x && typeof x === 'object' ? x : {};
+    } catch (e) { return {}; }
+  };
+  qsSaleDeleteKey_ = (r, iso) => {
+    if (!r) return '';
+    const sid = String(r._sid || '').trim();
+    if (sid) return 'id:' + sid;
+    const d = String(iso || this.state.qsDateISO || this.qsTodayISO() || '');
+    return 'sig:' + [d, r.client || '', r.goods || '', r.qty || '', r.price || '', r.payMode || 'Cash', r.paid || ''].map(v => String(v).trim().toLowerCase()).join('|');
+  };
+  qsIsSaleDeleted_ = (r, iso) => {
+    const k = this.qsSaleDeleteKey_(r, iso);
+    if (!k) return false;
+    return !!this.qsDeletedSales_()[k];
+  };
+  qsRememberDeletedSale_ = (r, iso) => {
+    const k = this.qsSaleDeleteKey_(r, iso);
+    if (!k) return;
+    try {
+      const m = this.qsDeletedSales_();
+      m[k] = { deletedAt: new Date().toISOString(), saleId: String((r && r._sid) || '') };
+      localStorage.setItem('fp_qs_deleted_sales', JSON.stringify(m));
+    } catch (e) {}
+  };
+  removeQsSale = (i) => {
+    if (!window.confirm('Una uhakika unataka kufuta safu hii?')) return;
+    const row = (this.state.qsSales || [])[i];
+    const iso = this.state.qsDateISO || this.qsTodayISO();
+    if (row && (String(row.client || '').trim() || String(row.goods || '').trim() || String(row._sid || '').trim())) this.qsRememberDeletedSale_(row, iso);
+    this.setState(s => {
+      const synced = { ...(s.qsSyncedIds || {}) };
+      if (row && row._sid) delete synced[row._sid];
+      return { qsSales: s.qsSales.filter((_, j) => j !== i), qsSyncedIds: synced };
+    }, () => {
+      try { this.saveLocalCache_ && this.saveLocalCache_(); } catch (e) {}
+      this.showToast('✓ Sale imefutwa na haitarudi kwenye sync');
+    });
+  };"""
+              s = s.replace(old_remove, new_remove, 1)
+
+          # Cloud sync used to restore a row after it was removed from React state.
+          if '_fpDeletedSalesFilter' not in s:
+              pat = re.compile(r"(        const loaded = r\.sales\.map\(s => \(\{ client: s\.Client \|\| '', goods: s\.Goods \|\| '', qty: String\(s\.Qty \|\| ''\), price: String\(s\.UnitPrice \|\| ''\), paid: \(function\(\)\{.*?\}\)\(\), payMode: s\.PayMode \|\| 'Cash', _sid: s\.SaleID \|\| '' \}\)\);)")
+              m = pat.search(s)
+              if not m:
+                  raise SystemExit('cloud sales loaded anchor not found')
+              original = m.group(1).replace('        const loaded =', '        let loaded =', 1)
+              extra = """
+        // _fpDeletedSalesFilter: never resurrect a sale the user explicitly deleted.
+        try { loaded = loaded.filter(rw => !this.qsIsSaleDeleted_(rw, iso)); } catch (e) {}"""
+              s = s[:m.start()] + original + extra + s[m.end():]
+
+          required = ['fp_qs_deleted_sales', '_fpDeletedSalesFilter', "Sale imefutwa na haitarudi kwenye sync"]
+          missing = [x for x in required if x not in s]
+          if missing:
+              raise SystemExit('validation failed: ' + ', '.join(missing))
+
+          p.write_text(s, encoding='utf-8')
+          print('Quick Sale durable delete patch applied')
+          PY
+
+      - name: Commit source fix
+        run: |
+          if git diff --quiet -- index.html; then
+            echo "No changes needed"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "make Quick Sale sale deletion durable"
+          git push
