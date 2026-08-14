@@ -1,4 +1,4 @@
-name: Clean short Nauli names
+name: Fix Quick Sale worker duplicates
 
 on:
   push:
@@ -16,7 +16,8 @@ jobs:
       - uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Permanently remove legacy short Nauli rows
+
+      - name: Deduplicate canonical Nauli rows in app state
         run: |
           python3 - <<'PY'
           from pathlib import Path
@@ -25,93 +26,99 @@ jobs:
           p = Path('index.html')
           s = p.read_text(encoding='utf-8')
 
-          daily = "\n".join([
-              "  fpDailyExpTpl_ = () => {",
-              "    const full = [",
-              "      { name: 'Ismail Issa', price: '7000' },",
-              "      { name: 'Hassan Mwesiumo', price: '7000' },",
-              "      { name: 'Ismar Salim Hussein (Suma)', price: '7000' },",
-              "      { name: 'Steven Mkope', price: '5000' },",
-              "      { name: 'Fadhili Ally', price: '7000' },",
-              "      { name: 'Emanuel W. Sese (Ima)', price: '7000' },",
-              "      { name: 'Sedekia Johnson Laurent', price: '7000' },",
-              "      { name: 'Henry Charles Kwedi', price: '7000' },",
-              "      { name: 'Shaibu Frank Malekela', price: '7000' }",
-              "    ];",
-              "    try { localStorage.setItem('fp_daily_exp_tpl', JSON.stringify(full)); } catch (e) {}",
-              "    return full;",
-              "  };",
-          ])
-          s, n = re.subn(r"  fpDailyExpTpl_ = \(\) => \{\n.*?\n  \};", daily, s, count=1, flags=re.S)
-          if n != 1:
-              raise SystemExit('fpDailyExpTpl_ not found')
+          canonical = "{ 'ismail issa':1, 'hassan mwesiumo':1, 'ismar salim hussein (suma)':1, 'steven mkope':1, 'fadhili ally':1, 'emanuel w. sese (ima)':1, 'sedekia johnson laurent':1, 'henry charles kwedi':1, 'shaibu frank malekela':1 }"
 
-          save_tpl = "\n".join([
-              "  fpSaveDailyExpTpl_ = () => {",
-              "    try { localStorage.setItem('fp_daily_exp_tpl', JSON.stringify(this.fpDailyExpTpl_() || [])); } catch (e) {}",
-              "  };",
-          ])
-          s, n = re.subn(r"  fpSaveDailyExpTpl_ = \(\) => \{\n.*?\n  \};", save_tpl, s, count=1, flags=re.S)
-          if n != 1:
-              raise SystemExit('fpSaveDailyExpTpl_ not found')
-
-          if '_legacyNauliCloud' not in s:
-              m = re.search(r"^          const le = r\.expenses\.map\(x => \{.*?return row; \}\);$", s, flags=re.M)
-              if not m:
-                  raise SystemExit('cloud expense line not found')
-              cloud = m.group(0).replace('const le =', 'let le =', 1) + "\n" + "\n".join([
-                  "          const _legacyNauliCloud = { stive:1, kwedy:1, sedekia:1, imma:1, hasan:1, ismo:1, suma:1, fadhil:1, shaibu:1 };",
+          # 1) Cloud pull: keep only one canonical Nauli row per worker, regardless of ExpenseID/time.
+          if '_canonicalNauliCloudDedupe' not in s:
+              anchor = "          le.forEach(rw => { if (rw._eid) expDone[rw._eid] = rw.client + '|' + rw.goods + '|' + rw.qty + '|' + rw.price + '|' + (rw.payMode || 'Cash'); });"
+              if anchor not in s:
+                  raise SystemExit('cloud dedupe anchor not found')
+              block = "\n".join([
+                  "          const _canonicalNauliCloudDedupe = " + canonical + ";",
+                  "          const _seenCanonicalNauliCloud = {};",
                   "          le = le.filter(function (rw) {",
                   "            const nm = String((rw && rw.client) || '').trim().toLowerCase();",
                   "            const rs = String((rw && rw.goods) || '').trim().toLowerCase();",
-                  "            return !(_legacyNauliCloud[nm] && rs.indexOf('nauli') > -1);",
+                  "            if (_canonicalNauliCloudDedupe[nm] && rs.indexOf('nauli') > -1) {",
+                  "              if (_seenCanonicalNauliCloud[nm]) return false;",
+                  "              _seenCanonicalNauliCloud[nm] = 1;",
+                  "            }",
+                  "            return true;",
                   "          });",
+                  anchor,
               ])
-              s = s[:m.start()] + cloud + s[m.end():]
+              s = s.replace(anchor, block, 1)
 
-          old_cache = "            ['qsSales', 'qsExpenses', 'qsStore', 'qsDateISO'].forEach(k => { if (c[k] != null) patch[k] = c[k]; });"
-          if '_legacyNauliCache' not in s:
-              if old_cache not in s:
-                  raise SystemExit('local cache restore line not found')
-              new_cache = "\n".join([
-                  "            ['qsSales', 'qsStore', 'qsDateISO'].forEach(k => { if (c[k] != null) patch[k] = c[k]; });",
-                  "            if (c.qsExpenses != null) {",
-                  "              const _legacyNauliCache = { stive:1, kwedy:1, sedekia:1, imma:1, hasan:1, ismo:1, suma:1, fadhil:1, shaibu:1 };",
-                  "              patch.qsExpenses = (Array.isArray(c.qsExpenses) ? c.qsExpenses : []).filter(function (rw) {",
+          # 2) Local cache restore: also dedupe canonical Nauli rows before they enter React state.
+          if '_canonicalNauliCacheDedupe' not in s:
+              pattern = re.compile(r"(              patch\.qsExpenses = \(Array\.isArray\(c\.qsExpenses\) \? c\.qsExpenses : \[\]\)\.filter\(function \(rw\) \{\n                const nm = String\(\(rw && rw\.client\) \|\| ''\)\.trim\(\)\.toLowerCase\(\);\n                const rs = String\(\(rw && rw\.goods\) \|\| ''\)\.trim\(\)\.toLowerCase\(\);\n                return !\(_legacyNauliCache\[nm\] && rs\.indexOf\('nauli'\) > -1\);\n              \}\);)")
+              m = pattern.search(s)
+              if not m:
+                  raise SystemExit('cache restore block not found')
+              extra = "\n" + "\n".join([
+                  "              const _canonicalNauliCacheDedupe = " + canonical + ";",
+                  "              const _seenCanonicalNauliCache = {};",
+                  "              patch.qsExpenses = patch.qsExpenses.filter(function (rw) {",
                   "                const nm = String((rw && rw.client) || '').trim().toLowerCase();",
                   "                const rs = String((rw && rw.goods) || '').trim().toLowerCase();",
-                  "                return !(_legacyNauliCache[nm] && rs.indexOf('nauli') > -1);",
+                  "                if (_canonicalNauliCacheDedupe[nm] && rs.indexOf('nauli') > -1) {",
+                  "                  if (_seenCanonicalNauliCache[nm]) return false;",
+                  "                  _seenCanonicalNauliCache[nm] = 1;",
+                  "                }",
+                  "                return true;",
                   "              });",
-                  "            }",
               ])
-              s = s.replace(old_cache, new_cache, 1)
+              s = s[:m.end()] + extra + s[m.end():]
 
-          old_store = "    if (loaded) return { qsDateISO: newISO, qsStore: store, qsSales: loaded.sales, qsExpenses: loaded.expenses };"
-          if '_legacyNauliStore' not in s:
-              if old_store not in s:
-                  raise SystemExit('stored-date expense line not found')
-              new_store = "\n".join([
-                  "    if (loaded) {",
-                  "      const _legacyNauliStore = { stive:1, kwedy:1, sedekia:1, imma:1, hasan:1, ismo:1, suma:1, fadhil:1, shaibu:1 };",
+          # 3) Switching Quick Sale dates: dedupe stored rows too.
+          if '_canonicalNauliStoreDedupe' not in s:
+              s = s.replace(
                   "      const _cleanStoredExpenses = (Array.isArray(loaded.expenses) ? loaded.expenses : []).filter(function (rw) {",
+                  "      let _cleanStoredExpenses = (Array.isArray(loaded.expenses) ? loaded.expenses : []).filter(function (rw) {",
+                  1,
+              )
+              anchor = "      return { qsDateISO: newISO, qsStore: store, qsSales: loaded.sales, qsExpenses: _cleanStoredExpenses };"
+              if anchor not in s:
+                  raise SystemExit('stored date return anchor not found')
+              block = "\n".join([
+                  "      const _canonicalNauliStoreDedupe = " + canonical + ";",
+                  "      const _seenCanonicalNauliStore = {};",
+                  "      _cleanStoredExpenses = _cleanStoredExpenses.filter(function (rw) {",
                   "        const nm = String((rw && rw.client) || '').trim().toLowerCase();",
                   "        const rs = String((rw && rw.goods) || '').trim().toLowerCase();",
-                  "        return !(_legacyNauliStore[nm] && rs.indexOf('nauli') > -1);",
+                  "        if (_canonicalNauliStoreDedupe[nm] && rs.indexOf('nauli') > -1) {",
+                  "          if (_seenCanonicalNauliStore[nm]) return false;",
+                  "          _seenCanonicalNauliStore[nm] = 1;",
+                  "        }",
+                  "        return true;",
                   "      });",
-                  "      return { qsDateISO: newISO, qsStore: store, qsSales: loaded.sales, qsExpenses: _cleanStoredExpenses };",
-                  "    }",
+                  anchor,
               ])
-              s = s.replace(old_store, new_store, 1)
+              s = s.replace(anchor, block, 1)
 
-          required = ['Ismail Issa', 'Shaibu Frank Malekela', '_legacyNauliCloud', '_legacyNauliCache', '_legacyNauliStore']
+          # 4) Fresh template rows get a stable per-day ExpenseID so repeated sessions do not create new worker rows.
+          old_key = "    const key = (r._eid) || ('EXP-' + iso.replace(/-/g, '') + '-' + Date.now() + '-' + i);"
+          if '_canonicalNauliStableId' not in s:
+              if old_key not in s:
+                  raise SystemExit('expense id anchor not found')
+              new_key = "\n".join([
+                  "    const _canonicalNauliStableId = " + canonical + ";",
+                  "    const _isCanonicalNauli = !!(_canonicalNauliStableId[String(name || '').trim().toLowerCase()] && String(reason || '').trim().toLowerCase().indexOf('nauli') > -1);",
+                  "    const _stableNauliSlug = String(name || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');",
+                  "    const key = (r._eid) || (_isCanonicalNauli ? ('EXP-' + iso.replace(/-/g, '') + '-NAULI-' + _stableNauliSlug) : ('EXP-' + iso.replace(/-/g, '') + '-' + Date.now() + '-' + i));",
+              ])
+              s = s.replace(old_key, new_key, 1)
+
+          required = ['_canonicalNauliCloudDedupe', '_canonicalNauliCacheDedupe', '_canonicalNauliStoreDedupe', '_canonicalNauliStableId']
           missing = [x for x in required if x not in s]
           if missing:
               raise SystemExit('validation failed: ' + ', '.join(missing))
 
           p.write_text(s, encoding='utf-8')
-          print('Permanent Nauli cleanup applied')
+          print('Quick Sale worker dedupe applied at source')
           PY
-      - name: Commit permanent fix
+
+      - name: Commit source fix
         run: |
           if git diff --quiet -- index.html; then
             echo "No changes needed"
@@ -120,5 +127,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add index.html
-          git commit -m "permanently remove duplicate short Nauli rows"
+          git commit -m "fix Quick Sale duplicate worker Nauli rows at source"
           git push
