@@ -1,15 +1,9 @@
-/* FEMMAS PRINT production UI fixes.
- * 1) Keep the desktop sidebar expanded.
- * 2) Keep Quick Sale payment menus above the table.
- * 3) Fit the Quick Sale Sales table inside its panel on desktop.
- * 4) Hide Payment Mode on blank Sales and Expense entry rows.
- * 5) Normalize legacy "Mobile Money" Quick Sale expenses to "Simu" and display "Simu Pay" consistently.
- */
+/* FEMMAS PRINT production UI fixes */
 (function () {
   'use strict';
 
-  var LEGACY_NAULI = { stive:1, kwedy:1, sedekia:1, imma:1, hasan:1, ismo:1, suma:1, fadhil:1, shaibu:1 };
-  var CANONICAL_NAULI = [
+  var LEGACY = { stive:1, kwedy:1, sedekia:1, imma:1, hasan:1, ismo:1, suma:1, fadhil:1, shaibu:1 };
+  var CANONICAL = [
     { name:'Ismail Issa', price:'7000' },
     { name:'Hassan Mwesiumo', price:'7000' },
     { name:'Ismar Salim Hussein (Suma)', price:'7000' },
@@ -20,58 +14,71 @@
     { name:'Henry Charles Kwedi', price:'7000' },
     { name:'Shaibu Frank Malekela', price:'7000' }
   ];
+  var CANONICAL_NAMES = {};
+  CANONICAL.forEach(function (x) { CANONICAL_NAMES[x.name.toLowerCase()] = 1; });
 
-  function isLegacyNauli(r) {
-    if (!r) return false;
-    var nm = String(r.client || r.name || '').trim().toLowerCase();
-    var rs = String(r.goods || r.reason || '').trim().toLowerCase();
-    return !!(LEGACY_NAULI[nm] && rs.indexOf('nauli') > -1);
+  function rowName(r) {
+    return String((r && (r.client || r.name || r.Name)) || '').trim().toLowerCase();
+  }
+  function rowReason(r) {
+    return String((r && (r.goods || r.reason || r.Reason || r.item)) || '').trim().toLowerCase();
+  }
+  function isNauli(r) {
+    return rowReason(r).indexOf('nauli') !== -1;
   }
 
-  function cleanLegacyRows(rows) {
+  function sanitizeExpenses(rows) {
     if (!Array.isArray(rows)) return { rows:rows, changed:false };
-    var out = rows.filter(function (r) { return !isLegacyNauli(r); });
-    return { rows:out, changed:out.length !== rows.length };
-  }
-
-  function normalizeExpenseModes(rows) {
-    if (!Array.isArray(rows)) return false;
+    var seen = {};
     var changed = false;
+    var out = [];
+
     for (var i = 0; i < rows.length; i++) {
       var r = rows[i];
-      if (!r || typeof r !== 'object') continue;
-      var pm = String(r.payMode || '').trim().toLowerCase();
+      if (!r || typeof r !== 'object') { out.push(r); continue; }
+
+      var nm = rowName(r);
+      if (LEGACY[nm] && isNauli(r)) { changed = true; continue; }
+
+      var pm = String(r.payMode || r.PayMode || '').trim().toLowerCase();
       if (pm === 'mobile money' || pm === 'simu pay') {
-        r.payMode = 'Simu';
+        if ('payMode' in r || !('PayMode' in r)) r.payMode = 'Simu';
+        else r.PayMode = 'Simu';
         changed = true;
       }
+
+      if (CANONICAL_NAMES[nm] && isNauli(r)) {
+        if (seen[nm]) { changed = true; continue; }
+        seen[nm] = 1;
+      }
+
+      out.push(r);
     }
-    return changed;
+    return { rows:out, changed:changed || out.length !== rows.length };
   }
 
-  function migrateQuickSaleCache() {
+  function sanitizeQuickSaleStorage() {
     var changed = false;
 
     try {
-      var rawTpl = localStorage.getItem('fp_daily_exp_tpl');
-      var tpl = rawTpl ? JSON.parse(rawTpl) : [];
-      var filtered = Array.isArray(tpl) ? tpl.filter(function (x) {
-        return !LEGACY_NAULI[String((x && x.name) || '').trim().toLowerCase()];
-      }) : [];
-      var needCanonical = filtered.length !== CANONICAL_NAULI.length || CANONICAL_NAULI.some(function (x) {
-        return !filtered.some(function (y) {
-          return String((y && y.name) || '').trim().toLowerCase() === x.name.toLowerCase();
-        });
+      var tplRaw = localStorage.getItem('fp_daily_exp_tpl');
+      var tpl = tplRaw ? JSON.parse(tplRaw) : [];
+      var tplNames = {};
+      if (Array.isArray(tpl)) {
+        tpl.forEach(function (x) { tplNames[String((x && x.name) || '').trim().toLowerCase()] = 1; });
+      }
+      var templateWrong = !Array.isArray(tpl) || tpl.length !== CANONICAL.length || CANONICAL.some(function (x) {
+        return !tplNames[x.name.toLowerCase()];
       });
-      if (needCanonical || (Array.isArray(tpl) && filtered.length !== tpl.length)) {
-        localStorage.setItem('fp_daily_exp_tpl', JSON.stringify(CANONICAL_NAULI));
+      if (templateWrong) {
+        localStorage.setItem('fp_daily_exp_tpl', JSON.stringify(CANONICAL));
         changed = true;
       }
     } catch (e) {
-      try { localStorage.setItem('fp_daily_exp_tpl', JSON.stringify(CANONICAL_NAULI)); changed = true; } catch (e2) {}
+      try { localStorage.setItem('fp_daily_exp_tpl', JSON.stringify(CANONICAL)); changed = true; } catch (e2) {}
     }
 
-    function cleanCache(key) {
+    function cleanKey(key) {
       try {
         var raw = localStorage.getItem(key);
         if (!raw) return;
@@ -80,20 +87,16 @@
         var localChanged = false;
 
         if (Array.isArray(c.qsExpenses)) {
-          var a = cleanLegacyRows(c.qsExpenses);
+          var a = sanitizeExpenses(c.qsExpenses);
           if (a.changed) { c.qsExpenses = a.rows; localChanged = true; }
-          if (normalizeExpenseModes(c.qsExpenses)) localChanged = true;
         }
 
         if (c.qsStore && typeof c.qsStore === 'object') {
           Object.keys(c.qsStore).forEach(function (d) {
             var day = c.qsStore[d];
-            if (!day || typeof day !== 'object') return;
-            if (Array.isArray(day.expenses)) {
-              var b = cleanLegacyRows(day.expenses);
-              if (b.changed) { day.expenses = b.rows; localChanged = true; }
-              if (normalizeExpenseModes(day.expenses)) localChanged = true;
-            }
+            if (!day || typeof day !== 'object' || !Array.isArray(day.expenses)) return;
+            var b = sanitizeExpenses(day.expenses);
+            if (b.changed) { day.expenses = b.rows; localChanged = true; }
           });
         }
 
@@ -104,69 +107,56 @@
       } catch (e) {}
     }
 
-    cleanCache('fp_local_cache');
+    cleanKey('fp_local_cache');
     try {
       for (var i = 0; i < localStorage.length; i++) {
         var key = localStorage.key(i) || '';
-        if (key.indexOf('fp_local_cache_') === 0) cleanCache(key);
+        if (key.indexOf('fp_local_cache_') === 0) cleanKey(key);
       }
     } catch (e) {}
 
     if (changed) {
       try {
-        if (sessionStorage.getItem('fp_qs_cache_migration_v2') !== '1') {
-          sessionStorage.setItem('fp_qs_cache_migration_v2', '1');
-          setTimeout(function () { location.reload(); }, 60);
+        if (sessionStorage.getItem('fp_qs_dedupe_reload_v1') !== '1') {
+          sessionStorage.setItem('fp_qs_dedupe_reload_v1', '1');
+          setTimeout(function () { location.reload(); }, 80);
         }
       } catch (e) {}
     } else {
-      try { sessionStorage.removeItem('fp_qs_cache_migration_v2'); } catch (e) {}
+      try { sessionStorage.removeItem('fp_qs_dedupe_reload_v1'); } catch (e) {}
     }
+    return changed;
   }
 
-  migrateQuickSaleCache();
+  sanitizeQuickSaleStorage();
 
-  /* ---------- styles ---------- */
-  try {
-    var oldStyle = document.getElementById('fpProductionUiFixes');
-    if (oldStyle && oldStyle.parentNode) oldStyle.parentNode.removeChild(oldStyle);
-
-    var style = document.createElement('style');
-    style.id = 'fpProductionUiFixes';
-    style.textContent =
-      '.fp-sec{opacity:.62;font-size:11px!important;letter-spacing:.06em;text-transform:uppercase;font-weight:700;padding-top:9px!important;pointer-events:none;cursor:default;display:block!important}' +
-      'aside .fp-fallicon{display:inline-flex;align-items:center;flex:none;margin-right:2px}' +
-      'aside nav a{display:flex!important;align-items:center;width:100%!important;box-sizing:border-box}' +
-      'aside>nav~*>div>div:nth-of-type(2){display:none!important}' +
-      '#fpRailBtn{display:none!important}' +
-      '[data-screen-label="Quick Sale"] tr.fp-qs-empty-row td:nth-child(7)>div:first-child{visibility:hidden!important}' +
-      '[data-screen-label="Quick Sale"] tr.fp-qs-exp-empty-row td:nth-child(7)>div:first-child{visibility:hidden!important}' +
-      '@media (min-width:1100px){' +
-        '[data-screen-label="Quick Sale"] .fp-qs-sales-scroll{overflow-x:hidden!important;overflow-y:visible!important;max-width:100%!important}' +
-        '[data-screen-label="Quick Sale"] table.fp-qs-sales-fit{width:100%!important;min-width:0!important;max-width:100%!important;table-layout:fixed!important}' +
-        '[data-screen-label="Quick Sale"] table.fp-qs-sales-fit th,[data-screen-label="Quick Sale"] table.fp-qs-sales-fit td{min-width:0!important;max-width:none!important;box-sizing:border-box!important;font-size:10.5px!important}' +
-        '[data-screen-label="Quick Sale"] table.fp-qs-sales-fit td{overflow:hidden}' +
-        '[data-screen-label="Quick Sale"] table.fp-qs-sales-fit td:nth-child(2),[data-screen-label="Quick Sale"] table.fp-qs-sales-fit td:nth-child(3),[data-screen-label="Quick Sale"] table.fp-qs-sales-fit td:nth-child(7){overflow:visible!important}' +
-        '[data-screen-label="Quick Sale"] table.fp-qs-sales-fit input{width:100%!important;min-width:0!important;box-sizing:border-box!important;padding-left:5px!important;padding-right:5px!important;font-size:10.5px!important}' +
-        '[data-screen-label="Quick Sale"] table.fp-qs-sales-fit th{padding-left:4px!important;padding-right:4px!important;white-space:normal!important;line-height:1.1!important}' +
-        '[data-screen-label="Quick Sale"] table.fp-qs-sales-fit td:nth-child(1),[data-screen-label="Quick Sale"] table.fp-qs-sales-fit th:nth-child(1){width:4%!important}' +
-        '[data-screen-label="Quick Sale"] table.fp-qs-sales-fit td:nth-child(2),[data-screen-label="Quick Sale"] table.fp-qs-sales-fit th:nth-child(2){width:14%!important}' +
-        '[data-screen-label="Quick Sale"] table.fp-qs-sales-fit td:nth-child(3),[data-screen-label="Quick Sale"] table.fp-qs-sales-fit th:nth-child(3){width:18%!important}' +
-        '[data-screen-label="Quick Sale"] table.fp-qs-sales-fit td:nth-child(4),[data-screen-label="Quick Sale"] table.fp-qs-sales-fit th:nth-child(4){width:7%!important}' +
-        '[data-screen-label="Quick Sale"] table.fp-qs-sales-fit td:nth-child(5),[data-screen-label="Quick Sale"] table.fp-qs-sales-fit th:nth-child(5){width:10%!important}' +
-        '[data-screen-label="Quick Sale"] table.fp-qs-sales-fit td:nth-child(6),[data-screen-label="Quick Sale"] table.fp-qs-sales-fit th:nth-child(6){width:12%!important}' +
-        '[data-screen-label="Quick Sale"] table.fp-qs-sales-fit td:nth-child(7),[data-screen-label="Quick Sale"] table.fp-qs-sales-fit th:nth-child(7){width:14%!important}' +
-        '[data-screen-label="Quick Sale"] table.fp-qs-sales-fit td:nth-child(8),[data-screen-label="Quick Sale"] table.fp-qs-sales-fit th:nth-child(8){width:10%!important}' +
-        '[data-screen-label="Quick Sale"] table.fp-qs-sales-fit td:nth-child(9),[data-screen-label="Quick Sale"] table.fp-qs-sales-fit th:nth-child(9){width:8%!important}' +
-        '[data-screen-label="Quick Sale"] table.fp-qs-sales-fit td:nth-child(10),[data-screen-label="Quick Sale"] table.fp-qs-sales-fit th:nth-child(10){width:3%!important}' +
-        '[data-screen-label="Quick Sale"] table.fp-qs-sales-fit td:nth-child(6),[data-screen-label="Quick Sale"] table.fp-qs-sales-fit td:nth-child(8),[data-screen-label="Quick Sale"] table.fp-qs-sales-fit td:nth-child(9){padding-left:4px!important;padding-right:4px!important;white-space:nowrap!important;text-overflow:ellipsis!important}' +
-        '[data-screen-label="Quick Sale"] table.fp-qs-sales-fit td:nth-child(7)>div:first-child{padding:5px 5px!important;font-size:10.5px!important;gap:2px!important}' +
-      '}';
-    document.head.appendChild(style);
-  } catch (e) {}
-
-  /* ---------- desktop sidebar ---------- */
-  var FALL = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8aa0c0" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="1.6" fill="#8aa0c0" stroke="none"/></svg>';
+  var style = document.createElement('style');
+  style.id = 'fpProductionUiFixes';
+  style.textContent =
+    '.fp-sec{opacity:.62;font-size:11px!important;letter-spacing:.06em;text-transform:uppercase;font-weight:700;padding-top:9px!important;pointer-events:none;cursor:default;display:block!important}' +
+    '#fpRailBtn{display:none!important}' +
+    '[data-screen-label="Quick Sale"] tr.fp-qs-empty-row td:nth-child(7)>div:first-child{visibility:hidden!important}' +
+    '[data-screen-label="Quick Sale"] tr.fp-qs-exp-empty-row td:nth-child(7)>div:first-child{visibility:hidden!important}' +
+    '@media (min-width:1100px){' +
+      '[data-screen-label="Quick Sale"] .fp-qs-sales-scroll{overflow-x:hidden!important;overflow-y:visible!important;max-width:100%!important}' +
+      '[data-screen-label="Quick Sale"] table.fp-qs-sales-fit{width:100%!important;min-width:0!important;max-width:100%!important;table-layout:fixed!important}' +
+      '[data-screen-label="Quick Sale"] table.fp-qs-sales-fit th,[data-screen-label="Quick Sale"] table.fp-qs-sales-fit td{min-width:0!important;box-sizing:border-box!important;font-size:10.5px!important}' +
+      '[data-screen-label="Quick Sale"] table.fp-qs-sales-fit td{overflow:hidden}' +
+      '[data-screen-label="Quick Sale"] table.fp-qs-sales-fit td:nth-child(2),[data-screen-label="Quick Sale"] table.fp-qs-sales-fit td:nth-child(3),[data-screen-label="Quick Sale"] table.fp-qs-sales-fit td:nth-child(7){overflow:visible!important}' +
+      '[data-screen-label="Quick Sale"] table.fp-qs-sales-fit input{width:100%!important;min-width:0!important;box-sizing:border-box!important;padding-left:5px!important;padding-right:5px!important;font-size:10.5px!important}' +
+      '[data-screen-label="Quick Sale"] table.fp-qs-sales-fit th{padding-left:4px!important;padding-right:4px!important;white-space:normal!important;line-height:1.1!important}' +
+      '[data-screen-label="Quick Sale"] table.fp-qs-sales-fit td:nth-child(1),[data-screen-label="Quick Sale"] table.fp-qs-sales-fit th:nth-child(1){width:4%!important}' +
+      '[data-screen-label="Quick Sale"] table.fp-qs-sales-fit td:nth-child(2),[data-screen-label="Quick Sale"] table.fp-qs-sales-fit th:nth-child(2){width:14%!important}' +
+      '[data-screen-label="Quick Sale"] table.fp-qs-sales-fit td:nth-child(3),[data-screen-label="Quick Sale"] table.fp-qs-sales-fit th:nth-child(3){width:18%!important}' +
+      '[data-screen-label="Quick Sale"] table.fp-qs-sales-fit td:nth-child(4),[data-screen-label="Quick Sale"] table.fp-qs-sales-fit th:nth-child(4){width:7%!important}' +
+      '[data-screen-label="Quick Sale"] table.fp-qs-sales-fit td:nth-child(5),[data-screen-label="Quick Sale"] table.fp-qs-sales-fit th:nth-child(5){width:10%!important}' +
+      '[data-screen-label="Quick Sale"] table.fp-qs-sales-fit td:nth-child(6),[data-screen-label="Quick Sale"] table.fp-qs-sales-fit th:nth-child(6){width:12%!important}' +
+      '[data-screen-label="Quick Sale"] table.fp-qs-sales-fit td:nth-child(7),[data-screen-label="Quick Sale"] table.fp-qs-sales-fit th:nth-child(7){width:14%!important}' +
+      '[data-screen-label="Quick Sale"] table.fp-qs-sales-fit td:nth-child(8),[data-screen-label="Quick Sale"] table.fp-qs-sales-fit th:nth-child(8){width:10%!important}' +
+      '[data-screen-label="Quick Sale"] table.fp-qs-sales-fit td:nth-child(9),[data-screen-label="Quick Sale"] table.fp-qs-sales-fit th:nth-child(9){width:8%!important}' +
+      '[data-screen-label="Quick Sale"] table.fp-qs-sales-fit td:nth-child(10),[data-screen-label="Quick Sale"] table.fp-qs-sales-fit th:nth-child(10){width:3%!important}' +
+    '}';
+  document.head.appendChild(style);
 
   function disableRail() {
     try { localStorage.setItem('fp_rail2', '0'); } catch (e) {}
@@ -175,28 +165,7 @@
     if (btn && btn.parentNode) btn.parentNode.removeChild(btn);
   }
 
-  function enhanceSidebar() {
-    disableRail();
-    var aside = document.querySelector('aside');
-    if (!aside) return;
-    var items = aside.querySelectorAll('nav a,nav button');
-    for (var i = 0; i < items.length; i++) {
-      var el = items[i];
-      if (!el.getAttribute('title')) {
-        var label = String(el.textContent || '').replace(/\s+/g, ' ').trim();
-        if (label) el.setAttribute('title', label.slice(0, 48));
-      }
-      if (!el.querySelector('svg') && !el.querySelector('img') && !el.querySelector('.fp-fallicon')) {
-        var s = document.createElement('span');
-        s.className = 'fp-fallicon';
-        s.innerHTML = FALL;
-        el.insertBefore(s, el.firstChild);
-      }
-    }
-  }
-
-  /* ---------- Quick Sale tables ---------- */
-  function findTableByColumns(root, count) {
+  function findTable(root, count) {
     var tables = root ? root.querySelectorAll('table') : [];
     for (var i = 0; i < tables.length; i++) {
       var row = tables[i].querySelector('tbody tr');
@@ -205,76 +174,69 @@
     return null;
   }
 
-  function markScrollAncestor(table, root) {
+  function markScroll(table, root) {
     var el = table ? table.parentElement : null;
     var fallback = el;
     while (el && el !== root) {
       try {
-        var cs = window.getComputedStyle ? window.getComputedStyle(el) : null;
-        var ox = cs ? cs.overflowX : '';
-        if (ox === 'auto' || ox === 'scroll') {
-          el.classList.add('fp-qs-sales-scroll');
-          return;
-        }
+        var ox = window.getComputedStyle(el).overflowX;
+        if (ox === 'auto' || ox === 'scroll') { el.classList.add('fp-qs-sales-scroll'); return; }
       } catch (e) {}
       el = el.parentElement;
     }
     if (fallback) fallback.classList.add('fp-qs-sales-scroll');
   }
 
+  function txt(el) {
+    return String((el && el.textContent) || '').replace(/\s+/g, ' ').trim();
+  }
+
   function setButtonText(button, label) {
     if (!button) return;
     for (var i = 0; i < button.childNodes.length; i++) {
       var n = button.childNodes[i];
-      if (n.nodeType === 3 && String(n.nodeValue || '').trim()) {
-        n.nodeValue = label;
-        return;
-      }
+      if (n.nodeType === 3 && String(n.nodeValue || '').trim()) { n.nodeValue = label; return; }
     }
   }
 
   function applyQuickSaleUi() {
+    disableRail();
     var root = document.querySelector('[data-screen-label="Quick Sale"]');
     if (!root) return;
 
-    var sales = findTableByColumns(root, 10);
+    var sales = findTable(root, 10);
     if (sales) {
       sales.classList.add('fp-qs-sales-fit');
-      markScrollAncestor(sales, root);
-      var salesRows = sales.querySelectorAll('tbody tr');
-      for (var i = 0; i < salesRows.length; i++) {
-        var client = salesRows[i].querySelector('input[data-qs-client]');
+      markScroll(sales, root);
+      var sr = sales.querySelectorAll('tbody tr');
+      for (var i = 0; i < sr.length; i++) {
+        var client = sr[i].querySelector('input[data-qs-client]');
         if (!client) continue;
-        salesRows[i].classList.toggle('fp-qs-empty-row', !String(client.value || '').trim());
-        var spm = salesRows[i].children[6] && salesRows[i].children[6].children[0];
-        if (spm && (qText(spm) === 'Simu' || qText(spm) === 'Mobile Money')) setButtonText(spm, 'Simu Pay');
+        sr[i].classList.toggle('fp-qs-empty-row', !String(client.value || '').trim());
+        var spm = sr[i].children[6] && sr[i].children[6].children[0];
+        if (spm && (txt(spm) === 'Simu' || txt(spm) === 'Mobile Money')) setButtonText(spm, 'Simu Pay');
       }
     }
 
-    var expenses = findTableByColumns(root, 8);
+    var expenses = findTable(root, 8);
     if (expenses) {
-      var expRows = expenses.querySelectorAll('tbody tr');
-      for (var j = 0; j < expRows.length; j++) {
-        var nameInput = expRows[j].querySelector('td:nth-child(2) input');
+      var er = expenses.querySelectorAll('tbody tr');
+      for (var j = 0; j < er.length; j++) {
+        var nameInput = er[j].querySelector('td:nth-child(2) input');
         if (!nameInput) continue;
-        var expEmpty = !String(nameInput.value || '').trim();
-        expRows[j].classList.toggle('fp-qs-exp-empty-row', expEmpty);
-        var epm = expRows[j].children[6] && expRows[j].children[6].children[0];
-        if (!expEmpty && epm && (qText(epm) === 'Simu' || qText(epm) === 'Mobile Money')) setButtonText(epm, 'Simu Pay');
+        var empty = !String(nameInput.value || '').trim();
+        er[j].classList.toggle('fp-qs-exp-empty-row', empty);
+        var epm = er[j].children[6] && er[j].children[6].children[0];
+        if (!empty && epm && (txt(epm) === 'Simu' || txt(epm) === 'Mobile Money')) setButtonText(epm, 'Simu Pay');
       }
     }
   }
 
-  /* ---------- Quick Sale payment popup ---------- */
   var MODES = ['Cash','Bank','Voda','Yas','Simu'];
   var COLORS = { Cash:'#16a34a', Bank:'#3496f3', Voda:'#e11d48', Yas:'#e0a400', Simu:'#8b5cf6' };
-  var DISPLAY = { Cash:'Cash', Bank:'Bank', Voda:'Voda', Yas:'Yas', Simu:'Simu Pay' };
+  var LABELS = { Cash:'Cash', Bank:'Bank', Voda:'Voda', Yas:'Yas', Simu:'Simu Pay' };
   var portal = null;
   var realMenu = null;
-
-  function qText(el) {
-    return String((el && el.textContent) || '').replace(/\s+/g, ' ').trim();
-  }
 
   function closePortal() {
     if (portal && portal.parentNode) portal.parentNode.removeChild(portal);
@@ -295,8 +257,7 @@
     if (!root) return null;
     var cell = target.closest('td');
     if (!cell || !cell.parentNode || !cell.parentNode.children) return null;
-    var index = Array.prototype.indexOf.call(cell.parentNode.children, cell);
-    if (index !== 6) return null;
+    if (Array.prototype.indexOf.call(cell.parentNode.children, cell) !== 6) return null;
     if (cell.parentNode.classList.contains('fp-qs-empty-row') || cell.parentNode.classList.contains('fp-qs-exp-empty-row')) return null;
     var trigger = cell.children && cell.children[0];
     if (!trigger || trigger.tagName !== 'DIV' || !trigger.querySelector('svg')) return null;
@@ -309,7 +270,7 @@
     var divs = cell.querySelectorAll('div');
     for (var i = 0; i < divs.length; i++) {
       var d = divs[i];
-      var t = qText(d);
+      var t = txt(d);
       if (t === 'Simu Pay') t = 'Simu';
       if (MODES.indexOf(t) !== -1 && !d.querySelector('svg')) out[t] = d;
     }
@@ -318,16 +279,12 @@
 
   function findRealMenu(options, cell) {
     var first = null;
-    for (var i = 0; i < MODES.length; i++) {
-      if (options[MODES[i]]) { first = options[MODES[i]]; break; }
-    }
+    for (var i = 0; i < MODES.length; i++) if (options[MODES[i]]) { first = options[MODES[i]]; break; }
     if (!first) return null;
     var p = first.parentNode;
     while (p && p !== cell) {
       var all = true;
-      for (var j = 0; j < MODES.length; j++) {
-        if (options[MODES[j]] && !p.contains(options[MODES[j]])) { all = false; break; }
-      }
+      for (var j = 0; j < MODES.length; j++) if (options[MODES[j]] && !p.contains(options[MODES[j]])) { all = false; break; }
       if (all) return p;
       p = p.parentNode;
     }
@@ -362,8 +319,7 @@
 
     portal = document.createElement('div');
     portal.id = 'fpQsPaymentPortal';
-    portal.setAttribute('role', 'menu');
-    portal.style.cssText = 'position:fixed;left:' + left + 'px;top:' + top + 'px;width:' + width + 'px;z-index:2147483640;background:#fff;border:1px solid rgba(46,144,240,.28);border-radius:12px;box-shadow:0 18px 46px rgba(19,49,90,.34);padding:5px;box-sizing:border-box;overflow:visible;';
+    portal.style.cssText = 'position:fixed;left:' + left + 'px;top:' + top + 'px;width:' + width + 'px;z-index:2147483640;background:#fff;border:1px solid rgba(46,144,240,.28);border-radius:12px;box-shadow:0 18px 46px rgba(19,49,90,.34);padding:5px;box-sizing:border-box;';
 
     for (var m = 0; m < MODES.length; m++) {
       (function (mode) {
@@ -375,7 +331,7 @@
         var dot = document.createElement('span');
         dot.style.cssText = 'width:8px;height:8px;border-radius:50%;background:' + COLORS[mode] + ';flex:none;';
         var label = document.createElement('span');
-        label.textContent = DISPLAY[mode] || mode;
+        label.textContent = LABELS[mode] || mode;
         item.appendChild(dot);
         item.appendChild(label);
         item.onmouseenter = function () { item.style.background = '#eef5fd'; };
@@ -383,10 +339,7 @@
         item.onmousedown = function (ev) {
           ev.preventDefault();
           ev.stopPropagation();
-          try { real.click(); }
-          catch (e) {
-            try { real.dispatchEvent(new MouseEvent('click', { bubbles:true, cancelable:true, view:window })); } catch (e2) {}
-          }
+          try { real.click(); } catch (e) { try { real.dispatchEvent(new MouseEvent('click', { bubbles:true, cancelable:true, view:window })); } catch (e2) {} }
           closePortal();
           setTimeout(applyQuickSaleUi, 0);
         };
@@ -397,7 +350,6 @@
   }
 
   function boot() {
-    enhanceSidebar();
     applyQuickSaleUi();
 
     document.addEventListener('click', function (e) {
@@ -421,14 +373,15 @@
         disableRail();
         if (pending) return;
         pending = true;
-        setTimeout(function () {
-          pending = false;
-          applyQuickSaleUi();
-        }, 40);
+        setTimeout(function () { pending = false; applyQuickSaleUi(); }, 40);
       }).observe(document.body, { childList:true, subtree:true, attributes:true, attributeFilter:['class'] });
     }
 
-    setInterval(function () { enhanceSidebar(); applyQuickSaleUi(); }, 2000);
+    setInterval(function () {
+      disableRail();
+      applyQuickSaleUi();
+      sanitizeQuickSaleStorage();
+    }, 2000);
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
