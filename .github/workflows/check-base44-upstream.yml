@@ -11,21 +11,13 @@ jobs:
   probe:
     runs-on: ubuntu-latest
     steps:
-      - name: Inspect today's Apps Script rows
+      - name: Probe legacy QuickSale daily endpoint
         shell: bash
         run: |
           set -euo pipefail
           base='https://script.google.com/macros/s/AKfycbzgr7hqI4vPFHB9nNRh2l7Ljb7m0KCf9Yl1Ue4pEfgSAADE4-luyv0B3_tn0zo0bQzecg/exec'
-          curl -sSL --max-time 40 "$base?action=getTable&tab=QuickSale&callback=probeCb" -o /tmp/qs.js
-          python - <<'PY'
-          import json,re,pathlib
-          s=pathlib.Path('/tmp/qs.js').read_text()
-          m=re.match(r'^probeCb\((.*)\)\s*;?\s*$',s,re.S)
-          if not m: raise SystemExit('invalid JSONP')
-          data=json.loads(m.group(1))
-          rows=[r for r in data.get('rows',[]) if '20260921' in str(r.get('SaleID',''))]
-          print('matched',len(rows))
-          for r in rows[:20]:
-              print(r.get('SaleID'), 'Date=',r.get('Date'), 'CreatedAt=',r.get('CreatedAt'), 'Client=',r.get('Client'))
-          if not rows: raise SystemExit('no today rows')
-          PY
+          code=$(curl -sSL --retry 2 --retry-delay 2 --max-time 35 -o /tmp/day.js -w '%{http_code}' "$base?action=getQuickSale&date=2026-09-21&callback=probeCb" || true)
+          echo "status=$code bytes=$(wc -c </tmp/day.js 2>/dev/null || echo 0)"
+          head -c 240 /tmp/day.js 2>/dev/null | tr '\n' ' ' || true
+          echo
+          grep -q '2026-09-21\|SALE-20260921' /tmp/day.js
