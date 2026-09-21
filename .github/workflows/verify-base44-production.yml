@@ -45,3 +45,28 @@ jobs:
 
           curl -sS -o /dev/null -w 'login_status=%{http_code}\n' --max-time 20 https://app.femmasprint.com/login
           curl -sS -o /dev/null -w 'dashboard_status=%{http_code}\n' --max-time 20 https://app.femmasprint.com/dashboard
+
+          python - <<'PY'
+          import re, pathlib, subprocess, hashlib
+          html=pathlib.Path('/tmp/app.html').read_text(errors='replace')
+          refs=re.findall(r'''(?:src|href)=["']([^"']+\.(?:js|css))["']''',html)
+          local=[x for x in refs if x.startswith('/')]
+          print('asset_refs',local[:5])
+          if not local:
+              raise SystemExit('No local JS/CSS asset found')
+          asset=local[0]
+          subprocess.run(['curl','-sSL','--max-time','20','https://app.femmasprint.com'+asset,'-o','/tmp/app.asset'],check=True)
+          subprocess.run(['curl','-sSL','--max-time','20','https://femmasbase.pages.dev'+asset,'-o','/tmp/base.asset'],check=True)
+          a=pathlib.Path('/tmp/app.asset').read_bytes()
+          b=pathlib.Path('/tmp/base.asset').read_bytes()
+          print('asset',asset,'bytes',len(a),'equal',a==b)
+          print('asset_sha256',hashlib.sha256(a).hexdigest())
+          if a!=b:
+              raise SystemExit('Asset mismatch')
+          PY
+
+          app_api=$(curl -sS -o /tmp/app-api.json -w '%{http_code}' --max-time 20 -H 'content-type: application/json' -d '{"email":"probe@example.invalid","password":"not-a-real-password"}' https://app.femmasprint.com/api/auth/login || true)
+          base_api=$(curl -sS -o /tmp/base-api.json -w '%{http_code}' --max-time 20 -H 'content-type: application/json' -d '{"email":"probe@example.invalid","password":"not-a-real-password"}' https://femmasbase.pages.dev/api/auth/login || true)
+          echo "app_api_status=$app_api base_api_status=$base_api"
+          test "$app_api" = "$base_api"
+          cmp /tmp/app-api.json /tmp/base-api.json
