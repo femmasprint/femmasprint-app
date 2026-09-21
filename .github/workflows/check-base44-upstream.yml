@@ -11,18 +11,20 @@ jobs:
   probe:
     runs-on: ubuntu-latest
     steps:
-      - name: Probe shared office sheet visibility
+      - name: Probe legacy Apps Script bridge
         shell: bash
         run: |
           set -euo pipefail
-          url='https://docs.google.com/spreadsheets/d/15fuAWl1c6kD70sIxK-yIP15K3OVr97JHXA9KFDfrPec/export?format=csv&sheet=QuickSale'
-          code=$(curl -sSL -o /tmp/qs.csv -w '%{http_code}' --max-time 30 "$url" || true)
-          echo "sheet_status=$code"
-          echo "sheet_bytes=$(wc -c </tmp/qs.csv 2>/dev/null || echo 0)"
-          head -c 180 /tmp/qs.csv 2>/dev/null | tr '\n' ' ' || true
+          base='https://script.google.com/macros/s/AKfycbzgr7hqI4vPFHB9nNRh2l7Ljb7m0KCf9Yl1Ue4pEfgSAADE4-luyv0B3_tn0zo0bQzecg/exec'
+          url="$base?action=getTable&tab=QuickSale&callback=probeCb"
+          code=$(curl -sSL -o /tmp/qs.js -w '%{http_code}' --max-time 40 "$url" || true)
+          echo "status=$code"
+          echo "bytes=$(wc -c </tmp/qs.js 2>/dev/null || echo 0)"
+          head -c 220 /tmp/qs.js 2>/dev/null | tr '\n' ' ' || true
           echo
-          if grep -q '2026-09-21' /tmp/qs.csv 2>/dev/null; then
+          if grep -q '2026-09-21' /tmp/qs.js 2>/dev/null; then
             echo 'today_rows_visible=true'
           else
             echo 'today_rows_visible=false'
+            exit 1
           fi
