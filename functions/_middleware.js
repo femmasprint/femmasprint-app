@@ -5,6 +5,14 @@
 const UPSTREAM_ORIGIN = 'https://femmasbase.pages.dev';
 const PUBLIC_ORIGIN = 'https://app.femmasprint.com';
 const LEGACY_SHEET_BRIDGE = 'https://script.google.com/macros/s/AKfycbzgr7hqI4vPFHB9nNRh2l7Ljb7m0KCf9Yl1Ue4pEfgSAADE4-luyv0B3_tn0zo0bQzecg/exec';
+const SHEET_MEMORY_CACHE = new Map();
+const SHEET_INFLIGHT = new Map();
+
+function sheetCacheTtl(sheet, date) {
+  if (date || ['QuickSale','Expenses','Attendance'].includes(sheet)) return 15000;
+  if (['Employees','Customers','Items','Suppliers'].includes(sheet)) return 300000;
+  return 90000;
+}
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -25,33 +33,55 @@ async function sharedSheetRead(sourceUrl) {
     return json({ ok:false, error:'Unsupported sheet' }, 400);
   }
 
-  const callback = 'femmasProxyCb';
-  const qs = new URLSearchParams({ callback });
-  if (sheet === 'QuickSale' && date) {
-    qs.set('action','getQuickSale');
-    qs.set('date',date);
-  } else {
-    qs.set('action','getTable');
-    qs.set('tab',sheet);
+  const cacheKey = sheet + '::' + (date || 'all');
+  const ttl = sheetCacheTtl(sheet, date);
+  const cached = SHEET_MEMORY_CACHE.get(cacheKey);
+  if (cached && Date.now() - cached.at <= ttl) {
+    return json({ ok:true, rows:cached.rows, source:'memory-cache' });
+  }
+  if (SHEET_INFLIGHT.has(cacheKey)) {
+    const rows = await SHEET_INFLIGHT.get(cacheKey);
+    return json({ ok:true, rows, source:'shared-inflight' });
   }
 
-  const res = await fetch(LEGACY_SHEET_BRIDGE + '?' + qs.toString(), { redirect:'follow' });
-  if (!res.ok) return json({ ok:false, error:'Sheet bridge unavailable', status:res.status }, 502);
-  const raw = await res.text();
-  const prefix = callback + '(';
-  const start = raw.indexOf(prefix);
-  const end = raw.lastIndexOf(')');
-  if (start < 0 || end <= start) return json({ ok:false, error:'Invalid bridge response' }, 502);
-  let payload;
-  try { payload = JSON.parse(raw.slice(start + prefix.length, end)); }
-  catch { return json({ ok:false, error:'Invalid bridge JSON' }, 502); }
+  const task = (async () => {
+    const callback = 'femmasProxyCb';
+    const qs = new URLSearchParams({ callback });
+    if (sheet === 'QuickSale' && date) {
+      qs.set('action','getQuickSale');
+      qs.set('date',date);
+    } else {
+      qs.set('action','getTable');
+      qs.set('tab',sheet);
+    }
 
-  if (sheet === 'QuickSale') {
-    const rows = Array.isArray(payload.sales) ? payload.sales : [];
-    return json({ ok:payload.ok !== false, rows, source:'apps-script' });
+    const res = await fetch(LEGACY_SHEET_BRIDGE + '?' + qs.toString(), { redirect:'follow' });
+    if (!res.ok) throw new Error('Sheet bridge unavailable: ' + res.status);
+    const raw = await res.text();
+    const prefix = callback + '(';
+    const start = raw.indexOf(prefix);
+    const end = raw.lastIndexOf(')');
+    if (start < 0 || end <= start) throw new Error('Invalid bridge response');
+
+    let payload;
+    try { payload = JSON.parse(raw.slice(start + prefix.length, end)); }
+    catch { throw new Error('Invalid bridge JSON'); }
+
+    const rows = sheet === 'QuickSale'
+      ? (Array.isArray(payload.sales) ? payload.sales : [])
+      : (Array.isArray(payload.rows) ? payload.rows : []);
+    if (payload.ok === false) throw new Error(payload.error || 'Sheet bridge failed');
+    SHEET_MEMORY_CACHE.set(cacheKey, { at:Date.now(), rows });
+    return rows;
+  })().finally(() => SHEET_INFLIGHT.delete(cacheKey));
+
+  SHEET_INFLIGHT.set(cacheKey, task);
+  try {
+    const rows = await task;
+    return json({ ok:true, rows, source:'apps-script' });
+  } catch (error) {
+    return json({ ok:false, error:error?.message || 'Shared data bridge failed' }, 502);
   }
-  const rows = Array.isArray(payload.rows) ? payload.rows : [];
-  return json({ ok:payload.ok !== false, rows, source:'apps-script' });
 }
 
 function rewriteLocation(value) {
