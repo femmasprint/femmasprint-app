@@ -2,7 +2,8 @@
  * app.femmasprint.com now serves the real femmasbase Cloudflare Pages application.
  * The legacy static app remains in this repository only as a rollback source.
  */
-const UPSTREAM_ORIGIN = 'https://femmasbase.pages.dev';
+const FRONTEND_UPSTREAM_ORIGIN = 'https://femmasbase.pages.dev';
+const BASE44_API_ORIGIN = 'https://base44.app';
 const PUBLIC_ORIGIN = 'https://app.femmasprint.com';
 const LEGACY_SHEET_BRIDGE = 'https://script.google.com/macros/s/AKfycbzgr7hqI4vPFHB9nNRh2l7Ljb7m0KCf9Yl1Ue4pEfgSAADE4-luyv0B3_tn0zo0bQzecg/exec';
 const SHEET_MEMORY_CACHE = new Map();
@@ -147,18 +148,19 @@ export async function onRequest(context) {
   // Production frontend follows the live femmasbase build directly.
   // The local build remains in the repository only as rollback material.
 
-  const upstreamUrl = new URL(sourceUrl.pathname + sourceUrl.search, UPSTREAM_ORIGIN);
+  const upstreamOrigin = sourceUrl.pathname.startsWith('/api/') ? BASE44_API_ORIGIN : FRONTEND_UPSTREAM_ORIGIN;
+  const upstreamUrl = new URL(sourceUrl.pathname + sourceUrl.search, upstreamOrigin);
 
   const headers = new Headers(incoming.headers);
   headers.delete('host');
 
-  if (headers.has('origin')) headers.set('origin', UPSTREAM_ORIGIN);
+  if (headers.has('origin')) headers.set('origin', upstreamOrigin);
   if (headers.has('referer')) {
     try {
       const ref = new URL(headers.get('referer'));
       if (ref.hostname === sourceUrl.hostname) {
         ref.protocol = 'https:';
-        ref.hostname = 'femmasbase.pages.dev';
+        ref.hostname = new URL(upstreamOrigin).hostname;
         ref.port = '';
         headers.set('referer', ref.toString());
       }
@@ -180,7 +182,7 @@ export async function onRequest(context) {
 
     const outHeaders = new Headers(upstream.headers);
     outHeaders.set('x-femmas-app-source', 'femmasbase');
-    outHeaders.set('x-femmas-app-upstream', 'femmasbase.pages.dev');
+    outHeaders.set('x-femmas-app-upstream', new URL(upstreamOrigin).hostname);
 
     const location = outHeaders.get('location');
     if (location) outHeaders.set('location', rewriteLocation(location));
