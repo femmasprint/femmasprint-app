@@ -1,0 +1,21 @@
+name: Check Browser Data Bridge Policy
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - shell: bash
+        run: |
+          set -e
+          curl -sSL https://app.femmasprint.com/ -o /tmp/app.html
+          echo "--- CSP/meta/script refs ---"
+          grep -ioE 'content-security-policy|script-src|connect-src|script.google.com|docs.google.com' /tmp/app.html | head -50 || true
+          echo "--- headers ---"
+          curl -sSI https://app.femmasprint.com/ | grep -iE 'content-security-policy|x-frame|referrer-policy|permissions-policy' || true
