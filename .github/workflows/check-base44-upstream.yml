@@ -11,20 +11,21 @@ jobs:
   probe:
     runs-on: ubuntu-latest
     steps:
-      - name: Probe legacy Apps Script bridge
+      - name: Inspect today's Apps Script rows
         shell: bash
         run: |
           set -euo pipefail
           base='https://script.google.com/macros/s/AKfycbzgr7hqI4vPFHB9nNRh2l7Ljb7m0KCf9Yl1Ue4pEfgSAADE4-luyv0B3_tn0zo0bQzecg/exec'
-          url="$base?action=getTable&tab=QuickSale&callback=probeCb"
-          code=$(curl -sSL -o /tmp/qs.js -w '%{http_code}' --max-time 40 "$url" || true)
-          echo "status=$code"
-          echo "bytes=$(wc -c </tmp/qs.js 2>/dev/null || echo 0)"
-          head -c 220 /tmp/qs.js 2>/dev/null | tr '\n' ' ' || true
-          echo
-          if grep -q '2026-09-21' /tmp/qs.js 2>/dev/null; then
-            echo 'today_rows_visible=true'
-          else
-            echo 'today_rows_visible=false'
-            exit 1
-          fi
+          curl -sSL --max-time 40 "$base?action=getTable&tab=QuickSale&callback=probeCb" -o /tmp/qs.js
+          python - <<'PY'
+          import json,re,pathlib
+          s=pathlib.Path('/tmp/qs.js').read_text()
+          m=re.match(r'^probeCb\((.*)\)\s*;?\s*$',s,re.S)
+          if not m: raise SystemExit('invalid JSONP')
+          data=json.loads(m.group(1))
+          rows=[r for r in data.get('rows',[]) if '20260921' in str(r.get('SaleID',''))]
+          print('matched',len(rows))
+          for r in rows[:20]:
+              print(r.get('SaleID'), 'Date=',r.get('Date'), 'CreatedAt=',r.get('CreatedAt'), 'Client=',r.get('Client'))
+          if not rows: raise SystemExit('no today rows')
+          PY
