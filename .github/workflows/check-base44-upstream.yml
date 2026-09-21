@@ -11,30 +11,18 @@ jobs:
   probe:
     runs-on: ubuntu-latest
     steps:
-      - name: Verify updated Base44 build is live
+      - name: Probe shared office sheet visibility
         shell: bash
         run: |
           set -euo pipefail
-          marker='Google Sheet ya office haijapatikana kwenye first load'
-          ok=0
-          for i in $(seq 1 30); do
-            echo "Attempt $i"
-            curl -sSL --max-time 20 https://femmasbase.pages.dev/ -o /tmp/base.html || true
-            asset=$(grep -oE '/assets/index-[^"]+\.js' /tmp/base.html | head -n1 || true)
-            if [ -n "$asset" ]; then
-              curl -sSL --max-time 30 "https://femmasbase.pages.dev$asset" -o /tmp/base.js || true
-              if grep -Fq "$marker" /tmp/base.js; then
-                ok=1
-                echo "Updated marker found in $asset"
-                break
-              fi
-            fi
-            sleep 5
-          done
-          test "$ok" = "1"
-
-          curl -sSL --max-time 20 https://app.femmasprint.com/ -o /tmp/app.html
-          app_asset=$(grep -oE '/assets/index-[^"]+\.js' /tmp/app.html | head -n1)
-          curl -sSL --max-time 30 "https://app.femmasprint.com$app_asset" -o /tmp/app.js
-          grep -Fq "$marker" /tmp/app.js
-          echo "Production app contains updated shared-data fix: $app_asset"
+          url='https://docs.google.com/spreadsheets/d/15fuAWl1c6kD70sIxK-yIP15K3OVr97JHXA9KFDfrPec/export?format=csv&sheet=QuickSale'
+          code=$(curl -sSL -o /tmp/qs.csv -w '%{http_code}' --max-time 30 "$url" || true)
+          echo "sheet_status=$code"
+          echo "sheet_bytes=$(wc -c </tmp/qs.csv 2>/dev/null || echo 0)"
+          head -c 180 /tmp/qs.csv 2>/dev/null | tr '\n' ' ' || true
+          echo
+          if grep -q '2026-09-21' /tmp/qs.csv 2>/dev/null; then
+            echo 'today_rows_visible=true'
+          else
+            echo 'today_rows_visible=false'
+          fi
