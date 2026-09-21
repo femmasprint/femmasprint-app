@@ -144,14 +144,8 @@ export async function onRequest(context) {
     catch (error) { return json({ ok:false, error:'Shared data bridge failed' }, 502); }
   }
 
-  // Serve the latest Base44 frontend committed directly in this Pages project.
-  // Keep backend/API requests on the Base44 upstream.
-  if (!sourceUrl.pathname.startsWith('/api/')) {
-    try {
-      const local = await localFrontend(context, incoming, sourceUrl);
-      if (local) return local;
-    } catch {}
-  }
+  // Production frontend follows the live femmasbase build directly.
+  // The local build remains in the repository only as rollback material.
 
   const upstreamUrl = new URL(sourceUrl.pathname + sourceUrl.search, UPSTREAM_ORIGIN);
 
