@@ -97,6 +97,41 @@ function rewriteSetCookie(value) {
     .replace(/Domain=\.?(?:femmasbase\.pages\.dev)/ig, 'Domain=app.femmasprint.com');
 }
 
+function markResponse(response, source, cacheControl = '') {
+  const headers = new Headers(response.headers);
+  headers.set('x-femmas-app-source', source);
+  if (cacheControl) headers.set('cache-control', cacheControl);
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers
+  });
+}
+
+async function localFrontend(context, incoming, sourceUrl) {
+  if (!context.env?.ASSETS || !['GET','HEAD'].includes(incoming.method)) return null;
+  const pathname = sourceUrl.pathname;
+  const isAssetPath = /\.[A-Za-z0-9]{2,8}$/.test(pathname);
+
+  if (isAssetPath) {
+    const asset = await context.env.ASSETS.fetch(incoming);
+    if (asset.status !== 404) {
+      const immutable = /\/assets\/[^/]+-[A-Za-z0-9_-]+\.(?:js|css)$/.test(pathname);
+      return markResponse(asset, 'local-base44-build', immutable ? 'public,max-age=31536000,immutable' : '');
+    }
+    return null;
+  }
+
+  // SPA route: always serve the locally committed Base44 index.
+  const indexUrl = new URL('/index.html', sourceUrl.origin);
+  const headers = new Headers(incoming.headers);
+  headers.set('accept', 'text/html');
+  const indexReq = new Request(indexUrl.toString(), { method:'GET', headers });
+  const index = await context.env.ASSETS.fetch(indexReq);
+  if (index.status !== 404) return markResponse(index, 'local-base44-build', 'no-store');
+  return null;
+}
+
 export async function onRequest(context) {
   const incoming = context.request;
   const sourceUrl = new URL(incoming.url);
@@ -104,6 +139,16 @@ export async function onRequest(context) {
     try { return await sharedSheetRead(sourceUrl); }
     catch (error) { return json({ ok:false, error:'Shared data bridge failed' }, 502); }
   }
+
+  // Serve the latest Base44 frontend committed directly in this Pages project.
+  // Keep backend/API requests on the Base44 upstream.
+  if (!sourceUrl.pathname.startsWith('/api/')) {
+    try {
+      const local = await localFrontend(context, incoming, sourceUrl);
+      if (local) return local;
+    } catch {}
+  }
+
   const upstreamUrl = new URL(sourceUrl.pathname + sourceUrl.search, UPSTREAM_ORIGIN);
 
   const headers = new Headers(incoming.headers);
