@@ -161,6 +161,7 @@ export async function onRequest(context) {
           el.append('<script id="fpEdgeFix">' + FIX_JS + '</scr' + 'ipt>', { html: true });
           el.append('<script id="fpMoreActions">' + MORE_JS + '</scr' + 'ipt>', { html: true });
           el.append('<script id="fpTheme" src="/fp-theme.js" defer></scr' + 'ipt>', { html: true });
+          el.append('<script id="fpBase44Exact" src="/fp-base44-exact.js?v=20260921-1" defer></scr' + 'ipt>', { html: true });
           el.append('<script id="fpAvatars" src="/fp-avatars.js" defer></scr' + 'ipt>', { html: true });
           el.append('<script id="fpPayroll" src="/fp-payroll.js" defer></scr' + 'ipt>', { html: true });
           el.append('<script id="fpInvSkin" src="/fp-invoice-skin.js?v=base44-exact-20260811-1958" defer></scr' + 'ipt>', { html: true });
