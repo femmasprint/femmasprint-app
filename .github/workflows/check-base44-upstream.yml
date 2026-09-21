@@ -1,0 +1,21 @@
+name: Check Base44 Upstream
+
+on:
+  push:
+    branches: [base44-full-migration-staging]
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Probe femmasbase Pages
+        shell: bash
+        run: |
+          set -euxo pipefail
+          curl -sSIL --max-time 20 https://femmasbase.pages.dev | sed -n '1,20p'
+          curl -sSL --max-time 20 https://femmasbase.pages.dev -o /tmp/base.html
+          wc -c /tmp/base.html
+          head -c 500 /tmp/base.html | tr '\n' ' '
