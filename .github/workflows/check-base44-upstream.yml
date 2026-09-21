@@ -11,11 +11,30 @@ jobs:
   probe:
     runs-on: ubuntu-latest
     steps:
-      - name: Probe femmasbase Pages
+      - name: Verify updated Base44 build is live
         shell: bash
         run: |
-          set -euxo pipefail
-          curl -sSIL --max-time 20 https://femmasbase.pages.dev | sed -n '1,20p'
-          curl -sSL --max-time 20 https://femmasbase.pages.dev -o /tmp/base.html
-          wc -c /tmp/base.html
-          head -c 500 /tmp/base.html | tr '\n' ' '
+          set -euo pipefail
+          marker='Google Sheet ya office haijapatikana kwenye first load'
+          ok=0
+          for i in $(seq 1 30); do
+            echo "Attempt $i"
+            curl -sSL --max-time 20 https://femmasbase.pages.dev/ -o /tmp/base.html || true
+            asset=$(grep -oE '/assets/index-[^"]+\.js' /tmp/base.html | head -n1 || true)
+            if [ -n "$asset" ]; then
+              curl -sSL --max-time 30 "https://femmasbase.pages.dev$asset" -o /tmp/base.js || true
+              if grep -Fq "$marker" /tmp/base.js; then
+                ok=1
+                echo "Updated marker found in $asset"
+                break
+              fi
+            fi
+            sleep 5
+          done
+          test "$ok" = "1"
+
+          curl -sSL --max-time 20 https://app.femmasprint.com/ -o /tmp/app.html
+          app_asset=$(grep -oE '/assets/index-[^"]+\.js' /tmp/app.html | head -n1)
+          curl -sSL --max-time 30 "https://app.femmasprint.com$app_asset" -o /tmp/app.js
+          grep -Fq "$marker" /tmp/app.js
+          echo "Production app contains updated shared-data fix: $app_asset"
