@@ -1,0 +1,29 @@
+name: Verify Staff Live
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - shell: bash
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 24); do
+            curl -sS -D /tmp/h -o /tmp/app.html --max-time 25 https://app.femmasprint.com/ || true
+            asset=$(grep -oE '/assets/index-[A-Za-z0-9_-]+\.js' /tmp/app.html | head -1 || true)
+            echo "attempt=$i asset=$asset source=$(grep -i '^x-femmas-app-source:' /tmp/h | tr -d '\r' || true)"
+            if [ "$asset" = "/assets/index-BdbIeHJM.js" ]; then
+              break
+            fi
+            sleep 5
+          done
+          test "$asset" = "/assets/index-BdbIeHJM.js"
+
+          curl -sS --max-time 30 "https://app.femmasprint.com/api/femmas-shared-sheet?sheet=Employees" -o /tmp/employees.json
+          python -c "import json; d=json.load(open('/tmp/employees.json')); rows=d.get('rows') or []; print('employees',len(rows),'source',d.get('source')); print([r.get('EmployeeName') for r in rows[:12]]); raise SystemExit(0 if len(rows)>=10 else 1)"
