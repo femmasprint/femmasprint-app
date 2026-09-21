@@ -1,174 +1,80 @@
-/* Cloudflare Pages Function middleware — dark theme, sidebar polish, and RESPONSIVE
- * (phone + tablet) layout. Injected into the page <head> at the EDGE so it applies
- * before first paint. CSS never edits app DOM nodes. The small fpEdgeFix script only ADDS
- * its own nodes (menu burger + backdrop) and hides the mock Google widget; it never moves
- * or edits React-managed content. Fully defensive: only HTML responses are touched; any
- * error falls through.
- *
- * Breakpoint: <=1024px = phones AND tablets get the mobile-friendly layout; desktops keep
- * the full layout. */
+/* FEMMAS PRINT production gateway
+ * app.femmasprint.com now serves the real femmasbase Cloudflare Pages application.
+ * The legacy static app remains in this repository only as a rollback source.
+ */
+const UPSTREAM_ORIGIN = 'https://femmasbase.pages.dev';
+const PUBLIC_ORIGIN = 'https://app.femmasprint.com';
 
-var HEAD_CSS =
-  ' aside nav a{display:flex !important;align-items:center;width:100% !important;box-sizing:border-box}' +
-  ' aside>nav~*>div>div:nth-of-type(2){display:none !important}' +
-  // ===== ROW HOVER HIGHLIGHT app-wide (light blue) — kila table, kila fomu =====
-  ' main table tr:hover > td{background:#eaf3ff !important;transition:background .12s ease}' +
-  // ===== INSTANT dark mode =====
-  ' aside nav a{position:relative;transition:background .16s ease,color .16s ease !important}' +
-  ' aside nav a:hover{background:rgba(46,144,240,.14) !important;color:#fff !important}' +
-  ' aside nav a svg,aside nav a i{transition:color .16s,stroke .16s,opacity .16s}' +
-  ' aside nav a:hover svg,aside nav a:hover i{color:#fff !important;stroke:#fff !important;opacity:1 !important}' +
-  ' aside nav a::before{content:"";position:absolute;left:1px;top:9px;bottom:9px;width:3px;border-radius:3px;background:transparent;transition:background .16s ease}' +
-  ' aside nav a:hover::before{background:#2e90f0}' +
-  ' #fpLangTop{flex:none !important}' +
-  'html:not(.fp-dark) body main div[style*="linear-gradient"] button,html:not(.fp-dark) body main div[style*="linear-gradient"] label' +
-  '{background:rgba(255,255,255,.16) !important;border:1.5px solid rgba(255,255,255,.5) !important;box-shadow:none !important}' +
-  ' body main div[style*="linear-gradient"] button svg,body main div[style*="linear-gradient"] label svg{stroke:#fff !important;opacity:1 !important}' +
-  ' body main div[style*="linear-gradient"] button,body main div[style*="linear-gradient"] label{color:#fff !important}' +
-  // ===== LIGHT-MODE variant for the premium metric tiles =====
-  ' html:not(.fp-dark) main div[style*="minmax(280px"]>div[data-fpmetric]{background:linear-gradient(165deg,#ffffff,#eef4ff) !important;border-color:#e4ebf5 !important;box-shadow:0 1px 2px rgba(19,49,90,.05),0 16px 30px -22px rgba(19,49,90,.28) !important}' +
-  ' html:not(.fp-dark) main div[style*="minmax(280px"]>div[data-fpmetric] div[style*="font-size:24px"],html:not(.fp-dark) main div[style*="minmax(280px"]>div[data-fpmetric] div[style*="font-size: 24px"]{color:#0f172a !important}' +
-  ' html:not(.fp-dark) main div[style*="minmax(280px"]>div[data-fpmetric] span[style*="uppercase"]{color:#5b6b85 !important}' +
-  // ===== Dark mode: Quick Sale toolbar + section header bars (match rest of app) =====
-  // ===== Design 2 (light mode): brighter-blue Quick Sale toolbar + light table header bars =====
-  ' html:not(.fp-dark) main div:has(>div[data-qsorder="note"]) > div:first-child[style*="linear-gradient(120deg"]{background:linear-gradient(120deg,#3bb0ea,#1c8ed4) !important}' +
-  ' html:not(.fp-dark) main div[style*="minmax(330px"] > div > div:first-child{background:#e9f3fe !important}' +
-  ' html:not(.fp-dark) main div[style*="minmax(330px"] > div > div:first-child span{color:#00578d !important}' +
-  // ===== INVOICE/SALE/PURCHASE FORMS FLAT: fomu ifunguke imejaa upande wa main, menu ibaki pembeni (si popup). z-index 60 (Mauzo/Matumizi/Purchase) + 70 (Invoice) =====
-  ' div[style*="z-index: 60"][style*="17, 33"],div[style*="z-index: 70"][style*="17, 33"]{background:#f4f7fb !important;backdrop-filter:none !important;-webkit-backdrop-filter:none !important;align-items:stretch !important;justify-content:stretch !important;padding:0 !important;left:248px !important}' +
-  ' div[style*="z-index: 60"][style*="17, 33"] > div,div[style*="z-index: 70"][style*="17, 33"] > div{max-width:100% !important;width:100% !important;max-height:100% !important;height:100% !important;border-radius:0 !important;border:none !important;box-shadow:none !important;overflow-y:auto !important}' +
-  ' @media(max-width:1024px){ div[style*="z-index: 60"][style*="17, 33"],div[style*="z-index: 70"][style*="17, 33"]{left:0 !important} }' +
-  // ===== Quick Sale NEW ORDER: toolbar -> tiles -> Sales -> Expenses -> chips -> Note =====
-  ' main div:has(>div[data-qsorder="note"]){display:flex !important;flex-direction:column !important}' +
-  ' main div:has(>div[data-qsorder="note"])>div[style*="minmax(280px"]{order:1 !important}' +
-  ' main div:has(>div[data-qsorder="note"])>div[style*="minmax(330px"]{order:2 !important}' +
-  ' main div:has(>div[data-qsorder="note"])>div[data-qsorder="chips"]{order:3 !important}' +
-  ' main div:has(>div[data-qsorder="note"])>div[data-qsorder="note"]{order:4 !important}' +
-  // The removed top banner used to push content below the sticky header; restore that gap globally.
-  // Remove all legacy desktop chrome above the real FEMMAS workspace.
-  ' div[data-topbanner="1"]{display:none !important}' +
-  ' .fp-legacy-chrome,.fp-legacy-tabs{display:none !important}' +
-  // ===== RESPONSIVE: phone & tablet (<=1024px) =====
-  ' .fp-burger{display:none;position:fixed;top:10px;left:10px;z-index:2147483000;width:40px;height:40px;' +
-  'border-radius:11px;background:#13315a;color:#fff;align-items:center;justify-content:center;' +
-  'border:1px solid rgba(255,255,255,.18);cursor:pointer;box-shadow:0 3px 12px rgba(0,0,0,.35)}' +
-  ' .fp-nav-backdrop{display:none}' +
-  ' @media(max-width:1024px){' +
-  '  main header{gap:3px !important;column-gap:3px !important}' +
-  '  main header button{padding:6px 7px !important;font-size:12px !important;font-weight:600 !important;' +
-  'gap:4px !important;min-height:34px}' +
-  '  main header button svg{width:14px !important;height:14px !important}' +
-  '  #fpLangTop{padding:0 8px !important;min-width:34px !important}' +
-      '  main header button[title*="Chapa"],main header button[title*="Print"]{display:none !important}' +
-  '  main div[style*="linear-gradient"] div[style*="gap: 14px"]{flex-wrap:nowrap !important;min-width:0 !important}' +
-  '  main div[style*="linear-gradient"] div[style*="gap: 14px"]>div{min-width:0 !important}' +
-  '  main div[style*="linear-gradient"] div[style*="gap: 10px"]{flex-wrap:nowrap !important;gap:4px !important;overflow:hidden !important}' +
-  '  main div[style*="linear-gradient"] div[style*="gap: 10px"]>*{flex:0 0 auto !important}' +
-  '  main div[style*="linear-gradient"] div[style*="gap: 10px"] button,main div[style*="linear-gradient"] div[style*="gap: 10px"] label{padding:6px !important}' +
-  '  html,body{overflow-x:hidden !important;max-width:100vw}' +
-  '  aside{position:fixed !important;left:0 !important;top:0 !important;bottom:0 !important;height:100vh !important;' +
-  'z-index:1002 !important;width:274px !important;max-width:84vw;transform:translateX(-100%) !important;' +
-  'transition:transform .26s ease !important;box-shadow:2px 0 26px rgba(0,0,0,.55);overflow-y:auto;overflow-x:hidden}' +
-  '  body.fp-nav-open aside{transform:translateX(0) !important;z-index:1005 !important}' +
-  '  main{width:100% !important;min-width:0 !important;overflow-x:hidden !important}' +
-  '  main header{flex-wrap:wrap !important;height:auto !important;row-gap:8px !important;' +
-  'padding-left:56px !important;align-items:center}' +
-  '  main div[style*="linear-gradient"] button,main div[style*="linear-gradient"] label{font-size:0 !important;' +
-  'padding:9px !important;min-width:0 !important;gap:0 !important}' +
-  '  main div[style*="linear-gradient"] button svg,main div[style*="linear-gradient"] label svg{width:18px !important;height:18px !important}' +
-  '  main div[style*="minmax(330px"]{display:flex !important;flex-direction:column !important;gap:12px !important}' +
-  '  main div[style*="minmax(330px"]>div{width:100% !important;min-width:0 !important}' +
-  '  main div[style*="repeat(5"]{display:flex !important;gap:4px !important;flex-wrap:nowrap !important}' +
-  '  main div[style*="repeat(5"]>div{flex:1 1 0 !important;min-width:0 !important;padding:5px 4px !important;overflow:hidden}' +
-  '  main div[style*="repeat(5"]>div *{font-size:9px !important;line-height:1.2 !important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
-  '  main div[style*="minmax(280px"]{display:flex !important;flex-wrap:wrap !important;gap:11px !important;margin-top:0 !important}' +
-  '  main div[style*="minmax(280px"]>div{flex:1 1 43% !important;min-width:0 !important}' +
-  '  main table{display:block;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}' +
-  '  main table th,main table td{white-space:nowrap}' +
-  '  .fp-burger{display:flex}' +
-  '  .fp-nav-backdrop{position:fixed;inset:0;background:rgba(2,10,24,.58);z-index:1001;display:none}' +
-  '  body.fp-nav-open .fp-nav-backdrop{display:block}' +
-  ' }';
+function rewriteLocation(value) {
+  if (!value) return value;
+  return value
+    .replace(/^https:\/\/femmasbase\.pages\.dev/i, PUBLIC_ORIGIN)
+    .replace(/^http:\/\/femmasbase\.pages\.dev/i, PUBLIC_ORIGIN);
+}
 
-var FIX_JS = `
-(function(){
-  try{
-    function ready(fn){if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',fn);else fn();}
-    ready(function(){
-      function clean(){
-        var old=document.querySelectorAll('.fp-burger,.fp-nav-backdrop');
-        for(var i=0;i<old.length;i++){if(old[i]&&old[i].parentNode)old[i].parentNode.removeChild(old[i]);}
-
-        var all=document.body?document.body.querySelectorAll('div,header,nav,section'):[];
-        for(var j=0;j<all.length;j++){
-          var el=all[j];
-          if(!el || el.id==='fp-main' || (el.closest && el.closest('#fp-main'))) continue;
-          var text=(el.textContent||'').replace(/\\s+/g,' ').trim();
-          if(!text || text.length>180) continue;
-          var legacyMenu=/Company\\s+Help\\s+Versions\\s+Shortcuts/i.test(text);
-          var legacySupport=/WhatsApp\\s+Chat\\s+Support/i.test(text) && /255\\s*658\\s*843\\s*344/.test(text);
-          var legacySale=/^Sale\\s*[×x]?$/i.test(text);
-          if(legacyMenu||legacySupport||legacySale){
-            var box=el.getBoundingClientRect();
-            if(box.top<140 && box.height<90){
-              el.classList.add(legacySale?'fp-legacy-tabs':'fp-legacy-chrome');
-              el.style.setProperty('display','none','important');
-            }
-          }
-        }
-      }
-      clean();
-      setInterval(clean,2000);
-    });
-  }catch(e){}
-})();`;
-
-var MORE_JS = `
-(function(){
-  try{
-    var IC={dots:'<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>'};
-    function closeMenu(){var x=document.querySelector('.fpMoreMenu');if(x)x.remove();}
-    function closeModal(){var x=document.querySelector('.fpActionModal');if(x)x.remove();}
-    function isRow(r){return r&&r.tagName==='TR'&&r.querySelectorAll('td').length>2;}
-    function openMenu(row,x,y){
-      closeMenu();var m=document.createElement('div');m.className='fpMoreMenu';m.style.cssText='position:fixed;z-index:2147483001;left:'+Math.max(8,x)+'px;top:'+Math.max(8,y)+'px;width:220px;background:#fff;border:1px solid #d9e3ef;border-radius:12px;box-shadow:0 18px 50px rgba(9,28,54,.24);padding:7px;color:#14263c;font:13px system-ui';
-      var actions=['Open','Edit','Print','Share'];
-      actions.forEach(function(a){var b=document.createElement('button');b.textContent=a;b.style.cssText='display:block;width:100%;border:0;background:none;text-align:left;padding:9px 10px;border-radius:8px;cursor:pointer;color:inherit';b.onclick=function(){closeMenu();var txt=(row.textContent||'').trim();alert(a+' — '+txt.slice(0,120));};m.appendChild(b);});
-      document.body.appendChild(m);
-      var r=m.getBoundingClientRect();if(r.right>innerWidth)m.style.left=Math.max(8,innerWidth-r.width-8)+'px';if(r.bottom>innerHeight)m.style.top=Math.max(8,innerHeight-r.height-8)+'px';
-    }
-    function addFunnels(){var th=document.querySelectorAll('main table thead th');for(var i=0;i<th.length;i++){if(th[i].querySelector('.fpFun'))continue;var f=document.createElement('span');f.className='fpFun';f.textContent='⌄';f.style.cssText='font-size:10px;opacity:.55;margin-left:5px';th[i].appendChild(f);}}
-    function enhance(){var rows=document.querySelectorAll('main table tbody tr');for(var i=0;i<rows.length;i++){var cell=rows[i].lastElementChild;if(!cell||cell.querySelector('.fpMoreBtn'))continue;var btns=cell.querySelectorAll('button,a');if(!btns.length)continue;var holder=btns[0].parentElement||cell;var mb=document.createElement('span');mb.className='fpMoreBtn';mb.setAttribute('title','More Actions');mb.innerHTML=IC.dots;holder.appendChild(mb);}addFunnels();}
-    document.addEventListener('click',function(e){var mb=e.target&&e.target.closest?e.target.closest('.fpMoreBtn'):null;if(mb){e.preventDefault();e.stopPropagation();var row=mb.closest('tr');if(row){var rc=mb.getBoundingClientRect();openMenu(row,rc.right-226,rc.bottom+4);}return;}if(!e.target.closest('.fpMoreMenu'))closeMenu();},true);
-    document.addEventListener('contextmenu',function(e){var row=e.target&&e.target.closest?e.target.closest('tr'):null;if(isRow(row)){e.preventDefault();openMenu(row,e.clientX,e.clientY);}},true);
-    document.addEventListener('keydown',function(e){if(e.key==='Escape'){closeMenu();closeModal();}});
-    window.addEventListener('scroll',closeMenu,true);
-    var t=null;
-    function ready(fn){if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',fn);else fn();}
-    ready(function(){enhance();new MutationObserver(function(){clearTimeout(t);t=setTimeout(enhance,180);}).observe(document.body,{childList:true,subtree:true});setInterval(enhance,3000);});
-  }catch(e){}
-})();`;
+function rewriteSetCookie(value) {
+  if (!value) return value;
+  return value
+    .replace(/Domain=\.?(?:femmasbase\.pages\.dev)/ig, 'Domain=app.femmasprint.com');
+}
 
 export async function onRequest(context) {
-  const response = await context.next();
+  const incoming = context.request;
+  const sourceUrl = new URL(incoming.url);
+  const upstreamUrl = new URL(sourceUrl.pathname + sourceUrl.search, UPSTREAM_ORIGIN);
+
+  const headers = new Headers(incoming.headers);
+  headers.delete('host');
+
+  if (headers.has('origin')) headers.set('origin', UPSTREAM_ORIGIN);
+  if (headers.has('referer')) {
+    try {
+      const ref = new URL(headers.get('referer'));
+      if (ref.hostname === sourceUrl.hostname) {
+        ref.protocol = 'https:';
+        ref.hostname = 'femmasbase.pages.dev';
+        ref.port = '';
+        headers.set('referer', ref.toString());
+      }
+    } catch {}
+  }
+
+  const init = {
+    method: incoming.method,
+    headers,
+    redirect: 'manual',
+  };
+
+  if (incoming.method !== 'GET' && incoming.method !== 'HEAD') {
+    init.body = incoming.body;
+  }
+
   try {
-    const ct = response.headers.get('content-type') || '';
-    if (!ct.includes('text/html')) return response;
-    return new HTMLRewriter()
-      .on('head', {
-        element(el) {
-          el.append('<style id="fpEdgeDark">' + HEAD_CSS + '</style>', { html: true });
-          el.append('<script id="fpEdgeFix">' + FIX_JS + '</scr' + 'ipt>', { html: true });
-          el.append('<script id="fpMoreActions">' + MORE_JS + '</scr' + 'ipt>', { html: true });
-          el.append('<script id="fpTheme" src="/fp-theme.js" defer></scr' + 'ipt>', { html: true });
-          el.append('<script id="fpBase44Exact" src="/fp-base44-exact.js?v=20260921-1" defer></scr' + 'ipt>', { html: true });
-          el.append('<script id="fpAvatars" src="/fp-avatars.js" defer></scr' + 'ipt>', { html: true });
-          el.append('<script id="fpPayroll" src="/fp-payroll.js" defer></scr' + 'ipt>', { html: true });
-          el.append('<script id="fpInvSkin" src="/fp-invoice-skin.js?v=base44-exact-20260811-1958" defer></scr' + 'ipt>', { html: true });
-        }
-      })
-      .transform(response);
-  } catch (e) {
-    return response; // never break the page
+    const upstream = await fetch(new Request(upstreamUrl.toString(), init));
+
+    const outHeaders = new Headers(upstream.headers);
+    outHeaders.set('x-femmas-app-source', 'femmasbase');
+    outHeaders.set('x-femmas-app-upstream', 'femmasbase.pages.dev');
+
+    const location = outHeaders.get('location');
+    if (location) outHeaders.set('location', rewriteLocation(location));
+
+    const cookie = outHeaders.get('set-cookie');
+    if (cookie) outHeaders.set('set-cookie', rewriteSetCookie(cookie));
+
+    return new Response(upstream.body, {
+      status: upstream.status,
+      statusText: upstream.statusText,
+      headers: outHeaders,
+    });
+  } catch (error) {
+    return new Response('FEMMAS APP is temporarily unavailable.', {
+      status: 502,
+      headers: {
+        'content-type': 'text/plain; charset=utf-8',
+        'cache-control': 'no-store',
+        'x-femmas-app-source': 'gateway-error'
+      }
+    });
   }
 }
