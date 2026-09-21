@@ -11,13 +11,28 @@ jobs:
   probe:
     runs-on: ubuntu-latest
     steps:
-      - name: Probe legacy QuickSale daily endpoint
+      - name: Verify shared-data bridge reached production
         shell: bash
         run: |
           set -euo pipefail
-          base='https://script.google.com/macros/s/AKfycbzgr7hqI4vPFHB9nNRh2l7Ljb7m0KCf9Yl1Ue4pEfgSAADE4-luyv0B3_tn0zo0bQzecg/exec'
-          code=$(curl -sSL --retry 2 --retry-delay 2 --max-time 35 -o /tmp/day.js -w '%{http_code}' "$base?action=getQuickSale&date=2026-09-21&callback=probeCb" || true)
-          echo "status=$code bytes=$(wc -c </tmp/day.js 2>/dev/null || echo 0)"
-          head -c 240 /tmp/day.js 2>/dev/null | tr '\n' ' ' || true
-          echo
-          grep -q '2026-09-21\|SALE-20260921' /tmp/day.js
+          marker='Apps Script bridge unavailable'
+          check_site () {
+            base="$1"
+            out="$2"
+            for i in $(seq 1 36); do
+              echo "$base attempt $i"
+              curl -sSL --max-time 20 "$base/" -o "/tmp/$out.html" || true
+              asset=$(grep -oE '/assets/index-[^"]+\.js' "/tmp/$out.html" | head -n1 || true)
+              if [ -n "$asset" ]; then
+                curl -sSL --max-time 30 "$base$asset" -o "/tmp/$out.js" || true
+                if grep -Fq "$marker" "/tmp/$out.js"; then
+                  echo "marker found: $base$asset"
+                  return 0
+                fi
+              fi
+              sleep 5
+            done
+            return 1
+          }
+          check_site https://femmasbase.pages.dev base
+          check_site https://app.femmasprint.com app
