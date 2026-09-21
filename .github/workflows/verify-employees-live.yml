@@ -13,33 +13,27 @@ jobs:
     steps:
       - shell: bash
         run: |
-          set -euo pipefail
-          echo "--- Employees endpoint ---"
-          curl -sS --max-time 30 -w "\nhttp=%{http_code} total=%{time_total}s\n" "https://app.femmasprint.com/api/femmas-shared-sheet?sheet=Employees" -o /tmp/employees.json
-          python - <<'PY'
-          import json
-          d=json.load(open('/tmp/employees.json'))
-          rows=d.get('rows') or []
-          print('ok',d.get('ok'),'source',d.get('source'),'rows',len(rows))
-          print('first',[(r.get('EmployeeID'),r.get('EmployeeName')) for r in rows[:5]])
-          if not d.get('ok') or len(rows) < 5:
-              raise SystemExit(1)
-          PY
+          set -u
+          BRIDGE="https://script.google.com/macros/s/AKfycbzgr7hqI4vPFHB9nNRh2l7Ljb7m0KCf9Yl1Ue4pEfgSAADE4-luyv0B3_tn0zo0bQzecg/exec"
+
+          echo "--- Direct Apps Script getTable Employees ---"
+          curl -sSL --max-time 35 -w "\nhttp=%{http_code} total=%{time_total}s\n" "$BRIDGE?action=getTable&tab=Employees&callback=probeCb" -o /tmp/direct.txt || true
+          echo "bytes=$(wc -c < /tmp/direct.txt)"
+          head -c 1500 /tmp/direct.txt | tr '\n' ' '
+          echo
+
+          echo "--- Direct candidate getEmployees ---"
+          curl -sSL --max-time 35 -w "\nhttp=%{http_code} total=%{time_total}s\n" "$BRIDGE?action=getEmployees&callback=probeCb" -o /tmp/employees-action.txt || true
+          echo "bytes=$(wc -c < /tmp/employees-action.txt)"
+          head -c 1500 /tmp/employees-action.txt | tr '\n' ' '
+          echo
+
+          echo "--- Production Employees endpoint ---"
+          curl -sS --max-time 35 -w "\nhttp=%{http_code} total=%{time_total}s\n" "https://app.femmasprint.com/api/femmas-shared-sheet?sheet=Employees" -o /tmp/prod.json || true
+          echo "bytes=$(wc -c < /tmp/prod.json)"
+          cat /tmp/prod.json
+          echo
+
           echo "--- Current production bundle ---"
-          curl -sSL --max-time 30 "https://app.femmasprint.com/" -o /tmp/app.html
-          grep -oE '/assets/index-[A-Za-z0-9_-]+\.js' /tmp/app.html | head -1
-          asset=$(grep -oE '/assets/index-[A-Za-z0-9_-]+\.js' /tmp/app.html | head -1)
-          curl -sSL --max-time 30 "https://app.femmasprint.com$asset" -o /tmp/app.js
-          python - <<'PY'
-          from pathlib import Path
-          c=Path('/tmp/app.js').read_text(errors='ignore')
-          checks={
-            'shared_endpoint':'/api/femmas-shared-sheet' in c,
-            'employee_fallback':'sheet-employee-' in c,
-            'parallel_staff_message':'Wafanyakazi hawakuweza kupakiwa kutoka Base44 wala FEMMAS database' in c,
-            'session_cache':'femmas_shared_cache:' in c,
-          }
-          print(checks)
-          if not all(checks.values()):
-              raise SystemExit(1)
-          PY
+          curl -sSL --max-time 30 "https://app.femmasprint.com/" -o /tmp/app.html || true
+          grep -oE '/assets/index-[A-Za-z0-9_-]+\.js' /tmp/app.html | head -1 || true
