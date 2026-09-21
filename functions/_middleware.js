@@ -30,17 +30,9 @@ async function sharedSheetRead(sourceUrl) {
   const sheet = (sourceUrl.searchParams.get('sheet') || '').trim();
   const date = (sourceUrl.searchParams.get('date') || '').trim();
   const live = ['QuickSale','Expenses','Attendance'].includes(sheet);
-  const browserMaxAge = live ? 8 : 120;
+  const browserMaxAge = live ? 5 : 60;
   const edgeMaxAge = live ? 15 : 300;
   const cacheControl = `public, max-age=${browserMaxAge}, s-maxage=${edgeMaxAge}, stale-while-revalidate=300`;
-  const cache = caches.default;
-  const cacheKey = new Request(sourceUrl.toString(), { method:'GET' });
-  const cached = await cache.match(cacheKey);
-  if (cached) {
-    const h = new Headers(cached.headers);
-    h.set('x-femmas-cache','HIT');
-    return new Response(cached.body, { status:cached.status, headers:h });
-  }
   if (!['QuickSale','Expenses','Attendance','Employees','Customers','Items','Invoices','Payments','Debtors','Production','Suppliers','Purchases','Orders','Accounts','Payroll','Delivery','Leads'].includes(sheet)) {
     return json({ ok:false, error:'Unsupported sheet' }, 400);
   }
@@ -49,11 +41,11 @@ async function sharedSheetRead(sourceUrl) {
   const ttl = sheetCacheTtl(sheet, date);
   const cached = SHEET_MEMORY_CACHE.get(cacheKey);
   if (cached && Date.now() - cached.at <= ttl) {
-    return json({ ok:true, rows:cached.rows, source:'memory-cache' });
+    return json({ ok:true, rows:cached.rows, source:'memory-cache' }, 200, cacheControl);
   }
   if (SHEET_INFLIGHT.has(cacheKey)) {
     const rows = await SHEET_INFLIGHT.get(cacheKey);
-    return json({ ok:true, rows, source:'shared-inflight' });
+    return json({ ok:true, rows, source:'shared-inflight' }, 200, cacheControl);
   }
 
   const task = (async () => {
@@ -90,15 +82,10 @@ async function sharedSheetRead(sourceUrl) {
   SHEET_INFLIGHT.set(cacheKey, task);
   try {
     const rows = await task;
-    return json({ ok:true, rows, source:'apps-script' });
+    return json({ ok:true, rows, source:'apps-script' }, 200, cacheControl);
   } catch (error) {
     return json({ ok:false, error:error?.message || 'Shared data bridge failed' }, 502);
   }
-}
-
-let currentContext = null;
-function contextWaitUntilSafe(promise) {
-  try { currentContext?.waitUntil?.(promise); } catch {}
 }
 
 function rewriteLocation(value) {
@@ -150,7 +137,6 @@ async function localFrontend(context, incoming, sourceUrl) {
 }
 
 export async function onRequest(context) {
-  currentContext = context;
   const incoming = context.request;
   const sourceUrl = new URL(incoming.url);
   if (sourceUrl.pathname === '/api/femmas-shared-sheet' && incoming.method === 'GET') {
