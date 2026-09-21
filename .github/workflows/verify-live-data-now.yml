@@ -1,0 +1,33 @@
+name: Verify Live Data Now
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - shell: bash
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 18); do
+            code=$(curl -sS -o /tmp/live.json -w '%{http_code}' --max-time 20 "https://app.femmasprint.com/api/femmas-shared-sheet?sheet=QuickSale&date=2026-09-21" || true)
+            echo "attempt=$i status=$code"
+            if [ "$code" = "200" ]; then
+              python - <<'PY'
+import json
+d=json.load(open('/tmp/live.json'))
+rows=d.get('rows') or []
+print('source',d.get('source'))
+print('row_count',len(rows))
+for r in rows[-3:]:
+    print(r.get('Date'),r.get('Client'),r.get('Goods'),r.get('Amount'))
+if len(rows) < 10:
+    raise SystemExit(1)
+PY
+              exit 0
+            fi
+            sleep 5
+          done
+          exit 1
