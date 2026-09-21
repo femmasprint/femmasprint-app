@@ -396,3 +396,44 @@
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
   else boot();
 })();
+
+
+/* FEMMAS BASE44 DASHBOARD POLISH 2026-09-21 */
+(function(){
+  "use strict";
+  var STYLE_ID="fp-base44-dashboard-polish";
+  var css=[
+    "[data-screen-label='Dashboard'],[data-screen-label='Home'],#fp-main{--fp-dash-blue:#3ba3e8;--fp-dash-navy:#2d4d7a}",
+    "[data-screen-label='Dashboard'],[data-screen-label='Home']{background:linear-gradient(180deg,#f8fafc 0%,#f6f8fa 100%)!important;padding:14px!important}",
+    "[data-screen-label='Dashboard'] [data-widget-col],[data-screen-label='Home'] [data-widget-col]{background:#fff!important;border:1px solid #e3e9ef!important;border-radius:12px!important;box-shadow:0 4px 14px rgba(15,23,42,.06)!important;transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease!important}",
+    "[data-screen-label='Dashboard'] [data-widget-col]:hover,[data-screen-label='Home'] [data-widget-col]:hover{transform:translateY(-1px)!important;border-color:#c9d9e8!important;box-shadow:0 8px 22px rgba(15,23,42,.08)!important}",
+    "[data-screen-label='Dashboard'] h1,[data-screen-label='Dashboard'] h2,[data-screen-label='Home'] h1,[data-screen-label='Home'] h2{color:#17243a!important;letter-spacing:-.015em!important}",
+    "[data-screen-label='Dashboard'] svg,[data-screen-label='Home'] svg{shape-rendering:geometricPrecision}",
+    "[data-screen-label='Dashboard'] table,[data-screen-label='Home'] table{border-radius:12px!important;overflow:hidden!important}",
+    ".fp-v3-bar{animation-duration:.48s!important;animation-timing-function:cubic-bezier(.2,.78,.28,1)!important}",
+    ".fp-v3-bar-track{fill:rgba(45,77,122,.055)!important}",
+    ".fp-v3-bar{fill:#2d4d7a!important;filter:drop-shadow(0 5px 6px rgba(45,77,122,.12))!important}",
+    ".fp-v3-bar.fp-v3-bar-selected{fill:#3ba3e8!important;filter:drop-shadow(0 7px 9px rgba(59,163,232,.22))!important}",
+    ".fp-cross{stroke:#3ba3e8!important;stroke-width:1!important;stroke-dasharray:3 4!important}",
+    ".fp-hoverdot{fill:#3ba3e8!important;filter:drop-shadow(0 0 5px rgba(59,163,232,.55))!important}",
+    ".fp-tip{background:#17243a!important;border:1px solid rgba(59,163,232,.45)!important;border-radius:9px!important;box-shadow:0 10px 25px rgba(15,23,42,.18)!important}",
+    "@media(max-width:700px){[data-screen-label='Dashboard'],[data-screen-label='Home']{padding:9px!important}}"
+  ].join("");
+  function inject(){
+    if(document.getElementById(STYLE_ID))return;
+    var st=document.createElement("style");st.id=STYLE_ID;st.textContent=css;document.head.appendChild(st);
+  }
+  function smooth(){
+    inject();
+    var root=document.querySelector("[data-screen-label='Dashboard'],[data-screen-label='Home']");
+    if(!root)return;
+    var cards=root.querySelectorAll("[data-widget-col],section[style*='border-radius'],article[style*='border-radius']");
+    for(var i=0;i<cards.length;i++){
+      if(cards[i].dataset.fpSmooth==="1")continue;
+      cards[i].dataset.fpSmooth="1";
+      cards[i].style.willChange="transform";
+    }
+  }
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",smooth);else smooth();
+  setInterval(smooth,1100);
+})();
