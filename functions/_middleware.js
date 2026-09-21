@@ -14,12 +14,12 @@ function sheetCacheTtl(sheet, date) {
   return 90000;
 }
 
-function json(data, status = 200) {
+function json(data, status = 200, cacheControl = 'no-store') {
   return new Response(JSON.stringify(data), {
     status,
     headers: {
       'content-type': 'application/json; charset=utf-8',
-      'cache-control': 'no-store',
+      'cache-control': cacheControl,
       'access-control-allow-origin': PUBLIC_ORIGIN,
       'vary': 'Origin'
     }
@@ -29,6 +29,18 @@ function json(data, status = 200) {
 async function sharedSheetRead(sourceUrl) {
   const sheet = (sourceUrl.searchParams.get('sheet') || '').trim();
   const date = (sourceUrl.searchParams.get('date') || '').trim();
+  const live = ['QuickSale','Expenses','Attendance'].includes(sheet);
+  const browserMaxAge = live ? 8 : 120;
+  const edgeMaxAge = live ? 15 : 300;
+  const cacheControl = `public, max-age=${browserMaxAge}, s-maxage=${edgeMaxAge}, stale-while-revalidate=300`;
+  const cache = caches.default;
+  const cacheKey = new Request(sourceUrl.toString(), { method:'GET' });
+  const cached = await cache.match(cacheKey);
+  if (cached) {
+    const h = new Headers(cached.headers);
+    h.set('x-femmas-cache','HIT');
+    return new Response(cached.body, { status:cached.status, headers:h });
+  }
   if (!['QuickSale','Expenses','Attendance','Employees','Customers','Items','Invoices','Payments','Debtors','Production','Suppliers','Purchases','Orders','Accounts','Payroll','Delivery','Leads'].includes(sheet)) {
     return json({ ok:false, error:'Unsupported sheet' }, 400);
   }
@@ -84,6 +96,11 @@ async function sharedSheetRead(sourceUrl) {
   }
 }
 
+let currentContext = null;
+function contextWaitUntilSafe(promise) {
+  try { currentContext?.waitUntil?.(promise); } catch {}
+}
+
 function rewriteLocation(value) {
   if (!value) return value;
   return value
@@ -133,6 +150,7 @@ async function localFrontend(context, incoming, sourceUrl) {
 }
 
 export async function onRequest(context) {
+  currentContext = context;
   const incoming = context.request;
   const sourceUrl = new URL(incoming.url);
   if (sourceUrl.pathname === '/api/femmas-shared-sheet' && incoming.method === 'GET') {
