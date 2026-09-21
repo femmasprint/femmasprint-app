@@ -19,3 +19,18 @@ jobs:
           grep -ioE 'content-security-policy|script-src|connect-src|script.google.com|docs.google.com' /tmp/app.html | head -50 || true
           echo "--- headers ---"
           curl -sSI https://app.femmasprint.com/ | grep -iE 'content-security-policy|x-frame|referrer-policy|permissions-policy' || true
+
+          echo "--- live data endpoint ---"
+          curl -sS --max-time 25 "https://app.femmasprint.com/api/femmas-shared-sheet?sheet=QuickSale&date=2026-09-21" -o /tmp/live.json
+          python - <<'PY'
+import json
+d=json.load(open('/tmp/live.json'))
+rows=d.get('rows') or []
+print('ok',d.get('ok'))
+print('source',d.get('source'))
+print('rows',len(rows))
+for r in rows[-3:]:
+    print(r.get('Client'),r.get('Goods'),r.get('Amount'))
+if not d.get('ok') or len(rows)<10:
+    raise SystemExit(1)
+PY
