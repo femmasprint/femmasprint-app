@@ -70,3 +70,10 @@ jobs:
           echo "app_api_status=$app_api base_api_status=$base_api"
           test "$app_api" = "$base_api"
           cmp /tmp/app-api.json /tmp/base-api.json
+
+          echo "--- shared data bridge ---"
+          curl -sSIL --max-time 20 "https://docs.google.com/spreadsheets/d/15fuAWl1c6kD70sIxK-yIP15K3OVr97JHXA9KFDfrPec/export?format=csv&sheet=QuickSale" | sed -n '1,25p'
+          curl -sSL --max-time 20 "https://script.google.com/macros/s/AKfycbzgr7hqI4vPFHB9nNRh2l7Ljb7m0KCf9Yl1Ue4pEfgSAADE4-luyv0B3_tn0zo0bQzecg/exec?action=getQuickSale&date=2026-09-21&callback=probeCb" -o /tmp/bridge.txt
+          echo "bridge_bytes=$(wc -c < /tmp/bridge.txt)"
+          head -c 500 /tmp/bridge.txt | tr '\n' ' '
+          echo
