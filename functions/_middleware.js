@@ -21,7 +21,7 @@ function json(data, status = 200) {
 async function sharedSheetRead(sourceUrl) {
   const sheet = (sourceUrl.searchParams.get('sheet') || '').trim();
   const date = (sourceUrl.searchParams.get('date') || '').trim();
-  if (!['QuickSale','Expenses','Attendance'].includes(sheet)) {
+  if (!['QuickSale','Expenses','Attendance','Employees','Customers','Items','Invoices','Payments','Debtors','Production','Suppliers','Purchases','Orders','Accounts','Payroll','Delivery','Leads'].includes(sheet)) {
     return json({ ok:false, error:'Unsupported sheet' }, 400);
   }
 
