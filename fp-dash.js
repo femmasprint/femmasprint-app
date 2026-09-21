@@ -69,7 +69,7 @@
     if (!line) { svg.__fpDash = false; return; }
 
     // Entrance: draw the line in — only ONCE per page load, so theme toggles and
-    // period changes (which re-render the chart) don't re-animate and feel janky.
+    // period changes (which re-render the chart) do not re-animate and feel janky.
     if (!document.__fpChartAnim) {
       document.__fpChartAnim = true;
       try {
@@ -218,9 +218,6 @@
     ".fp-hoverdot{fill:#3399FF!important;filter:drop-shadow(0 0 7px rgba(51,153,255,.95))!important;}",
     ".fp-tip{border-color:rgba(51,153,255,.65)!important;background:rgba(10,26,47,.97)!important;}",
     ".fp-tip .v{color:#72BDFF!important;}",
-    "html.fp-dark .fp-v3-bar-track{fill:rgba(220,234,255,.085);}",
-    "html.fp-dark .fp-v3-bar{fill:#6EAFF0;filter:drop-shadow(0 8px 10px rgba(0,5,14,.34));}",
-    "html.fp-dark .fp-v3-bar.fp-v3-bar-selected{fill:#3399FF;filter:drop-shadow(0 9px 12px rgba(51,153,255,.34));}",
     "@keyframes fpV3BarRise{from{transform:scaleY(.025);opacity:.2}to{transform:scaleY(1);opacity:1}}",
     "@media(prefers-reduced-motion:reduce){.fp-v3-bar{animation:none!important;}}"
   ].join("");
