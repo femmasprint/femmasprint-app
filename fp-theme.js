@@ -793,3 +793,45 @@
   new MutationObserver(function(){requestAnimationFrame(apply)}).observe(document.documentElement,{childList:true,subtree:true});
   setInterval(apply,1200);
 })();
+
+
+/* FEMMAS LEGACY TOP ROW CLEANUP 2026-09-21 */
+(function(){
+  "use strict";
+  var labels={
+    "company":1,"help":1,"versions":1,"shortcuts":1,
+    "msaada wa whatsapp":1,"whatsapp help":1
+  };
+  function norm(v){return String(v||"").replace(/\s+/g," ").trim().toLowerCase()}
+  function clean(){
+    var main=document.getElementById("fp-main");
+    if(!main)return;
+    var legacy=main.querySelector("[data-topbanner='1']");
+    if(legacy) legacy.style.setProperty("display","none","important");
+
+    var top=main.querySelector(":scope > header, :scope > .fp-v3-topbar");
+    if(!top)return;
+    var candidates=top.querySelectorAll("a,button,[role='button'],span,div");
+    for(var i=0;i<candidates.length;i++){
+      var el=candidates[i], t=norm(el.textContent);
+      if(labels[t]){
+        el.style.setProperty("display","none","important");
+        continue;
+      }
+      if(/^\+?255[\d\s-]{7,}$/.test(t) || /^0\d{8,9}$/.test(t)){
+        el.style.setProperty("display","none","important");
+        continue;
+      }
+      if(t==="mauzo" && (el.tagName==="A" || el.tagName==="BUTTON" || el.getAttribute("role")==="button")){
+        var href=(el.getAttribute("href")||"").toLowerCase();
+        var cls=(el.className||"").toString().toLowerCase();
+        if(!/sale-invoices|quick-sale|invoice/.test(href+" "+cls)){
+          el.style.setProperty("display","none","important");
+        }
+      }
+    }
+  }
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",clean);else clean();
+  new MutationObserver(function(){requestAnimationFrame(clean)}).observe(document.documentElement,{childList:true,subtree:true});
+  setInterval(clean,1500);
+})();
