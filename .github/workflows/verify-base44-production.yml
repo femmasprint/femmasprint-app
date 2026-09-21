@@ -1,0 +1,47 @@
+name: Verify Base44 Production Switch
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for Cloudflare and verify upstream
+        shell: bash
+        run: |
+          set -euo pipefail
+          ok=0
+          for i in $(seq 1 24); do
+            echo "Attempt $i"
+            curl -sS -D /tmp/app.h -o /tmp/app.html --max-time 20 https://app.femmasprint.com/ || true
+            if grep -qi '^x-femmas-app-source: femmasbase' /tmp/app.h 2>/dev/null; then
+              ok=1
+              break
+            fi
+            sleep 5
+          done
+          echo "--- app headers ---"
+          sed -n '1,30p' /tmp/app.h || true
+          test "$ok" = "1"
+
+          curl -sSL --max-time 20 https://femmasbase.pages.dev/ -o /tmp/base.html
+          python - <<'PY'
+          import hashlib, pathlib
+          app=pathlib.Path('/tmp/app.html').read_bytes()
+          base=pathlib.Path('/tmp/base.html').read_bytes()
+          print('app_bytes',len(app))
+          print('base_bytes',len(base))
+          print('app_sha256',hashlib.sha256(app).hexdigest())
+          print('base_sha256',hashlib.sha256(base).hexdigest())
+          print('html_equal',app==base)
+          if app != base:
+              raise SystemExit('Production HTML does not match femmasbase upstream')
+          PY
+
+          curl -sS -o /dev/null -w 'login_status=%{http_code}\n' --max-time 20 https://app.femmasprint.com/login
+          curl -sS -o /dev/null -w 'dashboard_status=%{http_code}\n' --max-time 20 https://app.femmasprint.com/dashboard
