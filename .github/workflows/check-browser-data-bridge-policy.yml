@@ -13,24 +13,16 @@ jobs:
     steps:
       - shell: bash
         run: |
-          set -e
+          set -euo pipefail
           curl -sSL https://app.femmasprint.com/ -o /tmp/app.html
-          echo "--- CSP/meta/script refs ---"
-          grep -ioE 'content-security-policy|script-src|connect-src|script.google.com|docs.google.com' /tmp/app.html | head -50 || true
           echo "--- headers ---"
-          curl -sSI https://app.femmasprint.com/ | grep -iE 'content-security-policy|x-frame|referrer-policy|permissions-policy' || true
-
+          curl -sSI https://app.femmasprint.com/ | grep -iE 'content-security-policy|x-frame|referrer-policy|permissions-policy|x-femmas-app-source' || true
           echo "--- live data endpoint ---"
           curl -sS --max-time 25 "https://app.femmasprint.com/api/femmas-shared-sheet?sheet=QuickSale&date=2026-09-21" -o /tmp/live.json
-          python - <<'PY'
-import json
-d=json.load(open('/tmp/live.json'))
-rows=d.get('rows') or []
-print('ok',d.get('ok'))
-print('source',d.get('source'))
-print('rows',len(rows))
-for r in rows[-3:]:
-    print(r.get('Client'),r.get('Goods'),r.get('Amount'))
-if not d.get('ok') or len(rows)<10:
-    raise SystemExit(1)
-PY
+          python -c "import json; d=json.load(open('/tmp/live.json')); rows=d.get('rows') or []; print('ok',d.get('ok')); print('source',d.get('source')); print('rows',len(rows)); print('last',[(x.get('Client'),x.get('Goods'),x.get('Amount')) for x in rows[-3:]]); raise SystemExit(0 if d.get('ok') and len(rows)>=10 else 1)"
+          echo "--- deployed bundle contains bridge ---"
+          asset=$(grep -oE '/assets/index-[A-Za-z0-9_-]+\.js' /tmp/app.html | head -1)
+          test -n "$asset"
+          curl -sSL "https://app.femmasprint.com$asset" -o /tmp/app.js
+          grep -q "/api/femmas-shared-sheet" /tmp/app.js
+          echo "bundle_bridge=yes asset=$asset"
