@@ -112,6 +112,67 @@ function markResponse(response, source, cacheControl = '') {
   });
 }
 
+async function optimizeLiveFemmasResponse(response, sourceUrl) {
+  const contentType = String(response.headers.get('content-type') || '').toLowerCase();
+  const pathname = sourceUrl.pathname || '';
+
+  // Keep the exact working upstream/login flow, but make the dashboard non-blocking.
+  if (contentType.includes('text/html')) {
+    let html = await response.text();
+    const guard = `<script>
+(function(){
+  if (window.__femmasFastGuard) return;
+  window.__femmasFastGuard = true;
+  const nf = window.fetch.bind(window);
+  window.fetch = function(input, init){
+    init = init || {};
+    let url = '';
+    try { url = typeof input === 'string' ? input : (input && input.url) || ''; } catch(_) {}
+    const method = String(init.method || (input && input.method) || 'GET').toUpperCase();
+    if (!/\\/api\\//i.test(url) || init.signal) return nf(input, init);
+    const ctl = new AbortController();
+    const ms = method === 'GET' || method === 'HEAD' ? 8000 : 12000;
+    const t = setTimeout(function(){ try { ctl.abort(); } catch(_){} }, ms);
+    return nf(input, Object.assign({}, init, {signal:ctl.signal})).finally(function(){clearTimeout(t);});
+  };
+  var NX = window.XMLHttpRequest;
+  if (NX && !NX.__femmasFastGuard) {
+    var op = NX.prototype.open, sd = NX.prototype.send;
+    NX.prototype.open = function(method,url){ this.__fpMethod=String(method||'GET').toUpperCase(); this.__fpUrl=String(url||''); return op.apply(this,arguments); };
+    NX.prototype.send = function(){ try{ if(!this.timeout && /\\/api\\//i.test(this.__fpUrl||'')) this.timeout=(this.__fpMethod==='GET'||this.__fpMethod==='HEAD')?8500:12000; }catch(_){} return sd.apply(this,arguments); };
+    NX.__femmasFastGuard = true;
+  }
+})();</script>`;
+    if (!html.includes('__femmasFastGuard')) {
+      if (html.includes('<script type="module"')) html = html.replace('<script type="module"', guard + '<script type="module"');
+      else html = html.replace('</head>', guard + '</head>');
+    }
+    const headers = new Headers(response.headers);
+    headers.delete('content-length');
+    headers.set('cache-control','no-store');
+    headers.set('x-femmas-speed-fix','html-guard');
+    return new Response(html,{status:response.status,statusText:response.statusText,headers});
+  }
+
+  if ((contentType.includes('javascript') || /\\.js$/i.test(pathname)) && /\\/assets\\/index-[^/]+\\.js$/i.test(pathname)) {
+    let js = await response.text();
+    let changed = false;
+    const replacements = [
+      ['q.current=!0,re.current||L(!0),V("")','q.current=!0,re.current||L(!1),V("")'],
+      [',[K,L]=A.useState(!0),[X,V]=',',[K,L]=A.useState(!1),[X,V]=']
+    ];
+    for (const [from,to] of replacements) {
+      if (js.includes(from)) { js = js.replace(from,to); changed = true; }
+    }
+    const headers = new Headers(response.headers);
+    headers.delete('content-length');
+    headers.set('cache-control','no-store');
+    headers.set('x-femmas-speed-fix', changed ? 'dashboard-nonblocking' : 'guard-only');
+    return new Response(js,{status:response.status,statusText:response.statusText,headers});
+  }
+  return response;
+}
+
 async function localFrontend(context, incoming, sourceUrl) {
   if (!context.env?.ASSETS || !['GET','HEAD'].includes(incoming.method)) return null;
   const pathname = sourceUrl.pathname;
@@ -206,11 +267,12 @@ export async function onRequest(context) {
     const cookie = outHeaders.get('set-cookie');
     if (cookie) outHeaders.set('set-cookie', rewriteSetCookie(cookie));
 
-    return new Response(upstream.body, {
+    const proxied = new Response(upstream.body, {
       status: upstream.status,
       statusText: upstream.statusText,
       headers: outHeaders,
     });
+    return await optimizeLiveFemmasResponse(proxied, sourceUrl);
   } catch (error) {
     return new Response('FEMMAS APP is temporarily unavailable.', {
       status: 502,
