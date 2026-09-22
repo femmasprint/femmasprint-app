@@ -1,0 +1,29 @@
+name: Verify Google Sheets Compat
+on:
+  push:
+    branches: [verify-google-sheets-compat-20260922]
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - shell: bash
+        run: |
+          set -euo pipefail
+          APP_ID="6a26d86878b02023440a0ff4"
+          URL="https://app.femmasprint.com/api/apps/$APP_ID/functions/googleSheetsApi"
+          ok=0
+          for i in $(seq 1 20); do
+            read_code=$(curl -sS -o /tmp/read.json -w '%{http_code}' --max-time 25 -H 'origin: https://app.femmasprint.com' -H 'referer: https://app.femmasprint.com/quick-sale' -H 'content-type: application/json' -d '{"action":"readRange","spreadsheetId":"15fuAWl1c6kD70sIxK-yIP15K3OVr97JHXA9KFDfrPec","sheetName":"QuickSale"}' "$URL" || true)
+            update_code=$(curl -sS -o /tmp/update.json -w '%{http_code}' --max-time 25 -H 'origin: https://app.femmasprint.com' -H 'referer: https://app.femmasprint.com/quick-sale' -H 'content-type: application/json' -d '{"action":"updateByKey","spreadsheetId":"15fuAWl1c6kD70sIxK-yIP15K3OVr97JHXA9KFDfrPec","sheetName":"QuickSale","keyColumn":"SaleID","keyValue":"__NO_SUCH_SALE__","changes":{"Client":"probe"}}' "$URL" || true)
+            echo "attempt=$i read=$read_code update=$update_code"
+            echo "read_body=$(head -c 400 /tmp/read.json)"
+            echo "update_body=$(cat /tmp/update.json)"
+            if [ "$read_code" = "200" ] && [ "$update_code" = "404" ] && grep -q '"rows"' /tmp/read.json && grep -q 'Record not found' /tmp/update.json; then
+              ok=1
+              break
+            fi
+            sleep 5
+          done
+          test "$ok" = "1"
