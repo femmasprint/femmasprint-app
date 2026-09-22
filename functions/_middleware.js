@@ -154,7 +154,7 @@ async function optimizeLiveFemmasResponse(response, sourceUrl) {
     return new Response(html,{status:response.status,statusText:response.statusText,headers});
   }
 
-  if ((contentType.includes('javascript') || /\\.js$/i.test(pathname)) && /\\/assets\\/index-[^/]+\\.js$/i.test(pathname)) {
+  if ((contentType.includes('javascript') || /\.js$/i.test(pathname)) && /\/assets\/index-[^/]+\.js$/i.test(pathname)) {
     let js = await response.text();
     let changed = false;
     const replacements = [
