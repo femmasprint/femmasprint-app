@@ -20,6 +20,113 @@ function sheetCacheTtl(sheet, date) {
   return 90000;
 }
 
+function getCookie(request, name) {
+  const raw = String(request.headers.get('cookie') || '');
+  const parts = raw.split(';');
+  for (const part of parts) {
+    const i = part.indexOf('=');
+    if (i < 0) continue;
+    if (part.slice(0, i).trim() === name) return decodeURIComponent(part.slice(i + 1).trim());
+  }
+  return '';
+}
+
+function b64urlEncodeText(text) {
+  const bytes = new TextEncoder().encode(String(text || ''));
+  let binary = '';
+  for (const b of bytes) binary += String.fromCharCode(b);
+  return btoa(binary).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+function b64urlDecodeText(text) {
+  let s = String(text || '').replace(/-/g,'+').replace(/_/g,'/');
+  while (s.length % 4) s += '=';
+  const binary = atob(s);
+  const bytes = new Uint8Array(binary.length);
+  for (let i=0;i<binary.length;i++) bytes[i]=binary.charCodeAt(i);
+  return new TextDecoder().decode(bytes);
+}
+async function hmacHex(key, value) {
+  const cryptoKey = await crypto.subtle.importKey('raw', new TextEncoder().encode(String(key || '')), {name:'HMAC',hash:'SHA-256'}, false, ['sign']);
+  const sig = await crypto.subtle.sign('HMAC', cryptoKey, new TextEncoder().encode(String(value || '')));
+  return [...new Uint8Array(sig)].map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+function authUserShape(user) {
+  const u = user && typeof user === 'object' ? user : {};
+  return {
+    id: String(u.id || u.UserID || u.userId || ''),
+    email: String(u.email || u.Email || ''),
+    full_name: String(u.full_name || u.FullName || u.display_name || u.DisplayName || u.Username || 'FEMMAS User'),
+    display_name: String(u.display_name || u.DisplayName || u.FullName || u.full_name || u.Username || 'FEMMAS User'),
+    username: String(u.username || u.Username || ''),
+    phone: String(u.phone || u.Phone || ''),
+    role: String(u.role || u.Role || 'Employee')
+  };
+}
+async function signedUserCookie(user, token) {
+  const payload = b64urlEncodeText(JSON.stringify(authUserShape(user)));
+  const sig = await hmacHex(token, payload);
+  return payload + '.' + sig;
+}
+async function readSignedUser(request) {
+  const token = getCookie(request, 'fp_session');
+  const packed = getCookie(request, 'fp_user');
+  if (!token || !packed || !packed.includes('.')) return null;
+  const cut = packed.lastIndexOf('.');
+  const payload = packed.slice(0,cut), sig = packed.slice(cut+1);
+  if (await hmacHex(token,payload) !== sig) return null;
+  try { return authUserShape(JSON.parse(b64urlDecodeText(payload))); } catch { return null; }
+}
+function authCookies(token, packedUser, maxAge=28800) {
+  const secure = 'Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=' + maxAge;
+  return [
+    'fp_session=' + encodeURIComponent(token) + '; ' + secure,
+    'fp_user=' + encodeURIComponent(packedUser) + '; ' + secure
+  ];
+}
+async function appsScriptPost(payload) {
+  const res = await fetch(LEGACY_SHEET_BRIDGE, {
+    method:'POST',
+    headers:{'content-type':'application/json'},
+    body:JSON.stringify(payload),
+    redirect:'follow'
+  });
+  const raw = await res.text();
+  let data;
+  try { data = JSON.parse(raw); } catch { data = {ok:false,error:raw || 'Invalid FEMMAS backend response'}; }
+  if (!res.ok) throw new Error(data?.error || ('FEMMAS backend unavailable: ' + res.status));
+  return data;
+}
+async function femmasAuthLogin(request) {
+  const body = await request.json().catch(()=>({}));
+  let identifier = String(body.identifier || body.email || body.username || '').trim().toLowerCase();
+  const password = String(body.password || body.pin || '');
+  if (!identifier || !password) return json({error:'Username/email na PIN vinahitajika'},400);
+  if (identifier === 'femmasprint@gmail.com') identifier = 'george';
+  const data = await appsScriptPost({action:'login',username:identifier,pin:password});
+  if (!data?.ok || !data?.token) {
+    const message = data?.error === 'TOO_MANY_ATTEMPTS' ? 'Majaribio mengi sana. Jaribu tena baada ya muda.' : 'Username/email au PIN si sahihi';
+    return json({error:message,code:data?.error || 'INVALID_CREDENTIALS'}, data?.error === 'TOO_MANY_ATTEMPTS' ? 429 : 401);
+  }
+  const user = authUserShape(data.user);
+  const packed = await signedUserCookie(user, data.token);
+  const headers = new Headers({'content-type':'application/json; charset=utf-8','cache-control':'no-store'});
+  for (const cookie of authCookies(data.token, packed)) headers.append('set-cookie',cookie);
+  return new Response(JSON.stringify({ok:true,user,expiresAt:data.expiresAt || null}),{status:200,headers});
+}
+async function femmasAuthMe(request) {
+  const user = await readSignedUser(request);
+  if (!user) return json({error:'AUTH_REQUIRED'},401);
+  return json(user,200,'no-store');
+}
+async function femmasAuthLogout(request) {
+  const token = getCookie(request,'fp_session');
+  if (token) await appsScriptPost({action:'logout',sessionToken:token}).catch(()=>null);
+  const headers = new Headers({'content-type':'application/json; charset=utf-8','cache-control':'no-store'});
+  headers.append('set-cookie','fp_session=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0');
+  headers.append('set-cookie','fp_user=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0');
+  return new Response(JSON.stringify({ok:true}),{status:200,headers});
+}
+
 function json(data, status = 200, cacheControl = 'no-store') {
   return new Response(JSON.stringify(data), {
     status,
@@ -32,7 +139,7 @@ function json(data, status = 200, cacheControl = 'no-store') {
   });
 }
 
-async function sharedSheetRead(sourceUrl) {
+async function sharedSheetRead(sourceUrl, incoming) {
   const sheet = (sourceUrl.searchParams.get('sheet') || '').trim();
   const date = (sourceUrl.searchParams.get('date') || '').trim();
   const live = ['QuickSale','Expenses','Attendance'].includes(sheet);
@@ -59,6 +166,8 @@ async function sharedSheetRead(sourceUrl) {
   const task = (async () => {
     const callback = 'femmasProxyCb';
     const qs = new URLSearchParams({ callback });
+    const sessionToken = incoming ? getCookie(incoming,'fp_session') : '';
+    if (sessionToken) qs.set('sessionToken', sessionToken);
     if (sheet === 'QuickSale' && date) {
       qs.set('action','getQuickSale');
       qs.set('date',date);
@@ -97,9 +206,10 @@ async function sharedSheetRead(sourceUrl) {
   }
 }
 
-async function legacyTableRows(sheetName) {
+async function legacyTableRows(sheetName, sessionToken = '') {
   const callback = 'femmasCompatCb';
   const qs = new URLSearchParams({ action:'getTable', tab:sheetName, callback });
+  if (sessionToken) qs.set('sessionToken', sessionToken);
   const res = await fetch(LEGACY_SHEET_BRIDGE + '?' + qs.toString(), { redirect:'follow' });
   if (!res.ok) throw new Error('Shared table unavailable: ' + res.status);
   const raw = await res.text();
@@ -121,7 +231,7 @@ function latestRowsByKey(rows, keyColumn) {
   return [...map.values()];
 }
 
-async function postLegacyOfficeRow(sheetName, row) {
+async function postLegacyOfficeRow(sheetName, row, sessionToken = '') {
   const action = sheetName === 'QuickSale' ? 'addSale' : sheetName === 'Expenses' ? 'addExpense' : '';
   if (!action) throw new Error('Write not supported for this shared sheet');
   const payload = sheetName === 'QuickSale' ? {
@@ -147,6 +257,8 @@ async function postLegacyOfficeRow(sheetName, row) {
     expenseId:String(row.ExpenseID || ''),
     accountId:String(row.AccountId || ''),
   };
+  if (sessionToken) payload.sessionToken = sessionToken;
+  if (sessionToken) payload.sessionToken = sessionToken;
   const res = await fetch(LEGACY_SHEET_BRIDGE, {
     method:'POST',
     headers:{ 'content-type':'application/json' },
@@ -172,13 +284,14 @@ function requestFromFemmasApp(incoming) {
 
 async function googleSheetsCompat(incoming) {
   if (!requestFromFemmasApp(incoming)) return json({ error:'Forbidden' }, 403);
+  const sessionToken = getCookie(incoming,'fp_session');
   const body = await incoming.json().catch(() => ({}));
   const action = String(body?.action || '');
   const sheetName = String(body?.sheetName || '');
   if (!['QuickSale','Expenses','Attendance'].includes(sheetName)) return json({ error:'Sheet not supported' }, 403);
 
   if (action === 'readRange') {
-    let rows = await legacyTableRows(sheetName);
+    let rows = await legacyTableRows(sheetName, sessionToken);
     if (sheetName === 'QuickSale') rows = latestRowsByKey(rows, 'SaleID');
     if (sheetName === 'Expenses') rows = latestRowsByKey(rows, 'ExpenseID');
     const headers = rows.length ? Object.keys(rows[0]).filter((key) => key !== '__rowNumber') : [];
@@ -189,7 +302,7 @@ async function googleSheetsCompat(incoming) {
     const row = body?.row && typeof body.row === 'object' ? body.row : null;
     if (!row) return json({ error:'Row required' }, 400);
     if (!['QuickSale','Expenses'].includes(sheetName)) return json({ error:'Append not supported for this sheet' }, 403);
-    await postLegacyOfficeRow(sheetName, row);
+    await postLegacyOfficeRow(sheetName, row, sessionToken);
     return json({ ok:true, updates:{ compat:true } }, 200, 'no-store');
   }
 
@@ -200,13 +313,13 @@ async function googleSheetsCompat(incoming) {
     if (keyColumn !== expectedKey || !keyValue) return json({ error:'Valid key required' }, 400);
     if (!['QuickSale','Expenses'].includes(sheetName)) return json({ error:'Update not supported for this sheet' }, 403);
 
-    const rows = await legacyTableRows(sheetName);
+    const rows = await legacyTableRows(sheetName, sessionToken);
     const matches = rows.filter((row) => String(row?.[expectedKey] || '') === keyValue);
     if (!matches.length) return json({ error:'Record not found' }, 404);
     const current = matches[matches.length - 1];
     const changes = body?.changes && typeof body.changes === 'object' ? body.changes : {};
     const merged = { ...current, ...changes, [expectedKey]:keyValue };
-    await postLegacyOfficeRow(sheetName, merged);
+    await postLegacyOfficeRow(sheetName, merged, sessionToken);
     return json({ ok:true, updatedRange:'compat-append-correction' }, 200, 'no-store');
   }
 
@@ -214,6 +327,7 @@ async function googleSheetsCompat(incoming) {
 }
 
 async function sharedSheetWrite(incoming) {
+  const sessionToken = getCookie(incoming,'fp_session');
   const body = await incoming.json().catch(() => ({}));
   const action = String(body?.action || '');
   if (action !== 'addSale' && action !== 'addExpense') {
@@ -320,8 +434,17 @@ export async function onRequest(context) {
     if (asset.status !== 404) return markResponse(asset, 'femmas-local-asset', 'public,max-age=86400');
   }
 
+  if (sourceUrl.pathname === '/api/femmas-auth/login' && incoming.method === 'POST') {
+    try { return await femmasAuthLogin(incoming); } catch (error) { return json({error:error?.message || 'Login failed'},502); }
+  }
+  if (sourceUrl.pathname === '/api/femmas-auth/me' && incoming.method === 'GET') {
+    try { return await femmasAuthMe(incoming); } catch (error) { return json({error:'AUTH_REQUIRED'},401); }
+  }
+  if (sourceUrl.pathname === '/api/femmas-auth/logout' && incoming.method === 'POST') {
+    try { return await femmasAuthLogout(incoming); } catch (error) { return json({ok:true},200); }
+  }
   if (sourceUrl.pathname === '/api/femmas-shared-sheet' && incoming.method === 'GET') {
-    try { return await sharedSheetRead(sourceUrl); }
+    try { return await sharedSheetRead(sourceUrl, incoming); }
     catch (error) { return json({ ok:false, error:'Shared data bridge failed' }, 502); }
   }
   if (/^\/api\/apps\/[^/]+\/functions\/googleSheetsApi\/?$/.test(sourceUrl.pathname) && incoming.method === 'POST') {
@@ -341,7 +464,10 @@ export async function onRequest(context) {
     } catch {}
   }
 
-  const upstreamOrigin = sourceUrl.pathname.startsWith('/api/') ? BASE44_API_ORIGIN : FRONTEND_UPSTREAM_ORIGIN;
+  if (sourceUrl.pathname.startsWith('/api/')) {
+    return json({ error:'This FEMMAS endpoint is not yet available on the standalone backend', code:'FEMMAS_STANDALONE_ONLY' }, 501);
+  }
+  const upstreamOrigin = FRONTEND_UPSTREAM_ORIGIN;
   const upstreamUrl = new URL(sourceUrl.pathname + sourceUrl.search, upstreamOrigin);
 
   const headers = new Headers(incoming.headers);
