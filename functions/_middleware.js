@@ -9,6 +9,11 @@ const LEGACY_SHEET_BRIDGE = 'https://script.google.com/macros/s/AKfycbzgr7hqI4vP
 const SHEET_MEMORY_CACHE = new Map();
 const SHEET_INFLIGHT = new Map();
 
+function activeEmployeeRow(row) {
+  const n = String(row?.EmployeeName || row?.Name || row?.fullName || '').trim().toLowerCase();
+  return !['omar mrangi','jamali gwao','jamali','victor mapuga','victor'].some((x) => n === x || n.startsWith(x + ' '));
+}
+
 function sheetCacheTtl(sheet, date) {
   if (date || ['QuickSale','Expenses','Attendance'].includes(sheet)) return 15000;
   if (['Employees','Customers','Items','Suppliers'].includes(sheet)) return 300000;
@@ -72,9 +77,10 @@ async function sharedSheetRead(sourceUrl) {
     try { payload = JSON.parse(raw.slice(start + prefix.length, end)); }
     catch { throw new Error('Invalid bridge JSON'); }
 
-    const rows = sheet === 'QuickSale'
+    let rows = sheet === 'QuickSale'
       ? (Array.isArray(payload.sales) ? payload.sales : [])
       : (Array.isArray(payload.rows) ? payload.rows : []);
+    if (sheet === 'Employees') rows = rows.filter(activeEmployeeRow);
     if (payload.ok === false) throw new Error(payload.error || 'Sheet bridge failed');
     SHEET_MEMORY_CACHE.set(cacheKey, { at:Date.now(), rows });
     return rows;
