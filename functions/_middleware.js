@@ -1,9 +1,8 @@
 /* FEMMAS PRINT production gateway
- * app.femmasprint.com now serves the real femmasbase Cloudflare Pages application.
+ * app.femmasprint.com serves the FEMMAS production application.
  * The legacy static app remains in this repository only as a rollback source.
  */
 const FRONTEND_UPSTREAM_ORIGIN = 'https://femmasbase.pages.dev';
-const BASE44_API_ORIGIN = 'https://base44.app';
 const PUBLIC_ORIGIN = 'https://app.femmasprint.com';
 const LEGACY_SHEET_BRIDGE = 'https://script.google.com/macros/s/AKfycbzgr7hqI4vPFHB9nNRh2l7Ljb7m0KCf9Yl1Ue4pEfgSAADE4-luyv0B3_tn0zo0bQzecg/exec';
 const SHEET_MEMORY_CACHE = new Map();
@@ -411,18 +410,18 @@ async function localFrontend(context, incoming, sourceUrl) {
     const asset = await context.env.ASSETS.fetch(incoming);
     if (asset.status !== 404) {
       const immutable = /\/assets\/[^/]+-[A-Za-z0-9_-]+\.(?:js|css)$/.test(pathname);
-      return markResponse(asset, 'local-base44-build', immutable ? 'public,max-age=31536000,immutable' : '');
+      return markResponse(asset, 'local-femmas-build', immutable ? 'public,max-age=31536000,immutable' : '');
     }
     return null;
   }
 
-  // SPA route: always serve the locally committed Base44 index.
+  // SPA route: always serve the locally committed FEMMAS index.
   const indexUrl = new URL('/index.html', sourceUrl.origin);
   const headers = new Headers(incoming.headers);
   headers.set('accept', 'text/html');
   const indexReq = new Request(indexUrl.toString(), { method:'GET', headers });
   const index = await context.env.ASSETS.fetch(indexReq);
-  if (index.status !== 404) return markResponse(index, 'local-base44-build', 'no-store');
+  if (index.status !== 404) return markResponse(index, 'local-femmas-build', 'no-store');
   return null;
 }
 
