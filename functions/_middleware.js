@@ -89,6 +89,57 @@ async function sharedSheetRead(sourceUrl) {
   }
 }
 
+async function sharedSheetWrite(incoming) {
+  const body = await incoming.json().catch(() => ({}));
+  const action = String(body?.action || '');
+  if (action !== 'addSale' && action !== 'addExpense') {
+    return json({ ok:false, error:'Unsupported shared write action' }, 400);
+  }
+
+  const payload = action === 'addSale' ? {
+    action:'addSale',
+    date:String(body.date || '').slice(0,10),
+    client:String(body.client || ''),
+    goods:String(body.goods || ''),
+    qty:Number(body.qty || 0),
+    unitPrice:Number(body.unitPrice || 0),
+    payMode:String(body.payMode || 'Cash'),
+    paid:Number(body.paid || 0),
+    saleId:String(body.saleId || ''),
+    accountId:String(body.accountId || ''),
+  } : {
+    action:'addExpense',
+    date:String(body.date || '').slice(0,10),
+    name:String(body.name || ''),
+    reason:String(body.reason || ''),
+    qty:Number(body.qty || 0),
+    unitPrice:Number(body.unitPrice || 0),
+    payMode:String(body.payMode || 'Cash'),
+    expenseId:String(body.expenseId || ''),
+    employeeId:String(body.employeeId || ''),
+    accountId:String(body.accountId || ''),
+  };
+
+  if (action === 'addSale' && (!payload.date || !payload.saleId || !payload.goods)) {
+    return json({ ok:false, error:'Date, SaleID and Goods are required' }, 400);
+  }
+  if (action === 'addExpense' && (!payload.date || !payload.expenseId || !payload.reason)) {
+    return json({ ok:false, error:'Date, ExpenseID and Reason are required' }, 400);
+  }
+
+  const res = await fetch(LEGACY_SHEET_BRIDGE, {
+    method:'POST',
+    headers:{ 'content-type':'application/json' },
+    body:JSON.stringify(payload),
+    redirect:'follow'
+  });
+  const raw = await res.text();
+  let data;
+  try { data = JSON.parse(raw); } catch { data = { ok:false, error:raw || 'Invalid Apps Script response' }; }
+  if (!res.ok || data?.ok === false) return json({ ok:false, error:data?.error || `Shared write failed: ${res.status}` }, res.ok ? 400 : 502);
+  return json({ ok:true, action, result:data }, 200, 'no-store');
+}
+
 function rewriteLocation(value) {
   if (!value) return value;
   return value
@@ -143,6 +194,10 @@ export async function onRequest(context) {
   if (sourceUrl.pathname === '/api/femmas-shared-sheet' && incoming.method === 'GET') {
     try { return await sharedSheetRead(sourceUrl); }
     catch (error) { return json({ ok:false, error:'Shared data bridge failed' }, 502); }
+  }
+  if (sourceUrl.pathname === '/api/femmas-shared-write' && incoming.method === 'POST') {
+    try { return await sharedSheetWrite(incoming); }
+    catch (error) { return json({ ok:false, error:error?.message || 'Shared write bridge failed' }, 502); }
   }
 
   // Production frontend follows the live femmasbase build directly.
