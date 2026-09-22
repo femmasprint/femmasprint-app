@@ -19,7 +19,7 @@
     let url = '';
     try { url = typeof input === 'string' ? input : (input && input.url) || ''; } catch (_) {}
     const method = String(init.method || (input && input.method) || 'GET').toUpperCase();
-    const isData = /(?:base44\.app|\/api\/)/i.test(url);
+    const isData = /\/api\//i.test(url);
     if (!isData || init.signal) return nativeFetch(input, init);
 
     const controller = new AbortController();
@@ -31,8 +31,7 @@
 })();
     </script>
     <script>
-/* FEMMAS XHR timeout guard: Base44 SDK/Axios uses XHR, so stalled entity calls
-   must fail fast instead of keeping the dashboard loader alive for minutes. */
+/* FEMMAS XHR timeout guard: stalled API calls must fail fast instead of keeping the dashboard loader alive. */
 (function () {
   var NativeXHR = window.XMLHttpRequest;
   if (!NativeXHR || NativeXHR.__femmasGuarded) return;
@@ -49,7 +48,7 @@
   NativeXHR.prototype.send = function() {
     try {
       if (!this.timeout) {
-        var isApi = /base44\.app|\/api\//i.test(this.__fpUrl || '');
+        var isApi = /\/api\//i.test(this.__fpUrl || '');
         if (isApi) this.timeout = (this.__fpMethod === 'GET' || this.__fpMethod === 'HEAD') ? 6500 : 12000;
       }
     } catch (_) {}
