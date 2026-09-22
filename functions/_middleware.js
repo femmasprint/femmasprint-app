@@ -139,6 +139,24 @@ async function localFrontend(context, incoming, sourceUrl) {
 export async function onRequest(context) {
   const incoming = context.request;
   const sourceUrl = new URL(incoming.url);
+
+  // Base44 rejects app.femmasprint.com as an OAuth/auth return domain.
+  // For auth endpoints only, send the approved femmasbase.pages.dev return URL upstream;
+  // response Location headers are rewritten back to app.femmasprint.com below.
+  if (/^\/api\/apps\/auth\/(?:login|logout)/.test(sourceUrl.pathname)) {
+    const from = sourceUrl.searchParams.get('from_url');
+    if (from) {
+      try {
+        const u = new URL(from);
+        if (u.hostname === 'app.femmasprint.com') {
+          u.protocol = 'https:';
+          u.hostname = 'femmasbase.pages.dev';
+          u.port = '';
+          sourceUrl.searchParams.set('from_url', u.toString());
+        }
+      } catch {}
+    }
+  }
   if (sourceUrl.pathname === '/api/femmas-shared-sheet' && incoming.method === 'GET') {
     try { return await sharedSheetRead(sourceUrl); }
     catch (error) { return json({ ok:false, error:'Shared data bridge failed' }, 502); }
