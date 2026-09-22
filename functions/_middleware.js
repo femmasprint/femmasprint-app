@@ -2,8 +2,7 @@
  * app.femmasprint.com now serves the real femmasbase Cloudflare Pages application.
  * The legacy static app remains in this repository only as a rollback source.
  */
-const FRONTEND_UPSTREAM_ORIGIN = 'https://femmasbase.pages.dev';
-const BASE44_API_ORIGIN = 'https://base44.app';
+const UPSTREAM_ORIGIN = 'https://femmasbase.pages.dev';
 const PUBLIC_ORIGIN = 'https://app.femmasprint.com';
 const LEGACY_SHEET_BRIDGE = 'https://script.google.com/macros/s/AKfycbzgr7hqI4vPFHB9nNRh2l7Ljb7m0KCf9Yl1Ue4pEfgSAADE4-luyv0B3_tn0zo0bQzecg/exec';
 const SHEET_MEMORY_CACHE = new Map();
@@ -145,28 +144,21 @@ export async function onRequest(context) {
     catch (error) { return json({ ok:false, error:'Shared data bridge failed' }, 502); }
   }
 
-  // Serve the verified local FEMMAS frontend so dashboard performance fixes actually reach production.
-  // API/login requests keep using the same upstream behavior as the working baseline.
-  if (!sourceUrl.pathname.startsWith('/api/')) {
-    try {
-      const local = await localFrontend(context, incoming, sourceUrl);
-      if (local) return local;
-    } catch {}
-  }
+  // Production frontend follows the live femmasbase build directly.
+  // The local build remains in the repository only as rollback material.
 
-  const upstreamOrigin = sourceUrl.pathname.startsWith('/api/') ? BASE44_API_ORIGIN : FRONTEND_UPSTREAM_ORIGIN;
-  const upstreamUrl = new URL(sourceUrl.pathname + sourceUrl.search, upstreamOrigin);
+  const upstreamUrl = new URL(sourceUrl.pathname + sourceUrl.search, UPSTREAM_ORIGIN);
 
   const headers = new Headers(incoming.headers);
   headers.delete('host');
 
-  if (headers.has('origin')) headers.set('origin', upstreamOrigin);
+  if (headers.has('origin')) headers.set('origin', UPSTREAM_ORIGIN);
   if (headers.has('referer')) {
     try {
       const ref = new URL(headers.get('referer'));
       if (ref.hostname === sourceUrl.hostname) {
         ref.protocol = 'https:';
-        ref.hostname = new URL(upstreamOrigin).hostname;
+        ref.hostname = 'femmasbase.pages.dev';
         ref.port = '';
         headers.set('referer', ref.toString());
       }
@@ -188,7 +180,7 @@ export async function onRequest(context) {
 
     const outHeaders = new Headers(upstream.headers);
     outHeaders.set('x-femmas-app-source', 'femmasbase');
-    outHeaders.set('x-femmas-app-upstream', new URL(upstreamOrigin).hostname);
+    outHeaders.set('x-femmas-app-upstream', 'femmasbase.pages.dev');
 
     const location = outHeaders.get('location');
     if (location) outHeaders.set('location', rewriteLocation(location));
