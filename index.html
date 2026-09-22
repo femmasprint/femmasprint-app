@@ -10,6 +10,49 @@
     <meta name="description" content="FEMMAS PRINT — mfumo salama wa mauzo, fedha, stoo, wateja na uendeshaji wa biashara." />
     <link rel="manifest" href="/manifest.json" />
     <title>FEMMAS PRINT | Mfumo wa Biashara</title>
+    <script>
+/* FEMMAS network timeout guard: never let one stalled API keep the dashboard waiting. */
+(function () {
+  const nativeFetch = window.fetch.bind(window);
+  window.fetch = function(input, init) {
+    init = init || {};
+    let url = '';
+    try { url = typeof input === 'string' ? input : (input && input.url) || ''; } catch (_) {}
+    const method = String(init.method || (input && input.method) || 'GET').toUpperCase();
+    const isData = /(?:base44\.app|\/api\/)/i.test(url);
+    if (!isData || init.signal) return nativeFetch(input, init);
+    const controller = new AbortController();
+    const ms = method === 'GET' || method === 'HEAD' ? 6000 : 10000;
+    const timer = setTimeout(function () { try { controller.abort(); } catch (_) {} }, ms);
+    return nativeFetch(input, Object.assign({}, init, { signal: controller.signal }))
+      .finally(function () { clearTimeout(timer); });
+  };
+})();
+    </script>
+    <script>
+/* FEMMAS XHR timeout guard: stalled entity calls fail fast instead of hanging the dashboard. */
+(function () {
+  var NativeXHR = window.XMLHttpRequest;
+  if (!NativeXHR || NativeXHR.__femmasGuarded) return;
+  var nativeOpen = NativeXHR.prototype.open;
+  var nativeSend = NativeXHR.prototype.send;
+  NativeXHR.prototype.open = function(method, url) {
+    this.__fpMethod = String(method || 'GET').toUpperCase();
+    this.__fpUrl = String(url || '');
+    return nativeOpen.apply(this, arguments);
+  };
+  NativeXHR.prototype.send = function() {
+    try {
+      if (!this.timeout) {
+        var isApi = /base44\.app|\/api\//i.test(this.__fpUrl || '');
+        if (isApi) this.timeout = (this.__fpMethod === 'GET' || this.__fpMethod === 'HEAD') ? 6500 : 12000;
+      }
+    } catch (_) {}
+    return nativeSend.apply(this, arguments);
+  };
+  NativeXHR.__femmasGuarded = true;
+})();
+    </script>
     <script type="module" crossorigin src="/assets/index-CBoxsot0.js"></script>
     <link rel="stylesheet" crossorigin href="/assets/style-BA0cGe30.css">
     <script type="module">
