@@ -466,8 +466,15 @@ export async function onRequest(context) {
     catch (error) { return json({ ok:false, error:error?.message || 'Shared write bridge failed' }, 502); }
   }
 
-  // Production frontend follows the live femmasbase build directly.
-  // The local build remains in the repository only as rollback material.
+  // Pin the user-facing app to the locally committed, verified Base44 bundle.
+  // This bundle contains the Employees/shared-sheet fallback and avoids proxy latency
+  // and regressions from a newer upstream frontend changing underneath the office.
+  if (!sourceUrl.pathname.startsWith('/api/')) {
+    try {
+      const local = await localFrontend(context, incoming, sourceUrl);
+      if (local) return local;
+    } catch {}
+  }
 
   const upstreamOrigin = sourceUrl.pathname.startsWith('/api/') ? BASE44_API_ORIGIN : FRONTEND_UPSTREAM_ORIGIN;
   const upstreamUrl = new URL(sourceUrl.pathname + sourceUrl.search, upstreamOrigin);
