@@ -1,0 +1,29 @@
+name: Verify Commerce Compat
+on:
+  push:
+    branches: [verify-commerce-compat-20260922]
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - shell: bash
+        run: |
+          set -euo pipefail
+          APP_ID="6a26d86878b02023440a0ff4"
+          URL="https://app.femmasprint.com/api/apps/$APP_ID/functions/commerceWorkflowApi"
+          ok=0
+          for i in $(seq 1 20); do
+            service=$(curl -sS -o /tmp/service.json -w '%{http_code}' --max-time 20 -H 'origin: https://app.femmasprint.com' -H 'referer: https://app.femmasprint.com/quick-sale' -H 'content-type: application/json' -d '{"action":"createSale","sourceChannel":"QuickSale","date":"2026-09-22","partyName":"__PROBE_ONLY__","paymentType":"Bank","bankAccountId":"femmas-local-bank","receivedAmount":100,"items":[{"lineKind":"Service","itemName":"probe","description":"probe","qty":1,"rate":100}]}' "$URL" || true)
+            stock=$(curl -sS -o /tmp/stock.json -w '%{http_code}' --max-time 20 -H 'origin: https://app.femmasprint.com' -H 'referer: https://app.femmasprint.com/quick-sale' -H 'content-type: application/json' -d '{"action":"createSale","sourceChannel":"QuickSale","date":"2026-09-22","partyName":"__PROBE_ONLY__","paymentType":"Cash","receivedAmount":100,"items":[{"lineKind":"Good","itemId":"REAL-STOCK-ID","itemName":"probe","description":"probe","qty":1,"rate":100,"stockQtyPerSaleUnit":1}]}' "$URL" || true)
+            echo "attempt=$i service=$service stock=$stock"
+            echo "service_body=$(head -c 500 /tmp/service.json)"
+            echo "stock_body=$(head -c 500 /tmp/stock.json)"
+            if [ "$service" = "200" ] && [ "$stock" = "503" ] && grep -q '"compatibilityMode":"shared-office"' /tmp/service.json; then
+              ok=1
+              break
+            fi
+            sleep 5
+          done
+          test "$ok" = "1"
