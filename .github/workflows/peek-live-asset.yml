@@ -16,6 +16,8 @@ jobs:
           echo "asset=$asset"
           curl -sSL --max-time 30 "https://app.femmasprint.com$asset" -o /tmp/app.js
           if grep -q "femmas-local-cash" /tmp/app.js; then echo "fallback_accounts=yes"; else echo "fallback_accounts=no"; fi
+          if grep -q "6a26d86878b02023440a0ff4" /tmp/app.js; then echo "base44_app_id=yes"; else echo "base44_app_id=no"; fi
+          if grep -q 'appId:""' /tmp/app.js || grep -q 'appId:"null"' /tmp/app.js; then echo "empty_app_id_pattern=yes"; else echo "empty_app_id_pattern=no"; fi
           if grep -q "/api/femmas-shared-write" /tmp/app.js; then echo "shared_write_client=yes"; else echo "shared_write_client=no"; fi
           curl -sS --max-time 30 -w " employees_http=%{http_code} employees_time=%{time_total}s\n" "https://app.femmasprint.com/api/femmas-shared-sheet?sheet=Employees" -o /tmp/e.json
           python -c "import json; d=json.load(open('/tmp/e.json')); print('employees_rows',len(d.get('rows') or []),'source',d.get('source'))"
