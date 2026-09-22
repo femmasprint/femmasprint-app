@@ -322,7 +322,7 @@ async function googleSheetsCompat(incoming) {
     return json({ ok:true, updatedRange:'compat-append-correction' }, 200, 'no-store');
   }
 
-  return json({ error:`Action ${action || 'unknown'} unavailable without Base44 Functions` }, 501);
+  return json({ error:`Action ${action || 'unknown'} unavailable on the FEMMAS standalone backend` }, 501);
 }
 
 async function sharedSheetWrite(incoming) {
