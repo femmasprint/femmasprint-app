@@ -1,0 +1,22 @@
+name: Verify Shared Write Route
+on:
+  push:
+    branches: [verify-shared-write-20260922]
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - shell: bash
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 20); do
+            code=$(curl -sS -o /tmp/body.json -w '%{http_code}' --max-time 20 -H 'content-type: application/json' -d '{"action":"addSale"}' https://app.femmasprint.com/api/femmas-shared-write || true)
+            echo "attempt=$i code=$code body=$(cat /tmp/body.json 2>/dev/null || true)"
+            if [ "$code" = "400" ] && grep -q "Date, SaleID and Goods are required" /tmp/body.json; then
+              exit 0
+            fi
+            sleep 5
+          done
+          exit 1
