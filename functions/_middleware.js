@@ -15,6 +15,25 @@ function sheetCacheTtl(sheet, date) {
   return 90000;
 }
 
+function isLocalStaticAsset(pathname) {
+  return /^\/(?:staff\/|fonts\/|femmas-stock\/)/.test(pathname) ||
+    /^\/(?:fp-avatars|fp-base44-exact|fp-base44-forms|fp-dash|fp-invoice-skin|fp-payroll|fp-sidebar|fp-theme|support)\.js$/.test(pathname) ||
+    /^\/(?:femmas-logo-03-mqrt99vq|femmas-app-icon-1024|fp_icon|femmas-signature)\.(?:png|svg|jpg|jpeg|webp)$/.test(pathname);
+}
+
+function corsPreflight() {
+  return new Response(null, {
+    status: 204,
+    headers: {
+      'access-control-allow-origin': PUBLIC_ORIGIN,
+      'access-control-allow-methods': 'GET,POST,PUT,PATCH,DELETE,OPTIONS',
+      'access-control-allow-headers': 'content-type,authorization,x-requested-with',
+      'access-control-max-age': '86400',
+      'vary': 'Origin'
+    }
+  });
+}
+
 function json(data, status = 200, cacheControl = 'no-store') {
   return new Response(JSON.stringify(data), {
     status,
@@ -411,9 +430,28 @@ async function localFrontend(context, incoming, sourceUrl) {
 export async function onRequest(context) {
   const incoming = context.request;
   const sourceUrl = new URL(incoming.url);
+
+  if (incoming.method === 'OPTIONS' && sourceUrl.pathname.startsWith('/api/')) {
+    return corsPreflight();
+  }
+
+  // FEMMAS-owned photos, fonts and helper scripts must always come from this
+  // Pages project. Proxying these to femmasbase is what made staff photos vanish.
+  if (isLocalStaticAsset(sourceUrl.pathname) && context.env?.ASSETS && ['GET','HEAD'].includes(incoming.method)) {
+    const asset = await context.env.ASSETS.fetch(incoming);
+    if (asset.status !== 404) {
+      return markResponse(asset, 'femmas-local-asset', 'public,max-age=86400,stale-while-revalidate=604800');
+    }
+  }
+  if (sourceUrl.pathname === '/api/femmas-health' && incoming.method === 'GET') {
+    return json({ ok:true, app:'femmasprint-app', gateway:'standalone', time:new Date().toISOString() }, 200, 'no-store');
+  }
   if (sourceUrl.pathname === '/api/femmas-shared-sheet' && incoming.method === 'GET') {
     try { return await sharedSheetRead(sourceUrl); }
     catch (error) { return json({ ok:false, error:'Shared data bridge failed' }, 502); }
+  }
+  if (sourceUrl.pathname === '/api/femmas-shared-sheet' && incoming.method !== 'GET') {
+    return json({ ok:false, error:'Shared sheet endpoint supports GET only' }, 405);
   }
   if (/^\/api\/apps\/[^/]+\/functions\/googleSheetsApi\/?$/.test(sourceUrl.pathname) && incoming.method === 'POST') {
     try { return await googleSheetsCompat(incoming); }
