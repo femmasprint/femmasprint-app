@@ -162,6 +162,55 @@ function requestFromFemmasApp(incoming) {
   return true;
 }
 
+async function commerceWorkflowCompat(incoming) {
+  if (!requestFromFemmasApp(incoming)) return json({ error:'Forbidden' }, 403);
+  const body = await incoming.json().catch(() => ({}));
+  const action = String(body?.action || '');
+
+  if (action !== 'createSale' || String(body?.sourceChannel || '') !== 'QuickSale') {
+    return json({ error:`Commerce action ${action || 'unknown'} requires Base44 backend functions` }, 402);
+  }
+
+  const items = Array.isArray(body?.items) ? body.items : [];
+  if (!items.length) return json({ error:'At least one sale item is required' }, 400);
+  const stockSensitive = items.some((item) =>
+    ['Good','Combo'].includes(String(item?.lineKind || '')) &&
+    (Boolean(String(item?.itemId || '').trim()) || Number(item?.stockQtyPerSaleUnit || 0) > 0)
+  );
+  if (stockSensitive) {
+    return json({ error:'Stock-linked sale requires canonical stock workflow. Base44 backend functions are currently unavailable.' }, 503);
+  }
+
+  const date = String(body?.date || '').slice(0,10);
+  const totalAmount = items.reduce((sum, item) => sum + (Number(item?.qty || 0) * Number(item?.rate || 0)), 0);
+  const receivedAmount = Math.max(0, Math.min(totalAmount, Number(body?.receivedAmount || 0)));
+  const id = `SALE-${date.replaceAll('-', '')}-${Date.now()}`;
+  const invoice = {
+    id,
+    invoiceNo:id,
+    invoiceType:'Sale Invoice',
+    sourceChannel:'QuickSale',
+    date,
+    partyId:String(body?.partyId || ''),
+    partyName:String(body?.partyName || 'Mteja'),
+    customerContactPhone:String(body?.customerContactPhone || ''),
+    paymentType:String(body?.paymentType || 'Cash'),
+    bankAccountId:String(body?.bankAccountId || ''),
+    subtotal:totalAmount,
+    discount:Number(body?.discount || 0),
+    tax:0,
+    totalAmount,
+    receivedAmount,
+    balanceAmount:Math.max(0, totalAmount - receivedAmount),
+    status:receivedAmount >= totalAmount ? 'Paid' : receivedAmount > 0 ? 'Partial' : 'Unpaid',
+    stockPosted:false,
+    moneyPosted:false,
+    notes:String(body?.notes || ''),
+    items:JSON.stringify(items)
+  };
+  return json({ invoice, payment:null, transaction:null, linkedExistingInvoice:false, compatibilityMode:'shared-office' }, 200, 'no-store');
+}
+
 async function googleSheetsCompat(incoming) {
   if (!requestFromFemmasApp(incoming)) return json({ error:'Forbidden' }, 403);
   const body = await incoming.json().catch(() => ({}));
@@ -314,6 +363,10 @@ export async function onRequest(context) {
   if (/^\/api\/apps\/[^/]+\/functions\/googleSheetsApi\/?$/.test(sourceUrl.pathname) && incoming.method === 'POST') {
     try { return await googleSheetsCompat(incoming); }
     catch (error) { return json({ error:error?.message || 'Google Sheets compatibility bridge failed' }, 502); }
+  }
+  if (/^\/api\/apps\/[^/]+\/functions\/commerceWorkflowApi\/?$/.test(sourceUrl.pathname) && incoming.method === 'POST') {
+    try { return await commerceWorkflowCompat(incoming); }
+    catch (error) { return json({ error:error?.message || 'Commerce compatibility bridge failed' }, 502); }
   }
   if (sourceUrl.pathname === '/api/femmas-shared-write' && incoming.method === 'POST') {
     try { return await sharedSheetWrite(incoming); }
