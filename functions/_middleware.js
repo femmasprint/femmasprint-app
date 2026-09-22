@@ -171,14 +171,15 @@ async function optimizeLiveFemmasResponse(response, sourceUrl) {
     }
     if (pathname === '/assets/Dashboard-DUmWkJWX.js') {
       const core = 'const[xe,Lt,Ar,wn]=await Promise.allSettled([ht.entities.Invoice.list("-date",1500),ht.entities.Expense.list("-date",1500),jh(Cr()),Th(Cr())]);';
-      const bounded = 'const[xe,Lt,Ar,wn]=await Promise.allSettled([ht.entities.Invoice.list("-date",1500),ht.entities.Expense.list("-date",1500),jh(Cr()),Th(Cr())].map(p=>__fpDashboardRead(p,12000)));if(xe.status==="rejected"||Lt.status==="rejected")throw new Error("Data ya mauzo au matumizi haijapatikana. Bonyeza Jaribu tena.");';
+      const bounded = 'void __fpDashboardRead(jh(Cr()),12000).then(O).catch(()=>F("Mauzo ya Google Sheet hayajapatikana; taarifa kuu zimehifadhiwa."));void __fpDashboardRead(Th(Cr()),12000).then(g).catch(()=>F("Matumizi ya Google Sheet hayajapatikana; taarifa kuu zimehifadhiwa."));const[xe,Lt]=await Promise.allSettled([ht.entities.Invoice.list("-date",1500),ht.entities.Expense.list("-date",1500)].map(p=>__fpDashboardRead(p,12000)));if(xe.status==="rejected"||Lt.status==="rejected")throw new Error("Data ya mauzo au matumizi haijapatikana. Bonyeza Jaribu tena.");';
       if (replaceOnce(core, bounded)) {
         js += '\nfunction __fpDashboardRead(p,ms){return new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(new Error("Dashboard read timed out")),ms);Promise.resolve(p).then(v=>{clearTimeout(timer);resolve(v)},e=>{clearTimeout(timer);reject(e)})})}\n';
         replaceOnce('xe.value=await J1()', 'xe.value=await __fpDashboardRead(J1(),8000)');
+        replaceOnce('i(Bt(xe)),s(Bt(Lt)),O(Bt(Ar)),g(Bt(wn)),','i(Bt(xe)),s(Bt(Lt)),');
       }
     }
     // Version the changed lazy chunks so browsers cannot reuse their old immutable copies.
-    const versioned = js.replace(/((?:\.\/|assets\/)(?:Dashboard-DUmWkJWX|sharedFemmasDb-pz44rUcs)\.js)(["'])/g, '$1?fp=20260922-data2$2');
+    const versioned = js.replace(/((?:\.\/|assets\/)(?:Dashboard-DUmWkJWX|sharedFemmasDb-pz44rUcs)\.js)(["'])/g, '$1?fp=20260922-data3$2');
     changed = changed || versioned !== js;
     js = versioned;
     const headers = new Headers(response.headers);
