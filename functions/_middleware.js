@@ -3,7 +3,7 @@
  * The legacy static app remains in this repository only as a rollback source.
  */
 const FRONTEND_UPSTREAM_ORIGIN = 'https://femmasbase.pages.dev';
-const BASE44_API_ORIGIN = 'https://base44.app';
+const BASE44_API_ORIGIN = 'https://app.base44.com';
 const PUBLIC_ORIGIN = 'https://app.femmasprint.com';
 const LEGACY_SHEET_BRIDGE = 'https://script.google.com/macros/s/AKfycbzgr7hqI4vPFHB9nNRh2l7Ljb7m0KCf9Yl1Ue4pEfgSAADE4-luyv0B3_tn0zo0bQzecg/exec';
 const SHEET_MEMORY_CACHE = new Map();
