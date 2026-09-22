@@ -2,25 +2,9 @@
  * app.femmasprint.com now serves the real femmasbase Cloudflare Pages application.
  * The legacy static app remains in this repository only as a rollback source.
  */
-const FRONTEND_UPSTREAM_ORIGIN = 'https://femmasbase.pages.dev';
-const BASE44_API_ORIGIN = 'https://base44.app';
+const UPSTREAM_ORIGIN = 'https://femmasbase.pages.dev';
 const PUBLIC_ORIGIN = 'https://app.femmasprint.com';
 const LEGACY_SHEET_BRIDGE = 'https://script.google.com/macros/s/AKfycbzgr7hqI4vPFHB9nNRh2l7Ljb7m0KCf9Yl1Ue4pEfgSAADE4-luyv0B3_tn0zo0bQzecg/exec';
-const SHARED_SPREADSHEET_ID = '15fuAWl1c6kD70sIxK-yIP15K3OVr97JHXA9KFDfrPec';
-const LOCAL_EMPLOYEES_FALLBACK = [
-  { EmployeeID:'EMP-014', EmployeeName:'Ismail Issa', Status:'Active' },
-  { EmployeeID:'EMP-004', EmployeeName:'Hassan Mwesiumo', Status:'Active' },
-  { EmployeeID:'EMP-017', EmployeeName:'Ismar Salim Hussein (Suma)', Status:'Active' },
-  { EmployeeID:'EMP-008', EmployeeName:'Steven Mkope', Status:'Active' },
-  { EmployeeID:'EMP-015', EmployeeName:'VICTOR MAPUGA', Status:'Active' },
-  { EmployeeID:'EMP-006', EmployeeName:'Fadhili Ally', Status:'Active' },
-  { EmployeeID:'EMP-009', EmployeeName:'Emanuel W. Sese (Ima)', Status:'Active' },
-  { EmployeeID:'EMP-010', EmployeeName:'Sedekia Johnson Laurent', Status:'Active' },
-  { EmployeeID:'EMP-011', EmployeeName:'Henry Charles Kwedi', Status:'Active' },
-  { EmployeeID:'EMP-012', EmployeeName:'Shaibu Frank Malekela', Status:'Active' },
-  { EmployeeID:'EMP-013', EmployeeName:'Felician Masanje', Status:'Active' },
-  { EmployeeID:'EMP-016', EmployeeName:'Omar Mrangi', Status:'Active' }
-];
 const SHEET_MEMORY_CACHE = new Map();
 const SHEET_INFLIGHT = new Map();
 
@@ -28,25 +12,6 @@ function sheetCacheTtl(sheet, date) {
   if (date || ['QuickSale','Expenses','Attendance'].includes(sheet)) return 15000;
   if (['Employees','Customers','Items','Suppliers'].includes(sheet)) return 300000;
   return 90000;
-}
-
-function isLocalStaticAsset(pathname) {
-  return /^\/(?:staff\/|fonts\/|femmas-stock\/)/.test(pathname) ||
-    /^\/(?:fp-avatars|fp-base44-exact|fp-base44-forms|fp-dash|fp-invoice-skin|fp-payroll|fp-sidebar|fp-theme|support)\.js$/.test(pathname) ||
-    /^\/(?:femmas-logo-03-mqrt99vq|femmas-app-icon-1024|fp_icon|femmas-signature)\.(?:png|svg|jpg|jpeg|webp)$/.test(pathname);
-}
-
-function corsPreflight() {
-  return new Response(null, {
-    status: 204,
-    headers: {
-      'access-control-allow-origin': PUBLIC_ORIGIN,
-      'access-control-allow-methods': 'GET,POST,PUT,PATCH,DELETE,OPTIONS',
-      'access-control-allow-headers': 'content-type,authorization,x-requested-with',
-      'access-control-max-age': '86400',
-      'vary': 'Origin'
-    }
-  });
 }
 
 function json(data, status = 200, cacheControl = 'no-store') {
@@ -61,78 +26,9 @@ function json(data, status = 200, cacheControl = 'no-store') {
   });
 }
 
-function splitCsvLine(line) {
-  const out = [];
-  let cur = '', quoted = false;
-  for (let i = 0; i < line.length; i++) {
-    const ch = line[i];
-    if (ch === '"') {
-      if (quoted && line[i + 1] === '"') { cur += '"'; i++; }
-      else quoted = !quoted;
-    } else if (ch === ',' && !quoted) { out.push(cur); cur = ''; }
-    else cur += ch;
-  }
-  out.push(cur);
-  return out;
-}
-
-function splitCsvRecords(text) {
-  const out = [];
-  let cur = '', quoted = false;
-  for (let i = 0; i < text.length; i++) {
-    const ch = text[i];
-    if (ch === '"') {
-      if (quoted && text[i + 1] === '"') { cur += '""'; i++; }
-      else { quoted = !quoted; cur += ch; }
-    } else if ((ch === '\n' || ch === '\r') && !quoted) {
-      if (ch === '\r' && text[i + 1] === '\n') i++;
-      if (cur.trim()) out.push(cur);
-      cur = '';
-    } else cur += ch;
-  }
-  if (cur.trim()) out.push(cur);
-  return out;
-}
-
-function parseCsvRows(text) {
-  const records = splitCsvRecords(text);
-  if (records.length < 2) return [];
-  const headers = splitCsvLine(records[0]);
-  return records.slice(1).map((line, index) => {
-    const values = splitCsvLine(line);
-    const row = { __rowNumber:index + 2 };
-    headers.forEach((h, i) => { row[h] = values[i] ?? ''; });
-    return row;
-  });
-}
-
-async function fetchWithTimeout(url, init = {}, ms = 6500) {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort('timeout'), ms);
-  try { return await fetch(url, { ...init, signal:controller.signal }); }
-  finally { clearTimeout(timer); }
-}
-
-async function csvSheetRows(sheet, date = '') {
-  const url = `https://docs.google.com/spreadsheets/d/${SHARED_SPREADSHEET_ID}/export?format=csv&sheet=${encodeURIComponent(sheet)}`;
-  const res = await fetchWithTimeout(url, { redirect:'follow' }, 6500);
-  if (!res.ok) throw new Error('CSV fallback unavailable: ' + res.status);
-  const raw = await res.text();
-  if (!raw || raw.trim().startsWith('<')) throw new Error('CSV fallback is not public');
-  let rows = parseCsvRows(raw);
-  if (date) rows = rows.filter((row) => String(row?.Date || '').slice(0,10) === date);
-  return rows;
-}
-
 async function sharedSheetRead(sourceUrl) {
   const sheet = (sourceUrl.searchParams.get('sheet') || '').trim();
   const date = (sourceUrl.searchParams.get('date') || '').trim();
-
-  if (sheet === 'Employees') {
-    const cachedEmployees = SHEET_MEMORY_CACHE.get('Employees::all');
-    const rows = cachedEmployees?.rows?.length ? cachedEmployees.rows : LOCAL_EMPLOYEES_FALLBACK;
-    return json({ ok:true, rows, source:cachedEmployees?.rows?.length ? 'memory-cache' : 'local-employees-fallback' }, 200, 'public,max-age=60,s-maxage=300');
-  }
   const live = ['QuickSale','Expenses','Attendance'].includes(sheet);
   const browserMaxAge = live ? 5 : 60;
   const edgeMaxAge = live ? 15 : 300;
@@ -163,7 +59,7 @@ async function sharedSheetRead(sourceUrl) {
       qs.set('tab',sheet);
     }
 
-    const res = await fetchWithTimeout(LEGACY_SHEET_BRIDGE + '?' + qs.toString(), { redirect:'follow' }, 6500);
+    const res = await fetch(LEGACY_SHEET_BRIDGE + '?' + qs.toString(), { redirect:'follow' });
     if (!res.ok) throw new Error('Sheet bridge unavailable: ' + res.status);
     const raw = await res.text();
     const prefix = callback + '(';
@@ -188,288 +84,8 @@ async function sharedSheetRead(sourceUrl) {
     const rows = await task;
     return json({ ok:true, rows, source:'apps-script' }, 200, cacheControl);
   } catch (error) {
-    try {
-      const rows = await csvSheetRows(sheet, date);
-      SHEET_MEMORY_CACHE.set(cacheKey, { at:Date.now(), rows });
-      return json({ ok:true, rows, source:'google-csv-fallback', warning:error?.message || '' }, 200, cacheControl);
-    } catch (csvError) {
-      if (cached?.rows?.length) {
-        return json({ ok:true, rows:cached.rows, source:'stale-memory-cache', warning:error?.message || '' }, 200, 'no-store');
-      }
-      return json({ ok:false, error:error?.message || csvError?.message || 'Shared data bridge failed' }, 502);
-    }
+    return json({ ok:false, error:error?.message || 'Shared data bridge failed' }, 502);
   }
-}
-
-async function legacyTableRows(sheetName) {
-  const callback = 'femmasCompatCb';
-  const qs = new URLSearchParams({ action:'getTable', tab:sheetName, callback });
-  const res = await fetch(LEGACY_SHEET_BRIDGE + '?' + qs.toString(), { redirect:'follow' });
-  if (!res.ok) throw new Error('Shared table unavailable: ' + res.status);
-  const raw = await res.text();
-  const prefix = callback + '(';
-  const start = raw.indexOf(prefix);
-  const end = raw.lastIndexOf(')');
-  if (start < 0 || end <= start) throw new Error('Invalid shared table response');
-  const payload = JSON.parse(raw.slice(start + prefix.length, end));
-  if (payload?.ok === false) throw new Error(payload?.error || 'Shared table failed');
-  return Array.isArray(payload?.rows) ? payload.rows : [];
-}
-
-function latestRowsByKey(rows, keyColumn) {
-  const map = new Map();
-  (rows || []).forEach((row, index) => {
-    const key = String(row?.[keyColumn] || `__row_${row?.__rowNumber || index}`);
-    map.set(key, row);
-  });
-  return [...map.values()];
-}
-
-async function postLegacyOfficeRow(sheetName, row) {
-  const action = sheetName === 'QuickSale' ? 'addSale' : sheetName === 'Expenses' ? 'addExpense' : '';
-  if (!action) throw new Error('Write not supported for this shared sheet');
-  const payload = sheetName === 'QuickSale' ? {
-    action,
-    date:String(row.Date || '').slice(0,10),
-    client:String(row.Client || ''),
-    goods:String(row.Goods || ''),
-    qty:Number(row.Qty || 0),
-    unitPrice:Number(row.UnitPrice || 0),
-    payMode:String(row.PayMode || 'Cash'),
-    paid:Number(row.Paid || 0),
-    saleId:String(row.SaleID || ''),
-    accountId:String(row.AccountId || ''),
-  } : {
-    action,
-    date:String(row.Date || '').slice(0,10),
-    name:String(row.Name || ''),
-    employeeId:String(row.EmployeeID || ''),
-    reason:String(row.Reason || ''),
-    qty:Number(row.Qty || 0),
-    unitPrice:Number(row.UnitPrice || 0),
-    payMode:String(row.PayMode || 'Cash'),
-    expenseId:String(row.ExpenseID || ''),
-    accountId:String(row.AccountId || ''),
-  };
-  const res = await fetch(LEGACY_SHEET_BRIDGE, {
-    method:'POST',
-    headers:{ 'content-type':'application/json' },
-    body:JSON.stringify(payload),
-    redirect:'follow'
-  });
-  const raw = await res.text();
-  let data;
-  try { data = JSON.parse(raw); } catch { data = { ok:false, error:raw || 'Invalid write response' }; }
-  if (!res.ok || data?.ok === false) throw new Error(data?.error || `Shared write failed: ${res.status}`);
-  return data;
-}
-
-function requestFromFemmasApp(incoming) {
-  const origin = String(incoming.headers.get('origin') || '');
-  const referer = String(incoming.headers.get('referer') || '');
-  const fetchSite = String(incoming.headers.get('sec-fetch-site') || '');
-  if (origin && origin !== PUBLIC_ORIGIN) return false;
-  if (referer && !referer.startsWith(PUBLIC_ORIGIN + '/')) return false;
-  if (fetchSite && !['same-origin','same-site','none'].includes(fetchSite)) return false;
-  return true;
-}
-
-async function commerceWorkflowCompat(incoming) {
-  if (!requestFromFemmasApp(incoming)) return json({ error:'Forbidden' }, 403);
-  const body = await incoming.json().catch(() => ({}));
-  const action = String(body?.action || '');
-
-  if (action === 'updateQuickSale') {
-    const invoiceId = String(body?.invoiceId || '').trim();
-    if (!invoiceId) return json({ error:'Quick Sale ID is required' }, 400);
-    const rows = await legacyTableRows('QuickSale');
-    const matches = rows.filter((row) => String(row?.SaleID || '') === invoiceId);
-    if (!matches.length) return json({ error:'Quick Sale record not found' }, 404);
-    const current = matches[matches.length - 1];
-    const items = Array.isArray(body?.items) ? body.items : [];
-    const line = items[0] || {};
-    const qty = Math.max(1, Number(line?.qty || current?.Qty || 1));
-    const unitPrice = Number(line?.rate ?? current?.UnitPrice ?? 0);
-    const totalAmount = qty * unitPrice;
-    const receivedAmount = Math.max(0, Math.min(totalAmount, Number(body?.receivedAmount ?? current?.Paid ?? totalAmount)));
-    const paymentType = String(body?.paymentType || current?.PayMode || 'Cash');
-    const accountId = String(body?.bankAccountId || current?.AccountId || '');
-    const updated = {
-      ...current,
-      Date:String(current?.Date || body?.date || '').slice(0,10),
-      Client:String(body?.partyName || current?.Client || 'Mteja'),
-      Goods:String(line?.description || line?.itemName || current?.Goods || ''),
-      Qty:qty,
-      UnitPrice:unitPrice,
-      PayMode:paymentType,
-      Paid:receivedAmount,
-      Amount:totalAmount,
-      Balance:Math.max(0,totalAmount-receivedAmount),
-      AccountId:accountId,
-      SaleID:invoiceId
-    };
-    await postLegacyOfficeRow('QuickSale', updated);
-    const invoice = {
-      id:invoiceId,
-      invoiceNo:String(current?.SaleNo || invoiceId),
-      invoiceType:'Sale Invoice',
-      sourceChannel:'QuickSale',
-      date:String(updated.Date || '').slice(0,10),
-      partyId:String(body?.partyId || ''),
-      partyName:String(updated.Client || 'Mteja'),
-      customerContactPhone:String(body?.customerContactPhone || ''),
-      paymentType,
-      bankAccountId:accountId,
-      subtotal:totalAmount,
-      discount:Number(body?.discount || 0),
-      tax:0,
-      totalAmount,
-      receivedAmount,
-      balanceAmount:Math.max(0,totalAmount-receivedAmount),
-      status:receivedAmount >= totalAmount ? 'Paid' : receivedAmount > 0 ? 'Partial' : 'Unpaid',
-      stockPosted:false,
-      moneyPosted:false,
-      items:JSON.stringify(items.length ? items : [{ description:updated.Goods, qty, rate:unitPrice, lineTotal:totalAmount }])
-    };
-    return json({ invoice, compatibilityMode:'shared-office-update' }, 200, 'no-store');
-  }
-
-  if (action !== 'createSale' || String(body?.sourceChannel || '') !== 'QuickSale') {
-    return json({ error:`Commerce action ${action || 'unknown'} requires Base44 backend functions` }, 402);
-  }
-
-  const items = Array.isArray(body?.items) ? body.items : [];
-  if (!items.length) return json({ error:'At least one sale item is required' }, 400);
-  const stockSensitive = items.some((item) =>
-    ['Good','Combo'].includes(String(item?.lineKind || '')) &&
-    (Boolean(String(item?.itemId || '').trim()) || Number(item?.stockQtyPerSaleUnit || 0) > 0)
-  );
-  if (stockSensitive) {
-    return json({ error:'Stock-linked sale requires canonical stock workflow. Base44 backend functions are currently unavailable.' }, 503);
-  }
-
-  const date = String(body?.date || '').slice(0,10);
-  const totalAmount = items.reduce((sum, item) => sum + (Number(item?.qty || 0) * Number(item?.rate || 0)), 0);
-  const receivedAmount = Math.max(0, Math.min(totalAmount, Number(body?.receivedAmount || 0)));
-  const id = `SALE-${date.replaceAll('-', '')}-${Date.now()}`;
-  const invoice = {
-    id,
-    invoiceNo:id,
-    invoiceType:'Sale Invoice',
-    sourceChannel:'QuickSale',
-    date,
-    partyId:String(body?.partyId || ''),
-    partyName:String(body?.partyName || 'Mteja'),
-    customerContactPhone:String(body?.customerContactPhone || ''),
-    paymentType:String(body?.paymentType || 'Cash'),
-    bankAccountId:String(body?.bankAccountId || ''),
-    subtotal:totalAmount,
-    discount:Number(body?.discount || 0),
-    tax:0,
-    totalAmount,
-    receivedAmount,
-    balanceAmount:Math.max(0, totalAmount - receivedAmount),
-    status:receivedAmount >= totalAmount ? 'Paid' : receivedAmount > 0 ? 'Partial' : 'Unpaid',
-    stockPosted:false,
-    moneyPosted:false,
-    notes:String(body?.notes || ''),
-    items:JSON.stringify(items)
-  };
-  return json({ invoice, payment:null, transaction:null, linkedExistingInvoice:false, compatibilityMode:'shared-office' }, 200, 'no-store');
-}
-
-async function googleSheetsCompat(incoming) {
-  if (!requestFromFemmasApp(incoming)) return json({ error:'Forbidden' }, 403);
-  const body = await incoming.json().catch(() => ({}));
-  const action = String(body?.action || '');
-  const sheetName = String(body?.sheetName || '');
-  if (!['QuickSale','Expenses','Attendance'].includes(sheetName)) return json({ error:'Sheet not supported' }, 403);
-
-  if (action === 'readRange') {
-    let rows = await legacyTableRows(sheetName);
-    if (sheetName === 'QuickSale') rows = latestRowsByKey(rows, 'SaleID');
-    if (sheetName === 'Expenses') rows = latestRowsByKey(rows, 'ExpenseID');
-    const headers = rows.length ? Object.keys(rows[0]).filter((key) => key !== '__rowNumber') : [];
-    return json({ headers, rows, rowCount:rows.length }, 200, 'no-store');
-  }
-
-  if (action === 'appendRow') {
-    const row = body?.row && typeof body.row === 'object' ? body.row : null;
-    if (!row) return json({ error:'Row required' }, 400);
-    if (!['QuickSale','Expenses'].includes(sheetName)) return json({ error:'Append not supported for this sheet' }, 403);
-    await postLegacyOfficeRow(sheetName, row);
-    return json({ ok:true, updates:{ compat:true } }, 200, 'no-store');
-  }
-
-  if (action === 'updateByKey') {
-    const keyColumn = String(body?.keyColumn || '');
-    const keyValue = String(body?.keyValue || '');
-    const expectedKey = sheetName === 'QuickSale' ? 'SaleID' : sheetName === 'Expenses' ? 'ExpenseID' : 'AttendanceID';
-    if (keyColumn !== expectedKey || !keyValue) return json({ error:'Valid key required' }, 400);
-    if (!['QuickSale','Expenses'].includes(sheetName)) return json({ error:'Update not supported for this sheet' }, 403);
-
-    const rows = await legacyTableRows(sheetName);
-    const matches = rows.filter((row) => String(row?.[expectedKey] || '') === keyValue);
-    if (!matches.length) return json({ error:'Record not found' }, 404);
-    const current = matches[matches.length - 1];
-    const changes = body?.changes && typeof body.changes === 'object' ? body.changes : {};
-    const merged = { ...current, ...changes, [expectedKey]:keyValue };
-    await postLegacyOfficeRow(sheetName, merged);
-    return json({ ok:true, updatedRange:'compat-append-correction' }, 200, 'no-store');
-  }
-
-  return json({ error:`Action ${action || 'unknown'} unavailable without Base44 Functions` }, 501);
-}
-
-async function sharedSheetWrite(incoming) {
-  const body = await incoming.json().catch(() => ({}));
-  const action = String(body?.action || '');
-  if (action !== 'addSale' && action !== 'addExpense') {
-    return json({ ok:false, error:'Unsupported shared write action' }, 400);
-  }
-
-  const payload = action === 'addSale' ? {
-    action:'addSale',
-    date:String(body.date || '').slice(0,10),
-    client:String(body.client || ''),
-    goods:String(body.goods || ''),
-    qty:Number(body.qty || 0),
-    unitPrice:Number(body.unitPrice || 0),
-    payMode:String(body.payMode || 'Cash'),
-    paid:Number(body.paid || 0),
-    saleId:String(body.saleId || ''),
-    accountId:String(body.accountId || ''),
-  } : {
-    action:'addExpense',
-    date:String(body.date || '').slice(0,10),
-    name:String(body.name || ''),
-    reason:String(body.reason || ''),
-    qty:Number(body.qty || 0),
-    unitPrice:Number(body.unitPrice || 0),
-    payMode:String(body.payMode || 'Cash'),
-    expenseId:String(body.expenseId || ''),
-    employeeId:String(body.employeeId || ''),
-    accountId:String(body.accountId || ''),
-  };
-
-  if (action === 'addSale' && (!payload.date || !payload.saleId || !payload.goods)) {
-    return json({ ok:false, error:'Date, SaleID and Goods are required' }, 400);
-  }
-  if (action === 'addExpense' && (!payload.date || !payload.expenseId || !payload.reason)) {
-    return json({ ok:false, error:'Date, ExpenseID and Reason are required' }, 400);
-  }
-
-  const res = await fetch(LEGACY_SHEET_BRIDGE, {
-    method:'POST',
-    headers:{ 'content-type':'application/json' },
-    body:JSON.stringify(payload),
-    redirect:'follow'
-  });
-  const raw = await res.text();
-  let data;
-  try { data = JSON.parse(raw); } catch { data = { ok:false, error:raw || 'Invalid Apps Script response' }; }
-  if (!res.ok || data?.ok === false) return json({ ok:false, error:data?.error || `Shared write failed: ${res.status}` }, res.ok ? 400 : 502);
-  return json({ ok:true, action, result:data }, 200, 'no-store');
 }
 
 function rewriteLocation(value) {
@@ -523,65 +139,26 @@ async function localFrontend(context, incoming, sourceUrl) {
 export async function onRequest(context) {
   const incoming = context.request;
   const sourceUrl = new URL(incoming.url);
-
-  if (incoming.method === 'OPTIONS' && sourceUrl.pathname.startsWith('/api/')) {
-    return corsPreflight();
-  }
-
-  // FEMMAS-owned photos, fonts and helper scripts must always come from this
-  // Pages project. Proxying these to femmasbase is what made staff photos vanish.
-  if (isLocalStaticAsset(sourceUrl.pathname) && context.env?.ASSETS && ['GET','HEAD'].includes(incoming.method)) {
-    const asset = await context.env.ASSETS.fetch(incoming);
-    if (asset.status !== 404) {
-      return markResponse(asset, 'femmas-local-asset', 'public,max-age=86400,stale-while-revalidate=604800');
-    }
-  }
-  if (sourceUrl.pathname === '/api/femmas-health' && incoming.method === 'GET') {
-    return json({ ok:true, app:'femmasprint-app', gateway:'standalone', time:new Date().toISOString() }, 200, 'no-store');
-  }
   if (sourceUrl.pathname === '/api/femmas-shared-sheet' && incoming.method === 'GET') {
     try { return await sharedSheetRead(sourceUrl); }
     catch (error) { return json({ ok:false, error:'Shared data bridge failed' }, 502); }
   }
-  if (sourceUrl.pathname === '/api/femmas-shared-sheet' && incoming.method !== 'GET') {
-    return json({ ok:false, error:'Shared sheet endpoint supports GET only' }, 405);
-  }
-  if (/^\/api\/apps\/[^/]+\/functions\/googleSheetsApi\/?$/.test(sourceUrl.pathname) && incoming.method === 'POST') {
-    try { return await googleSheetsCompat(incoming); }
-    catch (error) { return json({ error:error?.message || 'Google Sheets compatibility bridge failed' }, 502); }
-  }
-  if (/^\/api\/apps\/[^/]+\/functions\/commerceWorkflowApi\/?$/.test(sourceUrl.pathname) && incoming.method === 'POST') {
-    try { return await commerceWorkflowCompat(incoming); }
-    catch (error) { return json({ error:error?.message || 'Commerce compatibility bridge failed' }, 502); }
-  }
-  if (sourceUrl.pathname === '/api/femmas-shared-write' && incoming.method === 'POST') {
-    try { return await sharedSheetWrite(incoming); }
-    catch (error) { return json({ ok:false, error:error?.message || 'Shared write bridge failed' }, 502); }
-  }
 
-  // Pin the user-facing app to the locally committed, verified Base44 bundle.
-  // This bundle contains the Employees/shared-sheet fallback and avoids proxy latency
-  // and regressions from a newer upstream frontend changing underneath the office.
-  if (!sourceUrl.pathname.startsWith('/api/')) {
-    try {
-      const local = await localFrontend(context, incoming, sourceUrl);
-      if (local) return local;
-    } catch {}
-  }
+  // Production frontend follows the live femmasbase build directly.
+  // The local build remains in the repository only as rollback material.
 
-  const upstreamOrigin = sourceUrl.pathname.startsWith('/api/') ? BASE44_API_ORIGIN : FRONTEND_UPSTREAM_ORIGIN;
-  const upstreamUrl = new URL(sourceUrl.pathname + sourceUrl.search, upstreamOrigin);
+  const upstreamUrl = new URL(sourceUrl.pathname + sourceUrl.search, UPSTREAM_ORIGIN);
 
   const headers = new Headers(incoming.headers);
   headers.delete('host');
 
-  if (headers.has('origin')) headers.set('origin', upstreamOrigin);
+  if (headers.has('origin')) headers.set('origin', UPSTREAM_ORIGIN);
   if (headers.has('referer')) {
     try {
       const ref = new URL(headers.get('referer'));
       if (ref.hostname === sourceUrl.hostname) {
         ref.protocol = 'https:';
-        ref.hostname = new URL(upstreamOrigin).hostname;
+        ref.hostname = 'femmasbase.pages.dev';
         ref.port = '';
         headers.set('referer', ref.toString());
       }
@@ -603,7 +180,7 @@ export async function onRequest(context) {
 
     const outHeaders = new Headers(upstream.headers);
     outHeaders.set('x-femmas-app-source', 'femmasbase');
-    outHeaders.set('x-femmas-app-upstream', new URL(upstreamOrigin).hostname);
+    outHeaders.set('x-femmas-app-upstream', 'femmasbase.pages.dev');
 
     const location = outHeaders.get('location');
     if (location) outHeaders.set('location', rewriteLocation(location));
