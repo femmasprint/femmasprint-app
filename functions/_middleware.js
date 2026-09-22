@@ -6,6 +6,7 @@ const FRONTEND_UPSTREAM_ORIGIN = 'https://femmasbase.pages.dev';
 const BASE44_API_ORIGIN = 'https://app.base44.com';
 const PUBLIC_ORIGIN = 'https://app.femmasprint.com';
 const LEGACY_SHEET_BRIDGE = 'https://script.google.com/macros/s/AKfycbzgr7hqI4vPFHB9nNRh2l7Ljb7m0KCf9Yl1Ue4pEfgSAADE4-luyv0B3_tn0zo0bQzecg/exec';
+const SHARED_SPREADSHEET_ID = '15fuAWl1c6kD70sIxK-yIP15K3OVr97JHXA9KFDfrPec';
 const SHEET_MEMORY_CACHE = new Map();
 const SHEET_INFLIGHT = new Map();
 
@@ -46,6 +47,69 @@ function json(data, status = 200, cacheControl = 'no-store') {
   });
 }
 
+function splitCsvLine(line) {
+  const out = [];
+  let cur = '', quoted = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') {
+      if (quoted && line[i + 1] === '"') { cur += '"'; i++; }
+      else quoted = !quoted;
+    } else if (ch === ',' && !quoted) { out.push(cur); cur = ''; }
+    else cur += ch;
+  }
+  out.push(cur);
+  return out;
+}
+
+function splitCsvRecords(text) {
+  const out = [];
+  let cur = '', quoted = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (ch === '"') {
+      if (quoted && text[i + 1] === '"') { cur += '""'; i++; }
+      else { quoted = !quoted; cur += ch; }
+    } else if ((ch === '\n' || ch === '\r') && !quoted) {
+      if (ch === '\r' && text[i + 1] === '\n') i++;
+      if (cur.trim()) out.push(cur);
+      cur = '';
+    } else cur += ch;
+  }
+  if (cur.trim()) out.push(cur);
+  return out;
+}
+
+function parseCsvRows(text) {
+  const records = splitCsvRecords(text);
+  if (records.length < 2) return [];
+  const headers = splitCsvLine(records[0]);
+  return records.slice(1).map((line, index) => {
+    const values = splitCsvLine(line);
+    const row = { __rowNumber:index + 2 };
+    headers.forEach((h, i) => { row[h] = values[i] ?? ''; });
+    return row;
+  });
+}
+
+async function fetchWithTimeout(url, init = {}, ms = 6500) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort('timeout'), ms);
+  try { return await fetch(url, { ...init, signal:controller.signal }); }
+  finally { clearTimeout(timer); }
+}
+
+async function csvSheetRows(sheet, date = '') {
+  const url = `https://docs.google.com/spreadsheets/d/${SHARED_SPREADSHEET_ID}/export?format=csv&sheet=${encodeURIComponent(sheet)}`;
+  const res = await fetchWithTimeout(url, { redirect:'follow' }, 6500);
+  if (!res.ok) throw new Error('CSV fallback unavailable: ' + res.status);
+  const raw = await res.text();
+  if (!raw || raw.trim().startsWith('<')) throw new Error('CSV fallback is not public');
+  let rows = parseCsvRows(raw);
+  if (date) rows = rows.filter((row) => String(row?.Date || '').slice(0,10) === date);
+  return rows;
+}
+
 async function sharedSheetRead(sourceUrl) {
   const sheet = (sourceUrl.searchParams.get('sheet') || '').trim();
   const date = (sourceUrl.searchParams.get('date') || '').trim();
@@ -79,7 +143,7 @@ async function sharedSheetRead(sourceUrl) {
       qs.set('tab',sheet);
     }
 
-    const res = await fetch(LEGACY_SHEET_BRIDGE + '?' + qs.toString(), { redirect:'follow' });
+    const res = await fetchWithTimeout(LEGACY_SHEET_BRIDGE + '?' + qs.toString(), { redirect:'follow' }, 6500);
     if (!res.ok) throw new Error('Sheet bridge unavailable: ' + res.status);
     const raw = await res.text();
     const prefix = callback + '(';
@@ -104,7 +168,16 @@ async function sharedSheetRead(sourceUrl) {
     const rows = await task;
     return json({ ok:true, rows, source:'apps-script' }, 200, cacheControl);
   } catch (error) {
-    return json({ ok:false, error:error?.message || 'Shared data bridge failed' }, 502);
+    try {
+      const rows = await csvSheetRows(sheet, date);
+      SHEET_MEMORY_CACHE.set(cacheKey, { at:Date.now(), rows });
+      return json({ ok:true, rows, source:'google-csv-fallback', warning:error?.message || '' }, 200, cacheControl);
+    } catch (csvError) {
+      if (cached?.rows?.length) {
+        return json({ ok:true, rows:cached.rows, source:'stale-memory-cache', warning:error?.message || '' }, 200, 'no-store');
+      }
+      return json({ ok:false, error:error?.message || csvError?.message || 'Shared data bridge failed' }, 502);
+    }
   }
 }
 
