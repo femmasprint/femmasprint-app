@@ -167,6 +167,61 @@ async function commerceWorkflowCompat(incoming) {
   const body = await incoming.json().catch(() => ({}));
   const action = String(body?.action || '');
 
+  if (action === 'updateQuickSale') {
+    const invoiceId = String(body?.invoiceId || '').trim();
+    if (!invoiceId) return json({ error:'Quick Sale ID is required' }, 400);
+    const rows = await legacyTableRows('QuickSale');
+    const matches = rows.filter((row) => String(row?.SaleID || '') === invoiceId);
+    if (!matches.length) return json({ error:'Quick Sale record not found' }, 404);
+    const current = matches[matches.length - 1];
+    const items = Array.isArray(body?.items) ? body.items : [];
+    const line = items[0] || {};
+    const qty = Math.max(1, Number(line?.qty || current?.Qty || 1));
+    const unitPrice = Number(line?.rate ?? current?.UnitPrice ?? 0);
+    const totalAmount = qty * unitPrice;
+    const receivedAmount = Math.max(0, Math.min(totalAmount, Number(body?.receivedAmount ?? current?.Paid ?? totalAmount)));
+    const paymentType = String(body?.paymentType || current?.PayMode || 'Cash');
+    const accountId = String(body?.bankAccountId || current?.AccountId || '');
+    const updated = {
+      ...current,
+      Date:String(current?.Date || body?.date || '').slice(0,10),
+      Client:String(body?.partyName || current?.Client || 'Mteja'),
+      Goods:String(line?.description || line?.itemName || current?.Goods || ''),
+      Qty:qty,
+      UnitPrice:unitPrice,
+      PayMode:paymentType,
+      Paid:receivedAmount,
+      Amount:totalAmount,
+      Balance:Math.max(0,totalAmount-receivedAmount),
+      AccountId:accountId,
+      SaleID:invoiceId
+    };
+    await postLegacyOfficeRow('QuickSale', updated);
+    const invoice = {
+      id:invoiceId,
+      invoiceNo:String(current?.SaleNo || invoiceId),
+      invoiceType:'Sale Invoice',
+      sourceChannel:'QuickSale',
+      date:String(updated.Date || '').slice(0,10),
+      partyId:String(body?.partyId || ''),
+      partyName:String(updated.Client || 'Mteja'),
+      customerContactPhone:String(body?.customerContactPhone || ''),
+      paymentType,
+      bankAccountId:accountId,
+      subtotal:totalAmount,
+      discount:Number(body?.discount || 0),
+      tax:0,
+      totalAmount,
+      receivedAmount,
+      balanceAmount:Math.max(0,totalAmount-receivedAmount),
+      status:receivedAmount >= totalAmount ? 'Paid' : receivedAmount > 0 ? 'Partial' : 'Unpaid',
+      stockPosted:false,
+      moneyPosted:false,
+      items:JSON.stringify(items.length ? items : [{ description:updated.Goods, qty, rate:unitPrice, lineTotal:totalAmount }])
+    };
+    return json({ invoice, compatibilityMode:'shared-office-update' }, 200, 'no-store');
+  }
+
   if (action !== 'createSale' || String(body?.sourceChannel || '') !== 'QuickSale') {
     return json({ error:`Commerce action ${action || 'unknown'} requires Base44 backend functions` }, 402);
   }
