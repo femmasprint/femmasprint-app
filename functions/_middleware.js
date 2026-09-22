@@ -38,7 +38,9 @@ async function sharedSheetRead(sourceUrl) {
   const live = ['QuickSale','Expenses','Attendance'].includes(sheet);
   const browserMaxAge = live ? 5 : 60;
   const edgeMaxAge = live ? 15 : 300;
-  const cacheControl = `public, max-age=${browserMaxAge}, s-maxage=${edgeMaxAge}, stale-while-revalidate=300`;
+  const cacheControl = sheet === 'Employees'
+    ? 'no-store'
+    : `public, max-age=${browserMaxAge}, s-maxage=${edgeMaxAge}, stale-while-revalidate=300`;
   if (!['QuickSale','Expenses','Attendance','Employees','Customers','Items','Invoices','Payments','Debtors','Production','Suppliers','Purchases','Orders','Accounts','Payroll','Delivery','Leads'].includes(sheet)) {
     return json({ ok:false, error:'Unsupported sheet' }, 400);
   }
