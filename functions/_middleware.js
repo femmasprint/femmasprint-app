@@ -89,6 +89,122 @@ async function sharedSheetRead(sourceUrl) {
   }
 }
 
+async function legacyTableRows(sheetName) {
+  const callback = 'femmasCompatCb';
+  const qs = new URLSearchParams({ action:'getTable', tab:sheetName, callback });
+  const res = await fetch(LEGACY_SHEET_BRIDGE + '?' + qs.toString(), { redirect:'follow' });
+  if (!res.ok) throw new Error('Shared table unavailable: ' + res.status);
+  const raw = await res.text();
+  const prefix = callback + '(';
+  const start = raw.indexOf(prefix);
+  const end = raw.lastIndexOf(')');
+  if (start < 0 || end <= start) throw new Error('Invalid shared table response');
+  const payload = JSON.parse(raw.slice(start + prefix.length, end));
+  if (payload?.ok === false) throw new Error(payload?.error || 'Shared table failed');
+  return Array.isArray(payload?.rows) ? payload.rows : [];
+}
+
+function latestRowsByKey(rows, keyColumn) {
+  const map = new Map();
+  (rows || []).forEach((row, index) => {
+    const key = String(row?.[keyColumn] || `__row_${row?.__rowNumber || index}`);
+    map.set(key, row);
+  });
+  return [...map.values()];
+}
+
+async function postLegacyOfficeRow(sheetName, row) {
+  const action = sheetName === 'QuickSale' ? 'addSale' : sheetName === 'Expenses' ? 'addExpense' : '';
+  if (!action) throw new Error('Write not supported for this shared sheet');
+  const payload = sheetName === 'QuickSale' ? {
+    action,
+    date:String(row.Date || '').slice(0,10),
+    client:String(row.Client || ''),
+    goods:String(row.Goods || ''),
+    qty:Number(row.Qty || 0),
+    unitPrice:Number(row.UnitPrice || 0),
+    payMode:String(row.PayMode || 'Cash'),
+    paid:Number(row.Paid || 0),
+    saleId:String(row.SaleID || ''),
+    accountId:String(row.AccountId || ''),
+  } : {
+    action,
+    date:String(row.Date || '').slice(0,10),
+    name:String(row.Name || ''),
+    employeeId:String(row.EmployeeID || ''),
+    reason:String(row.Reason || ''),
+    qty:Number(row.Qty || 0),
+    unitPrice:Number(row.UnitPrice || 0),
+    payMode:String(row.PayMode || 'Cash'),
+    expenseId:String(row.ExpenseID || ''),
+    accountId:String(row.AccountId || ''),
+  };
+  const res = await fetch(LEGACY_SHEET_BRIDGE, {
+    method:'POST',
+    headers:{ 'content-type':'application/json' },
+    body:JSON.stringify(payload),
+    redirect:'follow'
+  });
+  const raw = await res.text();
+  let data;
+  try { data = JSON.parse(raw); } catch { data = { ok:false, error:raw || 'Invalid write response' }; }
+  if (!res.ok || data?.ok === false) throw new Error(data?.error || `Shared write failed: ${res.status}`);
+  return data;
+}
+
+function requestFromFemmasApp(incoming) {
+  const origin = String(incoming.headers.get('origin') || '');
+  const referer = String(incoming.headers.get('referer') || '');
+  const fetchSite = String(incoming.headers.get('sec-fetch-site') || '');
+  if (origin && origin !== PUBLIC_ORIGIN) return false;
+  if (referer && !referer.startsWith(PUBLIC_ORIGIN + '/')) return false;
+  if (fetchSite && !['same-origin','same-site','none'].includes(fetchSite)) return false;
+  return true;
+}
+
+async function googleSheetsCompat(incoming) {
+  if (!requestFromFemmasApp(incoming)) return json({ error:'Forbidden' }, 403);
+  const body = await incoming.json().catch(() => ({}));
+  const action = String(body?.action || '');
+  const sheetName = String(body?.sheetName || '');
+  if (!['QuickSale','Expenses','Attendance'].includes(sheetName)) return json({ error:'Sheet not supported' }, 403);
+
+  if (action === 'readRange') {
+    let rows = await legacyTableRows(sheetName);
+    if (sheetName === 'QuickSale') rows = latestRowsByKey(rows, 'SaleID');
+    if (sheetName === 'Expenses') rows = latestRowsByKey(rows, 'ExpenseID');
+    const headers = rows.length ? Object.keys(rows[0]).filter((key) => key !== '__rowNumber') : [];
+    return json({ headers, rows, rowCount:rows.length }, 200, 'no-store');
+  }
+
+  if (action === 'appendRow') {
+    const row = body?.row && typeof body.row === 'object' ? body.row : null;
+    if (!row) return json({ error:'Row required' }, 400);
+    if (!['QuickSale','Expenses'].includes(sheetName)) return json({ error:'Append not supported for this sheet' }, 403);
+    await postLegacyOfficeRow(sheetName, row);
+    return json({ ok:true, updates:{ compat:true } }, 200, 'no-store');
+  }
+
+  if (action === 'updateByKey') {
+    const keyColumn = String(body?.keyColumn || '');
+    const keyValue = String(body?.keyValue || '');
+    const expectedKey = sheetName === 'QuickSale' ? 'SaleID' : sheetName === 'Expenses' ? 'ExpenseID' : 'AttendanceID';
+    if (keyColumn !== expectedKey || !keyValue) return json({ error:'Valid key required' }, 400);
+    if (!['QuickSale','Expenses'].includes(sheetName)) return json({ error:'Update not supported for this sheet' }, 403);
+
+    const rows = await legacyTableRows(sheetName);
+    const matches = rows.filter((row) => String(row?.[expectedKey] || '') === keyValue);
+    if (!matches.length) return json({ error:'Record not found' }, 404);
+    const current = matches[matches.length - 1];
+    const changes = body?.changes && typeof body.changes === 'object' ? body.changes : {};
+    const merged = { ...current, ...changes, [expectedKey]:keyValue };
+    await postLegacyOfficeRow(sheetName, merged);
+    return json({ ok:true, updatedRange:'compat-append-correction' }, 200, 'no-store');
+  }
+
+  return json({ error:`Action ${action || 'unknown'} unavailable without Base44 Functions` }, 501);
+}
+
 async function sharedSheetWrite(incoming) {
   const body = await incoming.json().catch(() => ({}));
   const action = String(body?.action || '');
@@ -194,6 +310,10 @@ export async function onRequest(context) {
   if (sourceUrl.pathname === '/api/femmas-shared-sheet' && incoming.method === 'GET') {
     try { return await sharedSheetRead(sourceUrl); }
     catch (error) { return json({ ok:false, error:'Shared data bridge failed' }, 502); }
+  }
+  if (/^\/api\/apps\/[^/]+\/functions\/googleSheetsApi\/?$/.test(sourceUrl.pathname) && incoming.method === 'POST') {
+    try { return await googleSheetsCompat(incoming); }
+    catch (error) { return json({ error:error?.message || 'Google Sheets compatibility bridge failed' }, 502); }
   }
   if (sourceUrl.pathname === '/api/femmas-shared-write' && incoming.method === 'POST') {
     try { return await sharedSheetWrite(incoming); }
