@@ -7,6 +7,20 @@ const BASE44_API_ORIGIN = 'https://base44.app';
 const PUBLIC_ORIGIN = 'https://app.femmasprint.com';
 const LEGACY_SHEET_BRIDGE = 'https://script.google.com/macros/s/AKfycbzgr7hqI4vPFHB9nNRh2l7Ljb7m0KCf9Yl1Ue4pEfgSAADE4-luyv0B3_tn0zo0bQzecg/exec';
 const SHARED_SPREADSHEET_ID = '15fuAWl1c6kD70sIxK-yIP15K3OVr97JHXA9KFDfrPec';
+const LOCAL_EMPLOYEES_FALLBACK = [
+  { EmployeeID:'EMP-014', EmployeeName:'Ismail Issa', Status:'Active' },
+  { EmployeeID:'EMP-004', EmployeeName:'Hassan Mwesiumo', Status:'Active' },
+  { EmployeeID:'EMP-017', EmployeeName:'Ismar Salim Hussein (Suma)', Status:'Active' },
+  { EmployeeID:'EMP-008', EmployeeName:'Steven Mkope', Status:'Active' },
+  { EmployeeID:'EMP-015', EmployeeName:'VICTOR MAPUGA', Status:'Active' },
+  { EmployeeID:'EMP-006', EmployeeName:'Fadhili Ally', Status:'Active' },
+  { EmployeeID:'EMP-009', EmployeeName:'Emanuel W. Sese (Ima)', Status:'Active' },
+  { EmployeeID:'EMP-010', EmployeeName:'Sedekia Johnson Laurent', Status:'Active' },
+  { EmployeeID:'EMP-011', EmployeeName:'Henry Charles Kwedi', Status:'Active' },
+  { EmployeeID:'EMP-012', EmployeeName:'Shaibu Frank Malekela', Status:'Active' },
+  { EmployeeID:'EMP-013', EmployeeName:'Felician Masanje', Status:'Active' },
+  { EmployeeID:'EMP-016', EmployeeName:'Omar Mrangi', Status:'Active' }
+];
 const SHEET_MEMORY_CACHE = new Map();
 const SHEET_INFLIGHT = new Map();
 
@@ -113,6 +127,12 @@ async function csvSheetRows(sheet, date = '') {
 async function sharedSheetRead(sourceUrl) {
   const sheet = (sourceUrl.searchParams.get('sheet') || '').trim();
   const date = (sourceUrl.searchParams.get('date') || '').trim();
+
+  if (sheet === 'Employees') {
+    const cachedEmployees = SHEET_MEMORY_CACHE.get('Employees::all');
+    const rows = cachedEmployees?.rows?.length ? cachedEmployees.rows : LOCAL_EMPLOYEES_FALLBACK;
+    return json({ ok:true, rows, source:cachedEmployees?.rows?.length ? 'memory-cache' : 'local-employees-fallback' }, 200, 'public,max-age=60,s-maxage=300');
+  }
   const live = ['QuickSale','Expenses','Attendance'].includes(sheet);
   const browserMaxAge = live ? 5 : 60;
   const edgeMaxAge = live ? 15 : 300;
