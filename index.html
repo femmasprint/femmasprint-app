@@ -10,6 +10,26 @@
     <meta name="description" content="FEMMAS PRINT — mfumo salama wa mauzo, fedha, stoo, wateja na uendeshaji wa biashara." />
     <link rel="manifest" href="/manifest.json" />
     <title>FEMMAS PRINT | Mfumo wa Biashara</title>
+    <script>
+/* FEMMAS network timeout guard: never let one stalled API keep the whole dashboard loading. */
+(function () {
+  const nativeFetch = window.fetch.bind(window);
+  window.fetch = function(input, init) {
+    init = init || {};
+    let url = '';
+    try { url = typeof input === 'string' ? input : (input && input.url) || ''; } catch (_) {}
+    const method = String(init.method || (input && input.method) || 'GET').toUpperCase();
+    const isData = /(?:base44\.app|\/api\/)/i.test(url);
+    if (!isData || init.signal) return nativeFetch(input, init);
+
+    const controller = new AbortController();
+    const ms = method === 'GET' || method === 'HEAD' ? 6000 : 10000;
+    const timer = setTimeout(function () { try { controller.abort(); } catch (_) {} }, ms);
+    return nativeFetch(input, Object.assign({}, init, { signal: controller.signal }))
+      .finally(function () { clearTimeout(timer); });
+  };
+})();
+    </script>
     <script type="module" crossorigin src="/assets/index-CBoxsot0.js"></script>
     <link rel="stylesheet" crossorigin href="/assets/style-BA0cGe30.css">
     <script type="module">
