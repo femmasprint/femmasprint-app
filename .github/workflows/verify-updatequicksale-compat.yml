@@ -1,0 +1,29 @@
+name: Verify Quick Sale Update Compat
+on:
+  push:
+    branches: [verify-updatequicksale-compat-20260922]
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - shell: bash
+        run: |
+          set -euo pipefail
+          APP_ID="6a26d86878b02023440a0ff4"
+          URL="https://app.femmasprint.com/api/apps/$APP_ID/functions/commerceWorkflowApi"
+          ok=0
+          for i in $(seq 1 20); do
+            null_code=$(curl -sS -o /tmp/null.json -w '%{http_code}' --max-time 20 -H 'origin: https://app.femmasprint.com' -H 'referer: https://app.femmasprint.com/quick-sale' -H 'content-type: application/json' -d '{"action":"updateQuickSale","invoiceId":null,"items":[{"description":"probe","qty":1,"rate":100}],"receivedAmount":100,"paymentType":"Bank","bankAccountId":"femmas-local-bank"}' "$URL" || true)
+            missing_code=$(curl -sS -o /tmp/missing.json -w '%{http_code}' --max-time 20 -H 'origin: https://app.femmasprint.com' -H 'referer: https://app.femmasprint.com/quick-sale' -H 'content-type: application/json' -d '{"action":"updateQuickSale","invoiceId":"__NO_SUCH_SALE__","items":[{"description":"probe","qty":1,"rate":100}],"receivedAmount":100,"paymentType":"Bank","bankAccountId":"femmas-local-bank"}' "$URL" || true)
+            echo "attempt=$i null=$null_code missing=$missing_code"
+            echo "null_body=$(cat /tmp/null.json)"
+            echo "missing_body=$(cat /tmp/missing.json)"
+            if [ "$null_code" = "400" ] && [ "$missing_code" = "404" ] && grep -q 'Quick Sale ID is required' /tmp/null.json && grep -q 'Quick Sale record not found' /tmp/missing.json; then
+              ok=1
+              break
+            fi
+            sleep 5
+          done
+          test "$ok" = "1"
