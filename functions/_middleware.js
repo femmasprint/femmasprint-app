@@ -26,7 +26,7 @@ function json(data, status = 200, cacheControl = 'no-store') {
   });
 }
 
-async function sharedSheetRead(sourceUrl) {
+async function sharedSheetRead(sourceUrl, context) {
   const sheet = (sourceUrl.searchParams.get('sheet') || '').trim();
   const date = (sourceUrl.searchParams.get('date') || '').trim();
   const live = ['QuickSale','Expenses','Attendance'].includes(sheet);
@@ -37,6 +37,17 @@ async function sharedSheetRead(sourceUrl) {
     return json({ ok:false, error:'Unsupported sheet' }, 400);
   }
 
+  const edgeCache = typeof caches !== 'undefined' ? caches.default : null;
+  const edgeUrl = new URL('/api/femmas-shared-sheet', sourceUrl.origin);
+  edgeUrl.searchParams.set('sheet', sheet);
+  if (date) edgeUrl.searchParams.set('date', date);
+  const edgeKey = new Request(edgeUrl.toString());
+  if (edgeCache) {
+    try {
+      const hit = await edgeCache.match(edgeKey);
+      if (hit) return markResponse(hit, 'fresh-sheet-cache');
+    } catch {}
+  }
   const cacheKey = sheet + '::' + (date || 'all');
   const ttl = sheetCacheTtl(sheet, date);
   const cached = SHEET_MEMORY_CACHE.get(cacheKey);
@@ -71,7 +82,7 @@ async function sharedSheetRead(sourceUrl) {
     try { payload = JSON.parse(raw.slice(start + prefix.length, end)); }
     catch { throw new Error('Invalid bridge JSON'); }
 
-    const rows = sheet === 'QuickSale'
+    const rows = sheet === 'QuickSale' && date
       ? (Array.isArray(payload.sales) ? payload.sales : [])
       : (Array.isArray(payload.rows) ? payload.rows : []);
     if (payload.ok === false) throw new Error(payload.error || 'Sheet bridge failed');
@@ -82,7 +93,13 @@ async function sharedSheetRead(sourceUrl) {
   SHEET_INFLIGHT.set(cacheKey, task);
   try {
     const rows = await task;
-    return json({ ok:true, rows, source:'apps-script' }, 200, cacheControl);
+    const response = json({ ok:true, rows, source:'apps-script' }, 200, cacheControl);
+    if (edgeCache && context?.waitUntil) {
+      const copy = response.clone();
+      copy.headers.set('cache-control', 'public, max-age=' + Math.floor(ttl / 1000));
+      context.waitUntil(edgeCache.put(edgeKey, copy).catch(() => {}));
+    }
+    return response;
   } catch (error) {
     return json({ ok:false, error:error?.message || 'Shared data bridge failed' }, 502);
   }
@@ -119,38 +136,10 @@ async function optimizeLiveFemmasResponse(response, sourceUrl) {
   // Keep the exact working upstream/login flow, but make the dashboard non-blocking.
   if (contentType.includes('text/html')) {
     let html = await response.text();
-    const guard = `<script>
-(function(){
-  if (window.__femmasFastGuard) return;
-  window.__femmasFastGuard = true;
-  const nf = window.fetch.bind(window);
-  window.fetch = function(input, init){
-    init = init || {};
-    let url = '';
-    try { url = typeof input === 'string' ? input : (input && input.url) || ''; } catch(_) {}
-    const method = String(init.method || (input && input.method) || 'GET').toUpperCase();
-    if (!/\\/api\\//i.test(url) || init.signal) return nf(input, init);
-    const ctl = new AbortController();
-    const ms = method === 'GET' || method === 'HEAD' ? 8000 : 12000;
-    const t = setTimeout(function(){ try { ctl.abort(); } catch(_){} }, ms);
-    return nf(input, Object.assign({}, init, {signal:ctl.signal})).finally(function(){clearTimeout(t);});
-  };
-  var NX = window.XMLHttpRequest;
-  if (NX && !NX.__femmasFastGuard) {
-    var op = NX.prototype.open, sd = NX.prototype.send;
-    NX.prototype.open = function(method,url){ this.__fpMethod=String(method||'GET').toUpperCase(); this.__fpUrl=String(url||''); return op.apply(this,arguments); };
-    NX.prototype.send = function(){ try{ if(!this.timeout && /\\/api\\//i.test(this.__fpUrl||'')) this.timeout=(this.__fpMethod==='GET'||this.__fpMethod==='HEAD')?8500:12000; }catch(_){} return sd.apply(this,arguments); };
-    NX.__femmasFastGuard = true;
-  }
-})();</script>`;
-    if (!html.includes('__femmasFastGuard')) {
-      if (html.includes('<script type="module"')) html = html.replace('<script type="module"', guard + '<script type="module"');
-      else html = html.replace('</head>', guard + '</head>');
-    }
     const headers = new Headers(response.headers);
     headers.delete('content-length');
     headers.set('cache-control','no-store');
-    headers.set('x-femmas-speed-fix','html-guard');
+    headers.set('x-femmas-speed-fix','native-request-lifecycle');
     return new Response(html,{status:response.status,statusText:response.statusText,headers});
   }
 
@@ -171,22 +160,22 @@ async function optimizeLiveFemmasResponse(response, sourceUrl) {
     }
     if (pathname === '/assets/Dashboard-DUmWkJWX.js') {
       const core = 'const[xe,Lt,Ar,wn]=await Promise.allSettled([ht.entities.Invoice.list("-date",1500),ht.entities.Expense.list("-date",1500),jh(Cr()),Th(Cr())]);';
-      const bounded = 'void __fpDashboardRead(jh(Cr()),12000).then(O).catch(()=>F("Mauzo ya Google Sheet hayajapatikana; taarifa kuu zimehifadhiwa."));void __fpDashboardRead(Th(Cr()),12000).then(g).catch(()=>F("Matumizi ya Google Sheet hayajapatikana; taarifa kuu zimehifadhiwa."));const[xe,Lt]=await Promise.allSettled([ht.entities.Invoice.list("-date",1500),ht.entities.Expense.list("-date",1500)].map(p=>__fpDashboardRead(p,12000)));if(xe.status==="rejected"||Lt.status==="rejected")throw new Error("Data ya mauzo au matumizi haijapatikana. Bonyeza Jaribu tena.");';
+      const bounded = 'void jh(Cr()).then(O).catch(()=>F("Mauzo ya Google Sheet hayajapatikana."));void Th(Cr()).then(g).catch(()=>F("Matumizi ya Google Sheet hayajapatikana."));const[xe,Lt]=await Promise.allSettled([__fpInvoiceRead(ht.entities.Invoice.list("-date",1500),J1()),ht.entities.Expense.list("-date",1500)]);if(xe.status==="rejected"||Lt.status==="rejected")throw new Error("Data ya mauzo au matumizi haijapatikana. Bonyeza Jaribu tena.");';
       if (replaceOnce(core, bounded)) {
-        js += '\nfunction __fpDashboardRead(p,ms){return new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(new Error("Dashboard read timed out")),ms);Promise.resolve(p).then(v=>{clearTimeout(timer);resolve(v)},e=>{clearTimeout(timer);reject(e)})})}\n';
-        replaceOnce('if(xe.status==="fulfilled"&&!(xe.value||[]).length)try{xe.value=await J1()}catch{}', 'if(xe.status==="fulfilled"&&!(xe.value||[]).length)xe.value=await __fpDashboardRead(J1(),20000);');
+        js += '\nasync function __fpInvoiceRead(primary,legacy){const fallback=Promise.resolve(legacy).then(value=>({value}),error=>({error}));const rows=await primary;if(rows?.length)return rows;const result=await fallback;if(result.error)throw result.error;return result.value;}\n';
+        replaceOnce('if(xe.status==="fulfilled"&&!(xe.value||[]).length)try{xe.value=await J1()}catch{}', '');
         replaceOnce('i(Bt(xe)),s(Bt(Lt)),O(Bt(Ar)),g(Bt(wn)),','i(Bt(xe)),s(Bt(Lt)),');
       }
     }
     // Version the changed lazy chunks so browsers cannot reuse their old immutable copies.
-    const versioned = js.replace(/((?:\.\/|assets\/)(?:Dashboard-DUmWkJWX|sharedFemmasDb-pz44rUcs)\.js)(["'])/g, '$1?fp=20260922-data4$2');
+    const versioned = js.replace(/((?:\.\/|assets\/)(?:Dashboard-DUmWkJWX|sharedFemmasDb-pz44rUcs)\.js)(["'])/g, '$1?fp=20260922-data5$2');
     changed = changed || versioned !== js;
     js = versioned;
     const headers = new Headers(response.headers);
     headers.delete('content-length');
     headers.delete('etag');
     headers.set('cache-control', 'no-store');
-    headers.set('x-femmas-speed-fix', changed ? 'bounded-dashboard-direct-sheets-v2' : 'unchanged');
+    headers.set('x-femmas-speed-fix', changed ? 'parallel-dashboard-fresh-sheets-v5' : 'unchanged');
     return new Response(js, {status:response.status,statusText:response.statusText,headers});
   }
 
@@ -239,7 +228,7 @@ export async function onRequest(context) {
     }
   }
   if (sourceUrl.pathname === '/api/femmas-shared-sheet' && incoming.method === 'GET') {
-    try { return await sharedSheetRead(sourceUrl); }
+    try { return await sharedSheetRead(sourceUrl, context); }
     catch (error) { return json({ ok:false, error:'Shared data bridge failed' }, 502); }
   }
 
