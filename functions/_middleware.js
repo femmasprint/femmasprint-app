@@ -145,7 +145,7 @@ async function optimizeLiveFemmasResponse(response, sourceUrl) {
 
 
   // Match only the verified live chunks. Keep authentication and mutations intact.
-  if (['/assets/index-CoDuqWxY.js','/assets/Dashboard-DUmWkJWX.js','/assets/sharedFemmasDb-pz44rUcs.js'].includes(pathname)) {
+  if (['/assets/index-CoDuqWxY.js','/assets/Dashboard-DUmWkJWX.js','/assets/sharedFemmasDb-pz44rUcs.js','/assets/SaleInvoices-eHSRbIOi.js','/assets/CustomerSelect-CcjB1l7I.js','/assets/QuickSale-B7nQvxCA.js'].includes(pathname)) {
     let js = await response.text();
     let changed = false;
     const replaceOnce = (from, to) => {
@@ -167,15 +167,29 @@ async function optimizeLiveFemmasResponse(response, sourceUrl) {
         replaceOnce('i(Bt(xe)),s(Bt(Lt)),O(Bt(Ar)),g(Bt(wn)),','i(Bt(xe)),s(Bt(Lt)),');
       }
     }
+    if (pathname === '/assets/SaleInvoices-eHSRbIOi.js') {
+      replaceOnce('[T,De]=s.useState("this_month")','[T,De]=s.useState("all")');
+    }
+    if (pathname === '/assets/CustomerSelect-CcjB1l7I.js') {
+      replaceOnce('parties:z=Ee}){const[I,E]', 'parties:__fpParties=Ee}){const[__fpRows,__fpSetRows]=m.useState([]);m.useEffect(()=>{let alive=true;__fpCustomers().then(rows=>{if(alive)__fpSetRows(rows)}).catch(()=>{});return()=>{alive=false}},[]);const z=m.useMemo(()=>[...__fpParties,...__fpRows],[__fpParties,__fpRows]);const[I,E]');
+      replaceOnce('map(c=>({...c,name:c.partyName,source:"FEMMAS",inPartyMaster:!0}))},te=', 'map(c=>({...c,name:c.partyName,source:c._sheetContact?"Office Sheet":"FEMMAS",inPartyMaster:!c._sheetContact}))},te=');
+      replaceOnce('r.source==="WhatsApp Contact"?"WhatsApp":"Google"','r.source==="WhatsApp Contact"?"WhatsApp":r._sheetContact?"Office Sheet":"Google"');
+      js += '\nlet __fpCustomerTask;function __fpCustomers(){return __fpCustomerTask||(__fpCustomerTask=fetch("/api/femmas-shared-sheet?sheet=Customers",{credentials:"same-origin"}).then(async r=>{if(!r.ok)throw new Error("Customer sheet unavailable");const d=await r.json();if(!d.ok||!Array.isArray(d.rows))throw new Error("Invalid customer data");return d.rows.filter(r=>!/[Ii]nactive|[Dd]eleted/.test(String(r.Status||""))).map(r=>({id:"",legacyCustomerId:r.CustomerID||"",partyName:r.CustomerName||r.Name||"",phone:r.Phone||"",email:r.Email||"",type:"Customer",status:"Active",_sheetContact:true})).filter(r=>r.partyName)}).catch(e=>{__fpCustomerTask=null;throw e}))}\n';
+    }
+    if (pathname === '/assets/QuickSale-B7nQvxCA.js') {
+      replaceOnce('T.entities.Item.list("-created_date",500)', '__fpItems(T.entities.Item.list("-created_date",500))');
+      replaceOnce('T.functions.invoke("quickSaleCoreApi",{date:Ur.current,masterSearch:!0,query:s,limit:60})', '__fpMasterSearch(T,s)');
+      js += '\nasync function __fpItems(primary){const rows=await Promise.resolve(primary).catch(()=>[]);if(rows?.length)return rows;const r=await fetch("/api/femmas-shared-sheet?sheet=Items",{credentials:"same-origin"});if(!r.ok)throw new Error("Items unavailable");const d=await r.json();if(!d.ok||!Array.isArray(d.rows))throw new Error("Invalid items data");const num=v=>Number(String(v??"").replace(/,/g,""))||0;return d.rows.filter(r=>r.ItemID&&r.ItemName).map(r=>({id:r.ItemID,itemName:r.ItemName,itemCode:r.ItemCode||r.ItemID,category:r.Category||"",unit:r.Unit||"Pcs",salePrice:num(r.SalePrice||r.SellingPrice),currentStockQty:num(r.CurrentStock||r.AvailableStock||r.OpeningStock),inventoryTracked:false,stockBaselineVerified:false,status:r.Status||"Active",_peerShared:true}))}async function __fpMasterSearch(client,query){const escaped=String(query).replace(/[.*+?^${}()|[\\]\\\\]/g,"\\$&");const found=await Promise.allSettled([client.entities.ServiceCatalog.filter({service_name:{$regex:escaped}},"-created_date",100),__fpItems(client.entities.Item.filter({itemName:{$regex:escaped}},"-created_date",100))]);return {data:{catalog:found[0].status==="fulfilled"?found[0].value:[],items:found[1].status==="fulfilled"?found[1].value:[]}}}\n';
+    }
     // Version the changed lazy chunks so browsers cannot reuse their old immutable copies.
-    const versioned = js.replace(/((?:\.\/|assets\/)(?:Dashboard-DUmWkJWX|sharedFemmasDb-pz44rUcs)\.js)(["'])/g, '$1?fp=20260922-data5$2');
+    const versioned = js.replace(/((?:\.\/|assets\/)(?:Dashboard-DUmWkJWX|sharedFemmasDb-pz44rUcs|SaleInvoices-eHSRbIOi|CustomerSelect-CcjB1l7I|QuickSale-B7nQvxCA)\.js)(["'])/g, '$1?fp=20260923-directory6$2');
     changed = changed || versioned !== js;
     js = versioned;
     const headers = new Headers(response.headers);
     headers.delete('content-length');
     headers.delete('etag');
     headers.set('cache-control', 'no-store');
-    headers.set('x-femmas-speed-fix', changed ? 'parallel-dashboard-fresh-sheets-v5' : 'unchanged');
+    headers.set('x-femmas-speed-fix', changed ? 'office-directory-history-v6' : 'unchanged');
     return new Response(js, {status:response.status,statusText:response.statusText,headers});
   }
 
