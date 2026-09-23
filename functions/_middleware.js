@@ -173,7 +173,7 @@ async function optimizeLiveFemmasResponse(response, sourceUrl) {
     if (pathname === '/assets/CustomerSelect-CcjB1l7I.js') {
       replaceOnce('parties:z=Ee}){const[I,E]', 'parties:__fpParties=Ee}){const[__fpRows,__fpSetRows]=m.useState([]);m.useEffect(()=>{let alive=true;__fpCustomers().then(rows=>{if(alive)__fpSetRows(rows)}).catch(()=>{});return()=>{alive=false}},[]);const z=m.useMemo(()=>[...__fpParties,...__fpRows],[__fpParties,__fpRows]);const[I,E]');
       replaceOnce('map(c=>({...c,name:c.partyName,source:"FEMMAS",inPartyMaster:!0}))},te=', 'map(c=>({...c,name:c.partyName,source:c._sheetContact?"Office Sheet":"FEMMAS",inPartyMaster:!c._sheetContact}))},te=');
-      replaceOnce('r.source==="WhatsApp Contact"?"WhatsApp":"Google"','r.source==="WhatsApp Contact"?"WhatsApp":r._sheetContact?"Office Sheet":"Google"');
+      replaceOnce('e.source==="WhatsApp Contact"?"WhatsApp":"Google"','e.source==="WhatsApp Contact"?"WhatsApp":e._sheetContact?"Office Sheet":"Google"');
       js += '\nlet __fpCustomerTask;function __fpCustomers(){return __fpCustomerTask||(__fpCustomerTask=fetch("/api/femmas-shared-sheet?sheet=Customers",{credentials:"same-origin"}).then(async r=>{if(!r.ok)throw new Error("Customer sheet unavailable");const d=await r.json();if(!d.ok||!Array.isArray(d.rows))throw new Error("Invalid customer data");return d.rows.filter(r=>!/[Ii]nactive|[Dd]eleted/.test(String(r.Status||""))).map(r=>({id:"",legacyCustomerId:r.CustomerID||"",partyName:r.CustomerName||r.Name||"",phone:r.Phone||"",email:r.Email||"",type:"Customer",status:"Active",_sheetContact:true})).filter(r=>r.partyName)}).catch(e=>{__fpCustomerTask=null;throw e}))}\n';
     }
     if (pathname === '/assets/QuickSale-B7nQvxCA.js') {
