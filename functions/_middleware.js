@@ -164,9 +164,9 @@ async function optimizeLiveFemmasResponse(response, sourceUrl) {
     }
     if (pathname === '/assets/Dashboard-DUmWkJWX.js') {
       const core = 'const[xe,Lt,Ar,wn]=await Promise.allSettled([ht.entities.Invoice.list("-date",1500),ht.entities.Expense.list("-date",1500),jh(Cr()),Th(Cr())]);';
-      const bounded = 'void jh(Cr()).then(O).catch(()=>F("Mauzo ya Google Sheet hayajapatikana."));void Th(Cr()).then(g).catch(()=>F("Matumizi ya Google Sheet hayajapatikana."));const[xe,Lt]=await Promise.allSettled([__fpInvoiceRead(ht.entities.Invoice.list("-date",1500),J1()),ht.entities.Expense.list("-date",1500)]);if(xe.status==="rejected"||Lt.status==="rejected")throw new Error("Data ya mauzo au matumizi haijapatikana. Bonyeza Jaribu tena.");';
+      const bounded = 'void jh(Cr()).then(O).catch(()=>F("Mauzo ya Google Sheet hayajapatikana."));void Th(Cr()).then(g).catch(()=>F("Matumizi ya Google Sheet hayajapatikana."));const[xe,Lt]=await Promise.allSettled([__fpInvoiceRead(ht.entities.Invoice.list("-date",1500),J1()),__fpDashboardWait(ht.entities.Expense.list("-date",1500))]);if(xe.status==="rejected"||Lt.status==="rejected")throw new Error("Data ya mauzo au matumizi haijapatikana. Bonyeza Jaribu tena.");';
       if (replaceOnce(core, bounded)) {
-        js += '\nasync function __fpInvoiceRead(primary,legacy){const fallback=Promise.resolve(legacy).then(value=>({value}),error=>({error}));const rows=await primary;if(rows?.length)return rows;const result=await fallback;if(result.error)throw result.error;return result.value;}\n';
+        js += '\nfunction __fpDashboardWait(task,ms=35000){let timer;return Promise.race([Promise.resolve(task),new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error("Dashboard source haijajibu kwa wakati. Bonyeza Jaribu tena.")),ms)})]).finally(()=>clearTimeout(timer))}async function __fpInvoiceRead(primary,legacy){const fallback=Promise.resolve(legacy);const preferred=Promise.resolve(primary).then(rows=>rows?.length?rows:fallback,()=>fallback);return __fpDashboardWait(Promise.race([preferred,fallback]));}\n';
         replaceOnce('if(xe.status==="fulfilled"&&!(xe.value||[]).length)try{xe.value=await J1()}catch{}', '');
         replaceOnce('i(Bt(xe)),s(Bt(Lt)),O(Bt(Ar)),g(Bt(wn)),','i(Bt(xe)),s(Bt(Lt)),');
       }
@@ -190,14 +190,14 @@ async function optimizeLiveFemmasResponse(response, sourceUrl) {
       js += '\nasync function __fpItems(primary){const rows=await Promise.resolve(primary).catch(()=>[]);if(rows?.length)return rows;const r=await fetch("/api/femmas-shared-sheet?sheet=Items",{credentials:"same-origin"});if(!r.ok)throw new Error("Items unavailable");const d=await r.json();if(!d.ok||!Array.isArray(d.rows))throw new Error("Invalid items data");const num=v=>Number(String(v??"").replace(/,/g,""))||0;return d.rows.filter(r=>r.ItemID&&r.ItemName).map(r=>({id:r.ItemID,itemName:r.ItemName,itemCode:r.ItemCode||r.ItemID,category:r.Category||"",unit:r.Unit||"Pcs",salePrice:num(r.SalePrice||r.SellingPrice),currentStockQty:num(r.CurrentStock||r.AvailableStock||r.OpeningStock),inventoryTracked:false,stockBaselineVerified:false,status:r.Status||"Active",_peerShared:true}))}async function __fpMasterSearch(client,query){const escaped=String(query).replace(/[.*+?^${}()|[\\]\\\\]/g,"\\$&");const found=await Promise.allSettled([client.entities.ServiceCatalog.filter({service_name:{$regex:escaped}},"-created_date",100),__fpItems(client.entities.Item.filter({itemName:{$regex:escaped}},"-created_date",100))]);return {data:{catalog:found[0].status==="fulfilled"?found[0].value:[],items:found[1].status==="fulfilled"?found[1].value:[]}}}\n';
     }
     // Version the changed lazy chunks so browsers cannot reuse their old immutable copies.
-    const versioned = js.replace(/((?:\.\/|assets\/)(?:Dashboard-DUmWkJWX|sharedFemmasDb-pz44rUcs|SaleInvoices-eHSRbIOi|CustomerSelect-CcjB1l7I|QuickSale-B7nQvxCA)\.js)(["'])/g, '$1?fp=20260923-directory9$2');
+    const versioned = js.replace(/((?:\.\/|assets\/)(?:Dashboard-DUmWkJWX|sharedFemmasDb-pz44rUcs|SaleInvoices-eHSRbIOi|CustomerSelect-CcjB1l7I|QuickSale-B7nQvxCA)\.js)(["'])/g, '$1?fp=20260924-dashboard10$2');
     changed = changed || versioned !== js;
     js = versioned;
     const headers = new Headers(response.headers);
     headers.delete('content-length');
     headers.delete('etag');
     headers.set('cache-control', 'no-store');
-    headers.set('x-femmas-speed-fix', changed ? 'quick-sale-read-v9' : 'unchanged');
+    headers.set('x-femmas-speed-fix', changed ? 'dashboard-read-v10' : 'unchanged');
     return new Response(js, {status:response.status,statusText:response.statusText,headers});
   }
 
