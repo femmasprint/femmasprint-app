@@ -65,6 +65,7 @@ async function sharedSheetRead(sourceUrl, context) {
     if (sheet === 'QuickSale' && date) {
       qs.set('action','getQuickSale');
       qs.set('date',date);
+      qs.set('salesOnly','1');
     } else {
       qs.set('action','getTable');
       qs.set('tab',sheet);
@@ -82,10 +83,9 @@ async function sharedSheetRead(sourceUrl, context) {
     try { payload = JSON.parse(raw.slice(start + prefix.length, end)); }
     catch { throw new Error('Invalid bridge JSON'); }
 
-    const rows = sheet === 'QuickSale' && date
-      ? (Array.isArray(payload.sales) ? payload.sales : [])
-      : (Array.isArray(payload.rows) ? payload.rows : []);
     if (payload.ok === false) throw new Error(payload.error || 'Sheet bridge failed');
+    const rows = sheet === 'QuickSale' && date ? payload.sales : payload.rows;
+    if (!Array.isArray(rows)) throw new Error('Sheet bridge returned no row array');
     SHEET_MEMORY_CACHE.set(cacheKey, { at:Date.now(), rows });
     return rows;
   })().finally(() => SHEET_INFLIGHT.delete(cacheKey));
