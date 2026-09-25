@@ -131,7 +131,7 @@ function markResponse(response, source, cacheControl = '') {
 
 async function optimizeLiveFemmasResponse(response, sourceUrl) {
   const contentType = String(response.headers.get('content-type') || '').toLowerCase();
-  const pathname = sourceUrl.pathname || '';
+  const pathname = (sourceUrl.pathname || '').replace(/^\/assets\/(index|Dashboard|sharedFemmasDb|SaleInvoices|CustomerSelect|QuickSale)-[^/]+\.js$/, (_, name) => '/assets/' + ({"index":"index-CoDuqWxY","Dashboard":"Dashboard-DUmWkJWX","sharedFemmasDb":"sharedFemmasDb-pz44rUcs","SaleInvoices":"SaleInvoices-eHSRbIOi","CustomerSelect":"CustomerSelect-CcjB1l7I","QuickSale":"QuickSale-B7nQvxCA"})[name] + '.js');
 
   // Keep the exact working upstream/login flow, but make the dashboard non-blocking.
   if (contentType.includes('text/html')) {
@@ -155,6 +155,8 @@ async function optimizeLiveFemmasResponse(response, sourceUrl) {
       return true;
     };
     if (pathname === '/assets/sharedFemmasDb-pz44rUcs.js') {
+      replaceOnce('h=async(e,t="")=>{try{return await w(e,t)}catch{try{return await D(e,t)}catch{const a=await I(e);return t?a.filter(n=>r(n==null?void 0:n.Date)===t):a}}}', 'h=async(e,t="")=>w(e,t)');
+
       replaceOnce("J=async(e=\"\")=>{let t;try{t=(await p({action:\"readRange\",spreadsheetId:m,sheetName:\"QuickSale\",range:\"A1:Z2000\"})).rows||[],e&&(t=t.filter(s=>r(s==null?void 0:s.Date)===e))}catch{try{t=await w(\"QuickSale\",e)}catch{try{t=await D(\"QuickSale\",e)}catch{t=await I(\"QuickSale\"),e&&(t=t.filter(n=>r(n==null?void 0:n.Date)===e))}}}","J=async(e=\"\")=>{let t=await w(\"QuickSale\",e);");
       replaceOnce("z=async(e=\"\")=>{let t;try{t=(await p({action:\"readRange\",spreadsheetId:m,sheetName:\"Expenses\",range:\"A1:Z2000\"})).rows||[],e&&(t=t.filter(n=>r(n==null?void 0:n.Date)===e))}catch{try{t=await w(\"Expenses\",e)}catch{try{t=await D(\"Expenses\",e)}catch{t=await I(\"Expenses\"),e&&(t=t.filter(a=>r(a==null?void 0:a.Date)===e))}}}","z=async(e=\"\")=>{let t=await w(\"Expenses\",e);");
       replaceOnce("T=async(e=\"\")=>{let t;try{t=(await p({action:\"readRange\",spreadsheetId:m,sheetName:\"Attendance\",range:\"A1:Z5000\"})).rows||[],e&&(t=t.filter(n=>r(n==null?void 0:n.Date)===e))}catch{try{t=await w(\"Attendance\",e)}catch{try{t=await D(\"Attendance\",e)}catch{t=await I(\"Attendance\"),e&&(t=t.filter(a=>r(a==null?void 0:a.Date)===e))}}}","T=async(e=\"\")=>{let t=await w(\"Attendance\",e);");
@@ -184,20 +186,24 @@ async function optimizeLiveFemmasResponse(response, sourceUrl) {
       js += '\nlet __fpCustomerTask;function __fpCustomers(){return __fpCustomerTask||(__fpCustomerTask=fetch("/api/femmas-shared-sheet?sheet=Customers",{credentials:"same-origin"}).then(async r=>{if(!r.ok)throw new Error("Customer sheet unavailable");const d=await r.json();if(!d.ok||!Array.isArray(d.rows))throw new Error("Invalid customer data");return d.rows.filter(r=>!/[Ii]nactive|[Dd]eleted/.test(String(r.Status||""))).map(r=>({id:"",legacyCustomerId:r.CustomerID||"",partyName:r.CustomerName||r.Name||"",phone:r.Phone||"",email:r.Email||"",type:"Customer",status:"Active",_sheetContact:true})).filter(r=>r.partyName)}).catch(e=>{__fpCustomerTask=null;throw e}))}\n';
     }
     if (pathname === '/assets/QuickSale-B7nQvxCA.js') {
+      replaceOnce('Go(),T.entities.ManagementCompensation', 'Go().then(rows=>{Yt(rows);return rows}),T.entities.ManagementCompensation');
+      replaceOnce('hi(p),fi(p),Ln(p)]),O=', 'hi(p),fi(p),Ln(p)].map(task=>__fpQuickWait(task))),O=');
+      js += '\nfunction __fpQuickWait(task,ms=35000){let timer;return Promise.race([Promise.resolve(task),new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error("Chanzo cha data hakijajibu kwa wakati")),ms)})]).finally(()=>clearTimeout(timer))}\n';
+
       replaceOnce("Ln(Fe),hi(Fe),fi(Fe),En.length?","We.status===\"fulfilled\"?Promise.resolve(ko):Ln(Fe),G.status===\"fulfilled\"?Promise.resolve(ya):hi(Fe),ze.status===\"fulfilled\"?Promise.resolve(_a):fi(Fe),En.length?");
       replaceOnce('T.entities.Item.list("-created_date",500)', '__fpItems(T.entities.Item.list("-created_date",500))');
       replaceOnce('T.functions.invoke("quickSaleCoreApi",{date:Ur.current,masterSearch:!0,query:s,limit:60})', '__fpMasterSearch(T,s)');
-      js += '\nasync function __fpItems(primary){const rows=await Promise.resolve(primary).catch(()=>[]);if(rows?.length)return rows;const r=await fetch("/api/femmas-shared-sheet?sheet=Items",{credentials:"same-origin"});if(!r.ok)throw new Error("Items unavailable");const d=await r.json();if(!d.ok||!Array.isArray(d.rows))throw new Error("Invalid items data");const num=v=>Number(String(v??"").replace(/,/g,""))||0;return d.rows.filter(r=>r.ItemID&&r.ItemName).map(r=>({id:r.ItemID,itemName:r.ItemName,itemCode:r.ItemCode||r.ItemID,category:r.Category||"",unit:r.Unit||"Pcs",salePrice:num(r.SalePrice||r.SellingPrice),currentStockQty:num(r.CurrentStock||r.AvailableStock||r.OpeningStock),inventoryTracked:false,stockBaselineVerified:false,status:r.Status||"Active",_peerShared:true}))}async function __fpMasterSearch(client,query){const escaped=String(query).replace(/[.*+?^${}()|[\\]\\\\]/g,"\\$&");const found=await Promise.allSettled([client.entities.ServiceCatalog.filter({service_name:{$regex:escaped}},"-created_date",100),__fpItems(client.entities.Item.filter({itemName:{$regex:escaped}},"-created_date",100))]);return {data:{catalog:found[0].status==="fulfilled"?found[0].value:[],items:found[1].status==="fulfilled"?found[1].value:[]}}}\n';
+      js += '\nasync function __fpItems(primary){const rows=await __fpQuickWait(Promise.resolve(primary).catch(()=>[]),1500).catch(()=>[]);if(rows?.length)return rows;const r=await fetch("/api/femmas-shared-sheet?sheet=Items",{credentials:"same-origin"});if(!r.ok)throw new Error("Items unavailable");const d=await r.json();if(!d.ok||!Array.isArray(d.rows))throw new Error("Invalid items data");const num=v=>Number(String(v??"").replace(/,/g,""))||0;return d.rows.filter(r=>r.ItemID&&r.ItemName).map(r=>({id:r.ItemID,itemName:r.ItemName,itemCode:r.ItemCode||r.ItemID,category:r.Category||"",unit:r.Unit||"Pcs",salePrice:num(r.SalePrice||r.SellingPrice),currentStockQty:num(r.CurrentStock||r.AvailableStock||r.OpeningStock),inventoryTracked:false,stockBaselineVerified:false,status:r.Status||"Active",_peerShared:true}))}async function __fpMasterSearch(client,query){const escaped=String(query).replace(/[.*+?^${}()|[\\]\\\\]/g,"\\$&");const found=await Promise.allSettled([client.entities.ServiceCatalog.filter({service_name:{$regex:escaped}},"-created_date",100),__fpItems(client.entities.Item.filter({itemName:{$regex:escaped}},"-created_date",100))]);return {data:{catalog:found[0].status==="fulfilled"?found[0].value:[],items:found[1].status==="fulfilled"?found[1].value:[]}}}\n';
     }
     // Version the changed lazy chunks so browsers cannot reuse their old immutable copies.
-    const versioned = js.replace(/((?:\.\/|assets\/)(?:Dashboard-DUmWkJWX|sharedFemmasDb-pz44rUcs|SaleInvoices-eHSRbIOi|CustomerSelect-CcjB1l7I|QuickSale-B7nQvxCA)\.js)(["'])/g, '$1?fp=20260924-dashboard10$2');
+    const versioned = js.replace(/((?:\.\/|assets\/)(?:Dashboard|sharedFemmasDb|SaleInvoices|CustomerSelect|QuickSale)-[A-Za-z0-9_-]+\.js)(["'])/g, '$1?fp=20260925-build11$2');
     changed = changed || versioned !== js;
     js = versioned;
     const headers = new Headers(response.headers);
     headers.delete('content-length');
     headers.delete('etag');
     headers.set('cache-control', 'no-store');
-    headers.set('x-femmas-speed-fix', changed ? 'dashboard-read-v10' : 'unchanged');
+    headers.set('x-femmas-speed-fix', changed ? 'build-compatible-v11' : 'unchanged');
     return new Response(js, {status:response.status,statusText:response.statusText,headers});
   }
 
